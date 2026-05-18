@@ -1,5 +1,16 @@
 {
   "name": "@eata/test-electron-app",
   "version": "0.1.0",
-  "private": true
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "electron": "^35.0.0"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.0"
+  }
 }

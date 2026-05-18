@@ -8,7 +8,7 @@
       "plan_name": "eata",
       "status": "active",
       "started_at": "2026-05-18T13:38:52.956Z",
-      "updated_at": "2026-05-18T13:38:52.956Z",
+      "updated_at": "2026-05-18T14:06:35.810Z",
       "session_ids": [
         "ses_1c54479b5ffebiz1WoOZ7mI0E6"
       ],
@@ -16,13 +16,40 @@
         "ses_1c54479b5ffebiz1WoOZ7mI0E6": "direct"
       },
       "agent": "atlas",
-      "task_sessions": {}
+      "task_sessions": {
+        "todo:1": {
+          "task_key": "todo:1",
+          "task_label": "1",
+          "task_title": "Monorepo Scaffolding + pnpm Workspaces",
+          "session_id": "ses_1c4aa830cffeigtd92Fpzpw0w1",
+          "agent": "Sisyphus-Junior",
+          "category": "quick",
+          "updated_at": "2026-05-18T13:52:50.367Z",
+          "started_at": "2026-05-18T13:51:40.966Z",
+          "status": "completed",
+          "ended_at": "2026-05-18T13:52:50.367Z",
+          "elapsed_ms": 69401
+        },
+        "todo:2": {
+          "task_key": "todo:2",
+          "task_label": "2",
+          "task_title": "Shared Zod Schemas + TypeScript Types",
+          "session_id": "ses_1c4a2583affewjw2frTG1PoNhV",
+          "agent": "Sisyphus-Junior",
+          "category": "quick",
+          "updated_at": "2026-05-18T14:06:35.810Z",
+          "started_at": "2026-05-18T14:03:41.121Z",
+          "status": "completed",
+          "ended_at": "2026-05-18T14:06:35.810Z",
+          "elapsed_ms": 174689
+        }
+      }
     }
   },
   "active_plan": "D:\\workSpace\\electron_playwright_test\\.sisyphus\\plans\\eata.md",
   "started_at": "2026-05-18T13:38:52.956Z",
   "status": "active",
-  "updated_at": "2026-05-18T13:38:52.956Z",
+  "updated_at": "2026-05-18T14:06:35.810Z",
   "session_ids": [
     "ses_1c54479b5ffebiz1WoOZ7mI0E6"
   ],
@@ -30,6 +57,33 @@
     "ses_1c54479b5ffebiz1WoOZ7mI0E6": "direct"
   },
   "plan_name": "eata",
-  "task_sessions": {},
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "Monorepo Scaffolding + pnpm Workspaces",
+      "session_id": "ses_1c4aa830cffeigtd92Fpzpw0w1",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-18T13:52:50.367Z",
+      "started_at": "2026-05-18T13:51:40.966Z",
+      "status": "completed",
+      "ended_at": "2026-05-18T13:52:50.367Z",
+      "elapsed_ms": 69401
+    },
+    "todo:2": {
+      "task_key": "todo:2",
+      "task_label": "2",
+      "task_title": "Shared Zod Schemas + TypeScript Types",
+      "session_id": "ses_1c4a2583affewjw2frTG1PoNhV",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-18T14:06:35.810Z",
+      "started_at": "2026-05-18T14:03:41.121Z",
+      "status": "completed",
+      "ended_at": "2026-05-18T14:06:35.810Z",
+      "elapsed_ms": 174689
+    }
+  },
   "agent": "atlas"
 }

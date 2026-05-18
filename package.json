@@ -23,5 +23,8 @@
     "@langchain/langgraph": "^0.3.0",
     "@langchain/core": "^0.3.0",
     "@langchain/langgraph-checkpoint-sqlite": "^0.1.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["better-sqlite3", "esbuild", "electron"]
   }
 }

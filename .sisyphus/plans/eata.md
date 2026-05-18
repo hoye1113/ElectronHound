@@ -213,7 +213,7 @@ Max Concurrent: 7 (Wave 1)
 
 ## TODOs
 
-- [ ] 1. Monorepo Scaffolding + pnpm Workspaces
+- [x] 1. Monorepo Scaffolding + pnpm Workspaces
 
   **What to do**:
   - Create root `package.json` with pnpm workspaces config referencing `apps/*`, `packages/*`, `fixtures/*`
@@ -290,7 +290,7 @@ Max Concurrent: 7 (Wave 1)
   - Message: `chore(scaffold): initialize monorepo with pnpm workspaces`
   - Files: root configs, tsconfig, vitest, eslint, prettier
 
-- [ ] 2. Shared Zod Schemas + TypeScript Types
+- [x] 2. Shared Zod Schemas + TypeScript Types
 
   **What to do**:
   - Create `packages/shared-types/package.json` with Zod 4.4.3 + TypeScript 6.0.3
@@ -375,7 +375,7 @@ Max Concurrent: 7 (Wave 1)
   - Files: packages/shared-types/
   - Pre-commit: `pnpm test packages/shared-types`
 
-- [ ] 3. Test Electron Fixture App
+- [x] 3. Test Electron Fixture App
 
   **What to do**:
   - Create `fixtures/test-electron-app/package.json` with Electron dependency
@@ -456,7 +456,7 @@ Max Concurrent: 7 (Wave 1)
   - Message: `test(fixture): add minimal Electron test app`
   - Files: fixtures/test-electron-app/
 
-- [ ] 4. Launcher Wrapper + CDP Discovery
+- [x] 4. Launcher Wrapper + CDP Discovery
 
   **What to do**:
   - Create `packages/launcher/package.json`
@@ -538,7 +538,7 @@ Max Concurrent: 7 (Wave 1)
   - Message: `feat(launcher): add Electron CDP launcher wrapper`
   - Files: packages/launcher/
 
-- [ ] 5. Electron --require Helper Module
+- [x] 5. Electron --require Helper Module
 
   **What to do**:
   - Create `packages/electron-helper/package.json`
@@ -616,7 +616,7 @@ Max Concurrent: 7 (Wave 1)
   - Message: `feat(helper): add Electron --require injection module`
   - Files: packages/electron-helper/
 
-- [ ] 6. Fastify Server Skeleton + SQLite Setup
+- [x] 6. Fastify Server Skeleton + SQLite Setup
 
   **What to do**:
   - Create `apps/server/package.json` with Fastify 5.8.5, better-sqlite3 12.10.0, @fastify/static, pino 10.3.1
@@ -699,7 +699,7 @@ Max Concurrent: 7 (Wave 1)
   - Message: `feat(server): add Fastify skeleton with SQLite`
   - Files: apps/server/
 
-- [ ] 7. Dashboard Vite + React Skeleton
+- [x] 7. Dashboard Vite + React Skeleton
 
   **What to do**:
   - Use Vite scaffolding to create the Dashboard app: `pnpm create vite apps/dashboard --template react-ts`
