@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2024",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2024"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@eata/shared-types": ["packages/shared-types/src/index.ts"],
+      "@eata/agent-core": ["packages/agent-core/src/index.ts"],
+      "@eata/launcher": ["packages/launcher/src/index.ts"],
+      "@eata/electron-helper": ["packages/electron-helper/src/index.ts"],
+      "@eata/electron-bridge-mcp": ["packages/electron-bridge-mcp/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "**/dist/**"]
+}

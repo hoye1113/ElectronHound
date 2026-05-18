@@ -1,0 +1,35 @@
+{
+  "schema_version": 2,
+  "active_work_id": "eata-eaf64e55",
+  "works": {
+    "eata-eaf64e55": {
+      "work_id": "eata-eaf64e55",
+      "active_plan": "D:\\workSpace\\electron_playwright_test\\.sisyphus\\plans\\eata.md",
+      "plan_name": "eata",
+      "status": "active",
+      "started_at": "2026-05-18T13:38:52.956Z",
+      "updated_at": "2026-05-18T13:38:52.956Z",
+      "session_ids": [
+        "ses_1c54479b5ffebiz1WoOZ7mI0E6"
+      ],
+      "session_origins": {
+        "ses_1c54479b5ffebiz1WoOZ7mI0E6": "direct"
+      },
+      "agent": "atlas",
+      "task_sessions": {}
+    }
+  },
+  "active_plan": "D:\\workSpace\\electron_playwright_test\\.sisyphus\\plans\\eata.md",
+  "started_at": "2026-05-18T13:38:52.956Z",
+  "status": "active",
+  "updated_at": "2026-05-18T13:38:52.956Z",
+  "session_ids": [
+    "ses_1c54479b5ffebiz1WoOZ7mI0E6"
+  ],
+  "session_origins": {
+    "ses_1c54479b5ffebiz1WoOZ7mI0E6": "direct"
+  },
+  "plan_name": "eata",
+  "task_sessions": {},
+  "agent": "atlas"
+}
