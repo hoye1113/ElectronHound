@@ -10,7 +10,7 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "agent:run": "pnpm --filter agent-core run start"
+    "agent:run": "npx tsx packages/agent-core/src/cli.ts"
   },
   "devDependencies": {
     "typescript": "^5.8.0",

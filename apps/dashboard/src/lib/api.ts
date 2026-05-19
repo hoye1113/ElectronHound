@@ -1,0 +1,46 @@
+import type { Task, CreateTaskRequest, FeedbackPattern } from '@eata/shared-types';
+
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+
+export const api = {
+  tasks: {
+    list(params?: { status?: string; page?: number; limit?: number }): Promise<{
+      data: Task[];
+      total: number;
+      page: number;
+      limit: number;
+    }> {
+      const query = new URLSearchParams();
+      if (params?.status) query.set('status', params.status);
+      if (params?.page) query.set('page', String(params.page));
+      if (params?.limit) query.set('limit', String(params.limit));
+      return fetch(`${API_BASE}/api/tasks?${query}`).then((r) => r.json());
+    },
+    get(id: string): Promise<{ task: Task; steps: unknown[] }> {
+      return fetch(`${API_BASE}/api/tasks/${id}`).then((r) => r.json());
+    },
+    create(data: CreateTaskRequest): Promise<Task> {
+      return fetch(`${API_BASE}/api/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }).then((r) => r.json());
+    },
+    delete(id: string): Promise<void> {
+      return fetch(`${API_BASE}/api/tasks/${id}`, { method: 'DELETE' }).then(() => undefined);
+    },
+    cancel(id: string): Promise<Task> {
+      return fetch(`${API_BASE}/api/tasks/${id}/cancel`, { method: 'POST' }).then((r) => r.json());
+    },
+  },
+  reports: {
+    get(taskId: string): Promise<unknown> {
+      return fetch(`${API_BASE}/api/tasks/${taskId}/report`).then((r) => r.json());
+    },
+  },
+  feedback: {
+    getPatterns(): Promise<{ patterns: FeedbackPattern[] }> {
+      return fetch(`${API_BASE}/api/feedback/patterns`).then((r) => r.json());
+    },
+  },
+};

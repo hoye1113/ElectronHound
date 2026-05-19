@@ -1,13 +1,21 @@
-import './index.css';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Layout from './components/Layout';
+import TaskList from './pages/TaskList';
+import TaskDetail from './pages/TaskDetail';
+import LiveMonitor from './pages/LiveMonitor';
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900">EATA</h1>
-        <p className="mt-2 text-gray-600">Electron AI Testing Agent</p>
-      </div>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<TaskList />} />
+          <Route path="/task/:id" element={<TaskDetail />} />
+          <Route path="/monitor/:id" element={<LiveMonitor />} />
+          <Route path="/monitor" element={<LiveMonitor />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 

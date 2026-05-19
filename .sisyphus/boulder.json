@@ -8,7 +8,7 @@
       "plan_name": "eata",
       "status": "active",
       "started_at": "2026-05-18T13:38:52.956Z",
-      "updated_at": "2026-05-18T14:06:35.810Z",
+      "updated_at": "2026-05-18T14:55:03.036Z",
       "session_ids": [
         "ses_1c54479b5ffebiz1WoOZ7mI0E6"
       ],
@@ -42,6 +42,30 @@
           "status": "completed",
           "ended_at": "2026-05-18T14:06:35.810Z",
           "elapsed_ms": 174689
+        },
+        "todo:8": {
+          "task_key": "todo:8",
+          "task_label": "8",
+          "task_title": "electron-bridge-mcp Server",
+          "session_id": "ses_1c494afddffelr3HuS6NsLh3Oa",
+          "agent": "Sisyphus-Junior",
+          "category": "unspecified-high",
+          "updated_at": "2026-05-18T14:41:26.259Z",
+          "started_at": "2026-05-18T14:26:23.266Z",
+          "status": "completed",
+          "ended_at": "2026-05-18T14:41:26.259Z",
+          "elapsed_ms": 902993
+        },
+        "todo:15": {
+          "task_key": "todo:15",
+          "task_label": "15",
+          "task_title": "Feedback Aggregator — LangGraph 报告层 Sub Graph（4路并行）",
+          "session_id": "ses_1c475a1a9ffexlaRANuWM20TwF",
+          "agent": "Sisyphus-Junior",
+          "category": "unspecified-high",
+          "updated_at": "2026-05-18T14:55:03.036Z",
+          "started_at": "2026-05-18T14:55:03.036Z",
+          "status": "running"
         }
       }
     }
@@ -49,7 +73,7 @@
   "active_plan": "D:\\workSpace\\electron_playwright_test\\.sisyphus\\plans\\eata.md",
   "started_at": "2026-05-18T13:38:52.956Z",
   "status": "active",
-  "updated_at": "2026-05-18T14:06:35.810Z",
+  "updated_at": "2026-05-18T14:55:03.036Z",
   "session_ids": [
     "ses_1c54479b5ffebiz1WoOZ7mI0E6"
   ],
@@ -83,6 +107,30 @@
       "status": "completed",
       "ended_at": "2026-05-18T14:06:35.810Z",
       "elapsed_ms": 174689
+    },
+    "todo:8": {
+      "task_key": "todo:8",
+      "task_label": "8",
+      "task_title": "electron-bridge-mcp Server",
+      "session_id": "ses_1c494afddffelr3HuS6NsLh3Oa",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-05-18T14:41:26.259Z",
+      "started_at": "2026-05-18T14:26:23.266Z",
+      "status": "completed",
+      "ended_at": "2026-05-18T14:41:26.259Z",
+      "elapsed_ms": 902993
+    },
+    "todo:15": {
+      "task_key": "todo:15",
+      "task_label": "15",
+      "task_title": "Feedback Aggregator — LangGraph 报告层 Sub Graph（4路并行）",
+      "session_id": "ses_1c475a1a9ffexlaRANuWM20TwF",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-05-18T14:55:03.036Z",
+      "started_at": "2026-05-18T14:55:03.036Z",
+      "status": "running"
     }
   },
   "agent": "atlas"

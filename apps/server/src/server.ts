@@ -1,6 +1,9 @@
 import Fastify from 'fastify';
 import { initDatabase } from './db/index.js';
 import { runMigrations } from './db/migrations.js';
+import { registerRoutes } from './routes/index.js';
+import { streamRoutes } from './routes/stream.js';
+import { sseHub } from './streams/sseHub.js';
 import { configSchema, type ServerConfig } from './types/config.js';
 import type Database from 'better-sqlite3';
 
@@ -21,16 +24,23 @@ export async function buildServer(config?: Partial<ServerConfig>): Promise<Serve
   // Initialize database
   const db = initDatabase(validatedConfig.databasePath);
 
+  // Decorate server with db for route access
+  server.decorate('db', db);
+
   // Run migrations
   const migrated = runMigrations(db);
   if (migrated) {
     server.log.info('Database migrations applied');
   }
 
-  // Health check route
-  server.get('/health', async () => {
-    return { status: 'ok', timestamp: new Date().toISOString() };
-  });
+  // Register application routes
+  await registerRoutes(server);
+
+  // Register SSE stream routes (not under /api prefix)
+  await streamRoutes(server);
+
+  // Decorate sseHub
+  server.decorate('sseHub', sseHub);
 
   // Graceful shutdown
   process.on('SIGINT', async () => {

@@ -777,7 +777,7 @@ Max Concurrent: 7 (Wave 1)
   - Message: `feat(dashboard): add React + Vite skeleton`
   - Files: apps/dashboard/
 
-- [ ] 8. electron-bridge-mcp Server
+- [x] 8. electron-bridge-mcp Server
 
   **What to do**:
   - Create `packages/electron-bridge-mcp/package.json` with @modelcontextprotocol/sdk 1.29.0
@@ -860,7 +860,7 @@ Max Concurrent: 7 (Wave 1)
   - Message: `feat(mcp): add electron-bridge-mcp server`
   - Files: packages/electron-bridge-mcp/
 
-- [ ] 9. Fastify REST API Routes
+- [x] 9. Fastify REST API Routes
 
   **What to do**:
   - Create `apps/server/src/routes/tasks.ts`:
@@ -943,7 +943,7 @@ Max Concurrent: 7 (Wave 1)
   - Message: `feat(api): add REST routes for tasks/reports/feedback`
   - Files: apps/server/src/routes/
 
-- [ ] 10. Fastify SSE Hub
+- [x] 10. Fastify SSE Hub
 
   **What to do**:
   - Create `apps/server/src/streams/sseHub.ts`:
@@ -1001,7 +1001,7 @@ Max Concurrent: 7 (Wave 1)
   - Message: `feat(sse): add SSE hub for real-time updates`
   - Files: apps/server/src/streams/, apps/server/src/routes/stream.ts
 
-- [ ] 11. Worker Process Manager
+- [x] 11. Worker Process Manager
 
   **What to do**:
   - Create `apps/server/src/services/workerManager.ts`:
@@ -1081,7 +1081,7 @@ Max Concurrent: 7 (Wave 1)
   - Message: `feat(worker): add Worker process manager`
   - Files: apps/server/src/services/workerManager.ts, taskQueue.ts
 
-- [ ] 12. AI Loop Engine — LangGraph StateGraph 主循环
+- [x] 12. AI Loop Engine — LangGraph StateGraph 主循环
 
   **What to do**:
   - Create `packages/agent-core/package.json` with:
@@ -1293,7 +1293,7 @@ Max Concurrent: 7 (Wave 1)
   - Message: `feat(agent): add LangGraph StateGraph AI loop with Vercel AI SDK nodes`
   - Files: packages/agent-core/
 
-- [ ] 13. Dashboard Stores + API Client
+- [x] 13. Dashboard Stores + API Client
 
   **What to do**:
   - Create `apps/dashboard/src/lib/api.ts` — HTTP client for Fastify REST API:
@@ -1353,7 +1353,7 @@ Max Concurrent: 7 (Wave 1)
   - Message: `feat(stores): add Zustand stores and API client`
   - Files: apps/dashboard/src/stores/, apps/dashboard/src/lib/
 
-- [ ] 14. Report Service + Filesystem I/O
+- [x] 14. Report Service + Filesystem I/O
 
   **What to do**:
   - Create `apps/server/src/services/reportService.ts`:
@@ -1428,7 +1428,7 @@ Max Concurrent: 7 (Wave 1)
   - Message: `feat(reports): add report service and filesystem I/O`
   - Files: apps/server/src/services/reportService.ts, fileSecurity.ts
 
-- [ ] 15. Feedback Aggregator — LangGraph 报告层 Sub Graph（4路并行）
+- [x] 15. Feedback Aggregator — LangGraph 报告层 Sub Graph（4路并行）
 
   **What to do**:
   - Create `packages/agent-core/src/report-graph/` — LangGraph Sub Graph，在主循环 report 节点触发后并行执行
@@ -1610,7 +1610,7 @@ Max Concurrent: 7 (Wave 1)
   - Message: `feat(feedback): add LangGraph report sub-graph with 4-way parallel analysis`
   - Files: packages/agent-core/src/report-graph/
 
-- [ ] 16. Dashboard TaskList Page
+- [x] 16. Dashboard TaskList Page
 
   **What to do**:
   - Create `apps/dashboard/src/pages/TaskList.tsx`:
@@ -1801,7 +1801,7 @@ Max Concurrent: 7 (Wave 1)
   - Message: `feat(ui): add TaskDetail and report viewer`
   - Files: apps/dashboard/src/pages/TaskDetail.tsx, FeedbackLoop.tsx, components/
 
-- [ ] 19. CLI Mode: pnpm agent:run
+- [x] 19. CLI Mode: pnpm agent:run
 
   **What to do**:
   - Create `packages/agent-core/src/cli.ts` — Command-line entry point:
