@@ -7,3 +7,6 @@ data/*.sqlite3-shm
 *.log
 .DS_Store
 Thumbs.db
+
+# Test artifacts
+data/reports/
