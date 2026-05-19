@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import ScreenshotGallery from '../components/ScreenshotGallery';
 
@@ -54,8 +54,9 @@ describe('ScreenshotGallery', () => {
     render(<ScreenshotGallery screenshots={mockScreenshots} />);
     const thumbnails = screen.getAllByRole('button');
     fireEvent.click(thumbnails[0]);
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-    fireEvent.keyDown(window, { key: 'Escape' });
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+    fireEvent.keyDown(dialog, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 

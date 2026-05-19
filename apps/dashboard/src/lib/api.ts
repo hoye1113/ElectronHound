@@ -2,6 +2,10 @@ import type { Task, CreateTaskRequest, FeedbackPattern } from '@eata/shared-type
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
+export function getScreenshotUrl(taskId: string, stepIndex: number): string {
+  return `${API_BASE}/api/tasks/${taskId}/steps/${stepIndex}/screenshot`;
+}
+
 export const api = {
   tasks: {
     list(params?: { status?: string; page?: number; limit?: number }): Promise<{
@@ -36,6 +40,9 @@ export const api = {
   reports: {
     get(taskId: string): Promise<unknown> {
       return fetch(`${API_BASE}/api/tasks/${taskId}/report`).then((r) => r.json());
+    },
+    getHtmlUrl(taskId: string): string {
+      return `${API_BASE}/api/tasks/${taskId}/report/html`;
     },
     getManifest(id: string): Promise<unknown> {
       return fetch(`${API_BASE}/api/reports/${id}/manifest`).then((r) => r.json());

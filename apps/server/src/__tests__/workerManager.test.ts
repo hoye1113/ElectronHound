@@ -3,6 +3,22 @@ import { WorkerManager, type WorkerOptions } from '../services/workerManager.js'
 
 // ── Mock child_process.spawn (all in vi.hoisted for hoist safety) ──
 
+// Type for the fake process created in tests (avoids `as any`)
+interface FakeProcess {
+  pid: number;
+  exitCode: number | null;
+  signalCode: NodeJS.Signals | null;
+  stdout: {
+    on: (event: string, cb: (...args: unknown[]) => void) => unknown;
+    emitData: (data: string) => void;
+  };
+  stderr: { on: (event: string, cb: (...args: unknown[]) => void) => unknown };
+  stdin: { write: ReturnType<typeof vi.fn>; writable: boolean };
+  on: (event: string, cb: (...args: unknown[]) => void) => unknown;
+  emitEvent: (event: string, ...args: unknown[]) => void;
+  kill: ReturnType<typeof vi.fn>;
+}
+
 const { fakeSpawn, getLastSpawnArgs, getLastSpawnEnvs } = vi.hoisted(() => {
   // ── Fake Process Factory ────────────────────────────────────────
 
@@ -186,8 +202,7 @@ describe('WorkerManager', () => {
       const handle = manager.spawnWorker(defaultOptions);
       expect(handle.status).toBe('starting');
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const proc = handle.process as any;
+      const proc = handle.process as unknown as FakeProcess;
       proc.stdout.emitData(
         '{"jsonrpc":"2.0","method":"step_start","params":{}}\n',
       );
@@ -201,8 +216,7 @@ describe('WorkerManager', () => {
 
       vi.advanceTimersByTime(1000);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const proc = handle.process as any;
+      const proc = handle.process as unknown as FakeProcess;
       proc.stdout.emitData(
         '{"jsonrpc":"2.0","method":"heartbeat","params":{}}\n',
       );
@@ -216,8 +230,7 @@ describe('WorkerManager', () => {
 
       const handle = manager.spawnWorker(defaultOptions);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const proc = handle.process as any;
+      const proc = handle.process as unknown as FakeProcess;
       proc.stdout.emitData(
         '{"jsonrpc":"2.0","method":"task_end","params":{"success":true}}\n',
       );
@@ -235,8 +248,7 @@ describe('WorkerManager', () => {
 
       const handle = manager.spawnWorker(defaultOptions);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const proc = handle.process as any;
+      const proc = handle.process as unknown as FakeProcess;
       proc.stdout.emitData(
         '{"jsonrpc":"2.0","method":"task_end","params":{"success":false}}\n',
       );
@@ -254,8 +266,7 @@ describe('WorkerManager', () => {
 
       const handle = manager.spawnWorker(defaultOptions);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const proc = handle.process as any;
+      const proc = handle.process as unknown as FakeProcess;
       proc.stdout.emitData(
         '{"jsonrpc":"2.0","method":"error","params":{"message":"Something broke"}}\n',
       );
@@ -271,8 +282,7 @@ describe('WorkerManager', () => {
     it('handles multiple JSON messages in a single chunk', () => {
       const handle = manager.spawnWorker(defaultOptions);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const proc = handle.process as any;
+      const proc = handle.process as unknown as FakeProcess;
       proc.stdout.emitData(
         '{"jsonrpc":"2.0","method":"step_start"}\n{"jsonrpc":"2.0","method":"heartbeat"}\n',
       );
@@ -283,8 +293,7 @@ describe('WorkerManager', () => {
     it('tolerates non-JSON lines in stdout', () => {
       const handle = manager.spawnWorker(defaultOptions);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const proc = handle.process as any;
+      const proc = handle.process as unknown as FakeProcess;
       expect(() => {
         proc.stdout.emitData('some plain text output\n');
       }).not.toThrow();
@@ -300,8 +309,7 @@ describe('WorkerManager', () => {
       const handle = manager.spawnWorker(defaultOptions);
       manager.sendControl('test-task-1', 'cancel', { taskId: 'test-task-1' });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const stdin = (handle.process as any).stdin;
+      const stdin = (handle.process as unknown as FakeProcess).stdin;
       expect(stdin.write).toHaveBeenCalledTimes(1);
 
       const written = (stdin.write as ReturnType<typeof vi.fn>).mock
@@ -324,8 +332,7 @@ describe('WorkerManager', () => {
       manager.sendControl('test-task-1', 'pause');
       manager.sendControl('test-task-1', 'resume');
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const stdin = (handle.process as any).stdin;
+      const stdin = (handle.process as unknown as FakeProcess).stdin;
       expect(stdin.write).toHaveBeenCalledTimes(2);
     });
 
@@ -335,8 +342,7 @@ describe('WorkerManager', () => {
         hint: 'try a different approach',
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const stdin = (handle.process as any).stdin;
+      const stdin = (handle.process as unknown as FakeProcess).stdin;
       expect(stdin.write).toHaveBeenCalledTimes(1);
 
       const written = (stdin.write as ReturnType<typeof vi.fn>).mock
@@ -354,8 +360,7 @@ describe('WorkerManager', () => {
       manager.onEvent((e) => events.push(e));
 
       const handle = manager.spawnWorker(defaultOptions);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const proc = handle.process as any;
+      const proc = handle.process as unknown as FakeProcess;
       proc.stdout.emitData(
         '{"jsonrpc":"2.0","method":"step_start"}\n',
       );
@@ -369,8 +374,7 @@ describe('WorkerManager', () => {
 
     it('does not timeout if heartbeat is received', () => {
       const handle = manager.spawnWorker(defaultOptions);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const proc = handle.process as any;
+      const proc = handle.process as unknown as FakeProcess;
       proc.stdout.emitData(
         '{"jsonrpc":"2.0","method":"step_start"}\n',
       );
@@ -387,8 +391,7 @@ describe('WorkerManager', () => {
 
     it('does not check heartbeat for completed workers', () => {
       const handle = manager.spawnWorker(defaultOptions);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const proc = handle.process as any;
+      const proc = handle.process as unknown as FakeProcess;
       proc.stdout.emitData(
         '{"jsonrpc":"2.0","method":"task_end","params":{"success":true}}\n',
       );
@@ -406,8 +409,7 @@ describe('WorkerManager', () => {
 
       manager.cancelWorker('test-task-1');
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const stdin = (handle.process as any).stdin;
+      const stdin = (handle.process as unknown as FakeProcess).stdin;
       const written = (stdin.write as ReturnType<typeof vi.fn>).mock
         .calls[0][0] as string;
       const parsed = JSON.parse(written.trim());
@@ -421,8 +423,7 @@ describe('WorkerManager', () => {
 
       vi.advanceTimersByTime(6_000);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const proc = handle.process as any;
+      const proc = handle.process as unknown as FakeProcess;
       expect(proc.kill).toHaveBeenCalledWith('SIGTERM');
     });
 
@@ -433,8 +434,7 @@ describe('WorkerManager', () => {
       const handle = manager.spawnWorker(defaultOptions);
       manager.cancelWorker('test-task-1');
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const proc = handle.process as any;
+      const proc = handle.process as unknown as FakeProcess;
       proc.emitEvent('exit', 1, 'SIGTERM');
 
       expect(handle.status).toBe('cancelled');
@@ -456,8 +456,7 @@ describe('WorkerManager', () => {
       manager.onEvent((e) => events.push(e));
 
       const handle = manager.spawnWorker(defaultOptions);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const proc = handle.process as any;
+      const proc = handle.process as unknown as FakeProcess;
       proc.stdout.emitData(
         '{"jsonrpc":"2.0","method":"step_start"}\n',
       );
@@ -478,8 +477,7 @@ describe('WorkerManager', () => {
       manager.onEvent((e) => events.push(e));
 
       const handle = manager.spawnWorker(defaultOptions);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const proc = handle.process as any;
+      const proc = handle.process as unknown as FakeProcess;
       proc.stdout.emitData(
         '{"jsonrpc":"2.0","method":"step_start"}\n',
       );
@@ -496,8 +494,7 @@ describe('WorkerManager', () => {
 
     it('cleans up worker from map after exit', () => {
       const handle = manager.spawnWorker(defaultOptions);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const proc = handle.process as any;
+      const proc = handle.process as unknown as FakeProcess;
       proc.emitEvent('exit', 0, null);
 
       expect(manager.getWorker('test-task-1')).toBeUndefined();
@@ -509,8 +506,7 @@ describe('WorkerManager', () => {
       manager.onEvent((e) => events.push(e));
 
       const handle = manager.spawnWorker(defaultOptions);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const proc = handle.process as any;
+      const proc = handle.process as unknown as FakeProcess;
       proc.emitEvent('error', new Error('ENOENT'));
 
       expect(handle.status).toBe('failed');
@@ -538,8 +534,7 @@ describe('WorkerManager', () => {
       const handle = manager.spawnWorker(defaultOptions);
       expect(manager.getWorkerStatus('test-task-1')).toBe('starting');
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const proc = handle.process as any;
+      const proc = handle.process as unknown as FakeProcess;
       proc.stdout.emitData(
         '{"jsonrpc":"2.0","method":"step_start"}\n',
       );
@@ -566,10 +561,8 @@ describe('WorkerManager', () => {
 
       manager.shutdown();
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect((handle1.process as any).kill).toHaveBeenCalledWith('SIGTERM');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect((handle2.process as any).kill).toHaveBeenCalledWith('SIGTERM');
+      expect((handle1.process as unknown as FakeProcess).kill).toHaveBeenCalledWith('SIGTERM');
+      expect((handle2.process as unknown as FakeProcess).kill).toHaveBeenCalledWith('SIGTERM');
       expect(manager.getAllWorkers()).toHaveLength(0);
     });
 

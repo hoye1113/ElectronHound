@@ -35,7 +35,7 @@ export interface WorkerEvent {
 
 // ── Constants ───────────────────────────────────────────────────────
 
-const RUNNER_SCRIPT = 'packages/agent-core/src/runner.ts';
+const RUNNER_SCRIPT = 'packages/agent-core/src/worker-entry.ts';
 const HEARTBEAT_TIMEOUT = 10_000;
 const HEARTBEAT_CHECK_INTERVAL = 2_000;
 const CANCEL_TIMEOUT = 5_000;

@@ -6,9 +6,9 @@
       "work_id": "eata-eaf64e55",
       "active_plan": "D:\\workSpace\\electron_playwright_test\\.sisyphus\\plans\\eata.md",
       "plan_name": "eata",
-      "status": "active",
+      "status": "completed",
       "started_at": "2026-05-18T13:38:52.956Z",
-      "updated_at": "2026-05-18T14:55:03.036Z",
+      "updated_at": "2026-05-19T09:00:00.000Z",
       "session_ids": [
         "ses_1c54479b5ffebiz1WoOZ7mI0E6"
       ],
@@ -59,21 +59,49 @@
         "todo:15": {
           "task_key": "todo:15",
           "task_label": "15",
-          "task_title": "Feedback Aggregator — LangGraph 报告层 Sub Graph（4路并行）",
+          "task_title": "Feedback Aggregator — LangGraph 报告层 Sub Graph（4 路并行）",
           "session_id": "ses_1c475a1a9ffexlaRANuWM20TwF",
           "agent": "Sisyphus-Junior",
           "category": "unspecified-high",
           "updated_at": "2026-05-18T14:55:03.036Z",
           "started_at": "2026-05-18T14:55:03.036Z",
-          "status": "running"
+          "status": "completed",
+          "ended_at": "2026-05-18T14:55:03.036Z",
+          "elapsed_ms": null
+        },
+        "todo:v02_1-to-14": {
+          "task_key": "todo:v02_1-to-14",
+          "task_label": "v0.2",
+          "task_title": "v0.2: Real LLM + MCP + UX (14 tasks: Schema, Deps, Graph DI, LLM, MCP, Worker, Wire LLM, Screenshot, E2E, Settings, Screenshot View, HTML Report, Cancel, Routes)",
+          "session_id": "ses_1c54479b5ffebiz1WoOZ7mI0E6",
+          "agent": "atlas",
+          "category": "multiple",
+          "updated_at": "2026-05-19T09:00:00.000Z",
+          "started_at": "2026-05-19T06:18:54.886Z",
+          "status": "completed",
+          "ended_at": "2026-05-19T09:00:00.000Z",
+          "elapsed_ms": null
+        },
+        "final-wave:f1-f4": {
+          "task_key": "final-wave:f1-f4",
+          "task_label": "F1-F4",
+          "task_title": "Final Verification Wave (4 reviews × 2 versions = 8 reviews, all APPROVED)",
+          "session_id": "ses_1c54479b5ffebiz1WoOZ7mI0E6",
+          "agent": "oracle+unspecified-high+deep",
+          "category": "review",
+          "updated_at": "2026-05-19T09:00:00.000Z",
+          "started_at": "2026-05-18T13:38:52.956Z",
+          "status": "completed",
+          "ended_at": "2026-05-19T09:00:00.000Z",
+          "elapsed_ms": null
         }
       }
     }
   },
   "active_plan": "D:\\workSpace\\electron_playwright_test\\.sisyphus\\plans\\eata.md",
   "started_at": "2026-05-18T13:38:52.956Z",
-  "status": "active",
-  "updated_at": "2026-05-18T14:55:03.036Z",
+  "status": "completed",
+  "updated_at": "2026-05-19T09:00:00.000Z",
   "session_ids": [
     "ses_1c54479b5ffebiz1WoOZ7mI0E6"
   ],
@@ -124,13 +152,41 @@
     "todo:15": {
       "task_key": "todo:15",
       "task_label": "15",
-      "task_title": "Feedback Aggregator — LangGraph 报告层 Sub Graph（4路并行）",
+      "task_title": "Feedback Aggregator — LangGraph 报告层 Sub Graph（4 路并行）",
       "session_id": "ses_1c475a1a9ffexlaRANuWM20TwF",
       "agent": "Sisyphus-Junior",
       "category": "unspecified-high",
       "updated_at": "2026-05-18T14:55:03.036Z",
       "started_at": "2026-05-18T14:55:03.036Z",
-      "status": "running"
+      "status": "completed",
+      "ended_at": "2026-05-18T14:55:03.036Z",
+      "elapsed_ms": null
+    },
+    "todo:v02_1-to-14": {
+      "task_key": "todo:v02_1-to-14",
+      "task_label": "v0.2",
+      "task_title": "v0.2: Real LLM + MCP + UX (14 tasks)",
+      "session_id": "ses_1c54479b5ffebiz1WoOZ7mI0E6",
+      "agent": "atlas",
+      "category": "multiple",
+      "updated_at": "2026-05-19T09:00:00.000Z",
+      "started_at": "2026-05-19T06:18:54.886Z",
+      "status": "completed",
+      "ended_at": "2026-05-19T09:00:00.000Z",
+      "elapsed_ms": null
+    },
+    "final-wave:f1-f4": {
+      "task_key": "final-wave:f1-f4",
+      "task_label": "F1-F4",
+      "task_title": "Final Verification Wave (4 reviews × 2 versions = 8 reviews, all APPROVED)",
+      "session_id": "ses_1c54479b5ffebiz1WoOZ7mI0E6",
+      "agent": "oracle+unspecified-high+deep",
+      "category": "review",
+      "updated_at": "2026-05-19T09:00:00.000Z",
+      "started_at": "2026-05-18T13:38:52.956Z",
+      "status": "completed",
+      "ended_at": "2026-05-19T09:00:00.000Z",
+      "elapsed_ms": null
     }
   },
   "agent": "atlas"

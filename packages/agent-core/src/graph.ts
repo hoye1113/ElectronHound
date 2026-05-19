@@ -1,11 +1,16 @@
 import { StateGraph, END, START } from '@langchain/langgraph';
 import { TestState } from './state.js';
 import { observeNode } from './nodes/observe.js';
-import { planNode } from './nodes/plan.js';
+import { createPlanNode, type PlanNodeOptions } from './nodes/plan.js';
 import { executeNode } from './nodes/execute.js';
-import { verifyNode } from './nodes/verify.js';
+import { createVerifyNode, type VerifyNodeOptions } from './nodes/verify.js';
 import { abortNode } from './nodes/abort.js';
 import { reportNode } from './nodes/report.js';
+
+export interface TestGraphOptions {
+  plan?: PlanNodeOptions;
+  verify?: VerifyNodeOptions;
+}
 
 const routeAfterVerify = (
   state: typeof TestState.State,
@@ -31,7 +36,10 @@ const routeAfterObserve = (
   return 'normal';
 };
 
-export function createTestGraph() {
+export function createTestGraph(options?: TestGraphOptions) {
+  const planNode = createPlanNode(options?.plan ?? {});
+  const verifyNode = createVerifyNode(options?.verify ?? {});
+
   return new StateGraph(TestState)
     .addNode('observe', observeNode)
     .addNode('plan', planNode)

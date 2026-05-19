@@ -9,7 +9,7 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import type { Task, TaskStatus, StepRecord } from '@eata/shared-types';
-import { api } from '../lib/api';
+import { api, getScreenshotUrl } from '../lib/api';
 import StepTimeline from '../components/StepTimeline';
 import ScreenshotGallery from '../components/ScreenshotGallery';
 
@@ -51,12 +51,13 @@ export default function TaskDetail() {
         const ss: ScreenshotItem[] = (data.steps as StepRecord[])
           ?.filter((s) => s.screenshotPath)
           .map((s) => ({
-            url: s.screenshotPath!,
+            url: getScreenshotUrl(id, s.stepIndex),
             stepIndex: s.stepIndex,
             phase: s.phase,
           })) ?? [];
         setScreenshots(ss);
       } catch {
+        // Fetch screenshot failure - gracefully skip
         setError('Failed to load task details');
       } finally {
         setIsLoading(false);
@@ -78,8 +79,17 @@ export default function TaskDetail() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      // Silent fail - report may not be ready
+      // Report download failure - gracefully skip
     }
+  };
+
+  const handleDownloadHtmlReport = () => {
+    if (!id) return;
+    const url = api.reports.getHtmlUrl(id);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `report-${id}.html`;
+    a.click();
   };
 
   if (isLoading) {
@@ -144,14 +154,24 @@ export default function TaskDetail() {
           </div>
         </div>
 
-        <button
-          onClick={handleDownloadReport}
-          className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800/60 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
-          aria-label="Download report"
-        >
-          <Download className="size-4" />
-          Report
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            onClick={handleDownloadReport}
+            className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800/60 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+            aria-label="Download JSON report"
+          >
+            <Download className="size-4" />
+            JSON
+          </button>
+          <button
+            onClick={handleDownloadHtmlReport}
+            className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800/60 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+            aria-label="Download HTML report"
+          >
+            <Download className="size-4" />
+            HTML Report
+          </button>
+        </div>
       </div>
 
       {/* Steps timeline */}

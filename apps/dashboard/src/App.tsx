@@ -4,6 +4,8 @@ import TaskList from './pages/TaskList';
 import TaskDetail from './pages/TaskDetail';
 import LiveMonitor from './pages/LiveMonitor';
 import FeedbackLoop from './pages/FeedbackLoop';
+import SettingsPage from './pages/Settings';
+import NotFound from './pages/NotFound';
 
 function App() {
   return (
@@ -15,6 +17,8 @@ function App() {
           <Route path="/monitor/:id" element={<LiveMonitor />} />
           <Route path="/monitor" element={<LiveMonitor />} />
           <Route path="/feedback" element={<FeedbackLoop />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -1,0 +1,12 @@
+{
+  "taskId": "mock-fail-id",
+  "goal": "Test",
+  "status": "failed",
+  "totalSteps": 1,
+  "passedSteps": 1,
+  "failedSteps": 0,
+  "retriedSteps": 0,
+  "startTime": "2026-05-19T06:41:04.719Z",
+  "endTime": "2026-05-19T06:41:04.719Z",
+  "totalDuration": 0
+}

@@ -4,7 +4,12 @@ export { runTest } from './runner.js';
 export type { RunTestOptions } from './runner.js';
 export { TestState } from './state.js';
 export { getMCPClient, setMCPClient, MCPClient } from './mcp/client.js';
-export type { MCPToolCall, MCPToolResult, MCPClientConfig } from './mcp/client.js';
+export type {
+  MCPToolCall,
+  MCPToolResult,
+  MCPClientConfig,
+  MCPServerConfig,
+} from './mcp/client.js';
 export { guardObservation, guardPlan, guardExecResult, guardVerdict, GuardError } from './guards.js';
 export { observeNode } from './nodes/observe.js';
 export { createPlanNode, planNode } from './nodes/plan.js';

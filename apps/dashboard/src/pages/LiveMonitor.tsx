@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Activity, Loader2, AlertTriangle, Terminal, TreePine } from 'lucide-react';
+import { Activity, Loader2, AlertTriangle, Terminal, TreePine, XCircle } from 'lucide-react';
 import type { TaskStatus, StepRecord } from '@eata/shared-types';
 import { useTaskStore } from '../stores/taskStore';
 import { connectSSE } from '../lib/sse';
@@ -35,6 +35,7 @@ export default function LiveMonitor() {
   const currentTask = useTaskStore((s) => s.currentTask);
   const currentTaskSteps = useTaskStore((s) => s.currentTaskSteps) as StepRecord[];
   const fetchTask = useTaskStore((s) => s.fetchTask);
+  const cancelTask = useTaskStore((s) => s.cancelTask);
   const subscribeToTask = useTaskStore((s) => s.subscribeToTask);
   const isLoading = useTaskStore((s) => s.isLoading);
 
@@ -90,6 +91,12 @@ export default function LiveMonitor() {
     }
   }, [currentTaskSteps]);
 
+  const handleCancel = async () => {
+    if (id && window.confirm('Cancel this task?')) {
+      await cancelTask(id);
+    }
+  };
+
   if (!id) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-6">
@@ -144,6 +151,15 @@ export default function LiveMonitor() {
             <span className="rounded-md bg-indigo-500/15 px-2.5 py-1 text-xs font-semibold text-indigo-300">
               {phaseLabels[currentPhase]}
             </span>
+          )}
+          {(status === 'running' || status === 'queued') && (
+            <button
+              onClick={handleCancel}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-red-600/80 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-600"
+            >
+              <XCircle className="size-3.5" />
+              Cancel
+            </button>
           )}
         </div>
       </div>

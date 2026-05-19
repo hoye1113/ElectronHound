@@ -1,0 +1,12 @@
+{
+  "taskId": "mock-abort-id",
+  "goal": "Test",
+  "status": "aborted",
+  "totalSteps": 0,
+  "passedSteps": 0,
+  "failedSteps": 0,
+  "retriedSteps": 0,
+  "startTime": "2026-05-19T06:41:04.722Z",
+  "endTime": "2026-05-19T06:41:04.722Z",
+  "totalDuration": 0
+}

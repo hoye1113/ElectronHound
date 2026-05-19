@@ -1,0 +1,12 @@
+{
+  "taskId": "mock-task-id",
+  "goal": "Click Settings",
+  "status": "completed",
+  "totalSteps": 2,
+  "passedSteps": 2,
+  "failedSteps": 0,
+  "retriedSteps": 0,
+  "startTime": "2026-05-19T06:41:04.714Z",
+  "endTime": "2026-05-19T06:41:04.714Z",
+  "totalDuration": 0
+}

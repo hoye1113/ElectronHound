@@ -6,6 +6,7 @@ import {
   type Task,
   type StepRecord,
 } from '@eata/shared-types';
+import { sseHub } from '../streams/sseHub.js';
 
 function dbRowToTask(row: Record<string, unknown>): Task {
   const status = TaskStatusEnum.parse(row.status);
@@ -133,6 +134,43 @@ export async function taskRoutes(server: FastifyInstance) {
 
     reply.code(201);
     return dbRowToTask(createdRow);
+  });
+
+  // POST /tasks/:id/cancel — cancel a running or queued task
+  server.post('/tasks/:id/cancel', async (request, reply) => {
+    const { id } = request.params as { id: string };
+
+    const taskRow = server.db
+      .prepare('SELECT * FROM tasks WHERE id = ?')
+      .get(id) as Record<string, unknown> | undefined;
+
+    if (!taskRow) {
+      reply.code(404);
+      return { error: 'Task not found' };
+    }
+
+    const status = taskRow.status as string;
+
+    if (status !== 'running' && status !== 'queued') {
+      reply.code(409);
+      return { error: 'Task is not in a cancellable state' };
+    }
+
+    server.db
+      .prepare("UPDATE tasks SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?")
+      .run(id);
+
+    // Broadcast cancellation to SSE clients
+    sseHub.broadcast(id, {
+      event: 'status',
+      data: { taskId: id, status: 'cancelled' },
+    });
+
+    const updatedRow = server.db
+      .prepare('SELECT * FROM tasks WHERE id = ?')
+      .get(id) as Record<string, unknown>;
+
+    return dbRowToTask(updatedRow);
   });
 
   // DELETE /tasks/:id — cancel (if running) or delete (if queued)

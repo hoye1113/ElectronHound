@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 
 interface ScreenshotItem {
@@ -12,21 +13,7 @@ interface ScreenshotGalleryProps {
 }
 
 export default function ScreenshotGallery({ screenshots }: ScreenshotGalleryProps) {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-
-  const handleClose = useCallback(() => {
-    setSelectedIndex(null);
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && selectedIndex !== null) {
-        handleClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedIndex, handleClose]);
+  const [selectedScreenshot, setSelectedScreenshot] = useState<ScreenshotItem | null>(null);
 
   if (screenshots.length === 0) {
     return (
@@ -43,7 +30,7 @@ export default function ScreenshotGallery({ screenshots }: ScreenshotGalleryProp
         {screenshots.map((screenshot, index) => (
           <button
             key={index}
-            onClick={() => setSelectedIndex(index)}
+            onClick={() => setSelectedScreenshot(screenshot)}
             className="group relative aspect-video overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-colors hover:border-zinc-600"
             aria-label={`View screenshot from step ${screenshot.stepIndex + 1} (${screenshot.phase} phase)`}
           >
@@ -65,42 +52,42 @@ export default function ScreenshotGallery({ screenshots }: ScreenshotGalleryProp
         ))}
       </div>
 
-      {/* Overlay */}
-      {selectedIndex !== null && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/90 backdrop-blur-sm"
-          onClick={handleClose}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Screenshot viewer"
-        >
-          <div
-            className="relative max-h-[90vh] max-w-[90vw] rounded-xl border border-zinc-700 bg-zinc-900 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+      {/* Radix Dialog for large preview */}
+      <Dialog.Root open={selectedScreenshot !== null} onOpenChange={(open) => !open && setSelectedScreenshot(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-zinc-950/90 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+          <Dialog.Content
+            className="fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] max-w-[90vw] flex-col items-center -translate-x-1/2 -translate-y-1/2 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+            aria-describedby={undefined}
           >
-            <button
-              onClick={handleClose}
-              className="absolute -right-3 -top-3 flex size-8 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 shadow-lg transition-colors hover:bg-zinc-700 hover:text-zinc-100"
-              aria-label="Close screenshot viewer"
-            >
+            <Dialog.Title className="sr-only">Screenshot Preview</Dialog.Title>
+
+            <Dialog.Close className="absolute -right-3 -top-3 z-10 flex size-8 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 shadow-lg transition-colors hover:bg-zinc-700 hover:text-zinc-100" aria-label="Close screenshot viewer">
               <X className="size-4" />
-            </button>
-            <img
-              src={screenshots[selectedIndex].url}
-              alt={`Full size screenshot - Step ${screenshots[selectedIndex].stepIndex + 1}`}
-              className="max-h-[85vh] max-w-[85vw] rounded-xl object-contain"
-            />
-            <div className="flex items-center gap-3 px-4 py-3">
-              <span className="text-sm font-medium text-zinc-300">
-                Step {screenshots[selectedIndex].stepIndex + 1}
-              </span>
-              <span className="rounded bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
-                {screenshots[selectedIndex].phase}
-              </span>
+            </Dialog.Close>
+
+            <div className="relative rounded-xl border border-zinc-700 bg-zinc-900 shadow-2xl">
+              {selectedScreenshot && (
+                <>
+                  <img
+                    src={selectedScreenshot.url}
+                    alt={`Full size screenshot - Step ${selectedScreenshot.stepIndex + 1}`}
+                    className="max-h-[85vh] max-w-[85vw] rounded-xl object-contain"
+                  />
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <span className="text-sm font-medium text-zinc-300">
+                      Step {selectedScreenshot.stepIndex + 1}
+                    </span>
+                    <span className="rounded bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
+                      {selectedScreenshot.phase}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
-          </div>
-        </div>
-      )}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </>
   );
 }
