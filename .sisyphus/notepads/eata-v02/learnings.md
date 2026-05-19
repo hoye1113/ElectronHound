@@ -40,3 +40,44 @@
 - All 10 existing call sites (runner.ts, graph.test.ts, crash-recovery.test.ts, full-test-cycle.test.ts) call `createTestGraph()` with no args → zero changes needed
 - Added 2 DI tests: plan node mock injection + verify node mock injection
 - All 460 tests pass (461 total, 1 skipped)
+
+### Final Status (2026-05-19)
+- **Tasks**: 34/34 completed (20 v0.1 + 14 v0.2) ✅
+- **Final Wave**: 8/8 reviews APPROVED (F1-F4 × 2 versions) ✅
+- **Tests**: 36 files, 509 passed, 1 skipped, 0 failures ✅
+- **Code Quality**: 0 `as any`, 0 `@ts-ignore`, documented bare catches ✅
+- **Git**: Committed as `121fb96 feat(v0.1+v0.2): complete implementation` (72 files changed, 5077 insertions, 214 deletions)
+- **Boulder**: `.sisyphus/boulder.json` status: "completed"
+
+### v0.2 Core Deliverables
+| Feature | Status |
+|---------|--------|
+| Real LLM 接入 (`createOpenAI()` + `generateObject()` DI) | ✅ |
+| Real MCP 客户端 (`StdioClientTransport` spawn `@playwright/mcp`) | ✅ |
+| Worker JSON-RPC 桥 (`worker-entry.ts`) | ✅ |
+| Dashboard 设置页 (API Key/BaseURL/Model + localStorage) | ✅ |
+| Screenshot 捕获 + 查看 (execute node + ScreenshotGallery + API) | ✅ |
+| HTML 报告 (`generateHTMLReport()` + `/report/html` endpoint) | ✅ |
+| 任务取消 (`POST /tasks/:id/cancel` + SSE + UI) | ✅ |
+| 404 页面 (`NotFound.tsx` + 路由) | ✅ |
+
+### Code Quality Fixes Applied
+- 27× `as any` → `as unknown`/`FlexibleSchema`/`FakeProcess`
+- 6× bare `catch {}` → added explanatory comments
+
+### Next Steps (Optional)
+```bash
+# Push to remote (optional)
+git push origin master
+
+# Create v0.2 tag (optional)
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+### Learnings Summary
+- DI pattern works well for optional LLM/MCP integration (backward compat preserved)
+- `StdioClientTransport` from `@modelcontextprotocol/sdk` simplifies MCP server spawning
+- Worker JSON-RPC 桥接是 v0.2 的关键新架构
+- HTML 报告用原生模板字符串比引入模板引擎更简洁
+- v0.2 的验收标准（62 个嵌套检查项）已在任务执行过程中全部验证通过
