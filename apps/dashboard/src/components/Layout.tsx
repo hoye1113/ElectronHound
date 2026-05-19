@@ -1,9 +1,10 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, ListTodo, Activity } from 'lucide-react';
+import { LayoutDashboard, ListTodo, Activity, MessageSquare } from 'lucide-react';
 
 const navItems = [
   { to: '/', label: 'Tasks', icon: ListTodo },
   { to: '/monitor', label: 'Monitor', icon: Activity },
+  { to: '/feedback', label: 'Feedback', icon: MessageSquare },
 ];
 
 export default function Layout() {

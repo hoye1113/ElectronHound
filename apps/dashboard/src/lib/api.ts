@@ -37,6 +37,12 @@ export const api = {
     get(taskId: string): Promise<unknown> {
       return fetch(`${API_BASE}/api/tasks/${taskId}/report`).then((r) => r.json());
     },
+    getManifest(id: string): Promise<unknown> {
+      return fetch(`${API_BASE}/api/reports/${id}/manifest`).then((r) => r.json());
+    },
+    getTimeline(id: string): Promise<unknown> {
+      return fetch(`${API_BASE}/api/reports/${id}/timeline`).then((r) => r.json());
+    },
   },
   feedback: {
     getPatterns(): Promise<{ patterns: FeedbackPattern[] }> {

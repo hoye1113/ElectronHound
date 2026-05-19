@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import TaskList from './pages/TaskList';
 import TaskDetail from './pages/TaskDetail';
 import LiveMonitor from './pages/LiveMonitor';
+import FeedbackLoop from './pages/FeedbackLoop';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
           <Route path="/task/:id" element={<TaskDetail />} />
           <Route path="/monitor/:id" element={<LiveMonitor />} />
           <Route path="/monitor" element={<LiveMonitor />} />
+          <Route path="/feedback" element={<FeedbackLoop />} />
         </Route>
       </Routes>
     </BrowserRouter>
