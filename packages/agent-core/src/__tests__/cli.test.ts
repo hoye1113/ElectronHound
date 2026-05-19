@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type MockInstance } from 'vitest';
 
 // ─── Mock runner BEFORE imports (hoisted by vitest) ──────
 const { mockRunTest } = vi.hoisted(() => ({
@@ -254,7 +254,7 @@ describe('formatStepProgress', () => {
     const record = createFakeStepRecord({
       phase: 'verify',
       status: 'success',
-      resultSummary: 'Settings page visible',
+      reasoning: 'Settings page visible',
     });
     const output = formatStepProgress(record, 4, 50);
     expect(output).toContain('[Step 4/50]');
@@ -422,7 +422,7 @@ describe('report saving', () => {
           status: 'failed',
           action: { name: 'browser_click', args: {} },
           timestamp: '2024-01-01T00:00:00.000Z',
-          resultSummary: 'Element not found',
+          reasoning: 'Element not found',
         }),
         createFakeStepRecord({
           stepIndex: 1,
@@ -465,8 +465,8 @@ describe('report saving', () => {
 // ─── cliMain ─────────────────────────────────────────────
 
 describe('cliMain', () => {
-  let stderrSpy: ReturnType<typeof vi.spyOn>;
-  let stdoutSpy: ReturnType<typeof vi.spyOn>;
+  let stderrSpy!: MockInstance<typeof process.stderr.write>;
+  let stdoutSpy!: MockInstance<typeof process.stdout.write>;
 
   beforeEach(() => {
     stderrSpy = vi

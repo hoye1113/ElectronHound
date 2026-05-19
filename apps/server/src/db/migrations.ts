@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   step_count INTEGER DEFAULT 0,
   result_summary TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  provider_id TEXT
 );
 
 CREATE TABLE IF NOT EXISTS steps (
@@ -61,6 +62,16 @@ export function runMigrations(db: Database.Database): boolean {
 
   // Execute schema SQL (IF NOT EXISTS makes this safe to re-run)
   db.exec(schemaSql);
+
+  // Incremental migrations for existing tables
+  // Add provider_id column to tasks table if missing
+  const columns = db
+    .prepare("PRAGMA table_info(tasks)")
+    .all() as Array<{ name: string }>;
+  const hasProviderId = columns.some((c) => c.name === 'provider_id');
+  if (!hasProviderId) {
+    db.exec('ALTER TABLE tasks ADD COLUMN provider_id TEXT');
+  }
 
   return wasNeeded;
 }

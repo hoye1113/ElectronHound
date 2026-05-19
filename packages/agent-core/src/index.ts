@@ -41,3 +41,22 @@ export type {
   AccessibilityNodeOptions,
   PatternNodeOptions,
 } from './report-graph/index.js';
+
+// Config management (v0.3)
+export {
+  loadProvidersConfig,
+  saveProvidersConfig,
+  addProvider,
+  updateProvider,
+  deleteProvider,
+  setActiveProvider,
+  getActiveProviderConfig,
+} from './config-manager.js';
+
+// Provider factory (v0.3)
+export { createProviderInstance } from './provider-factory.js';
+export { getGenerateObjectForProvider } from './llm.js';
+
+// Provider types
+export type { LLMProviderConfig, ProvidersConfig, LLMProviderType } from './llm-types.js';
+export { BUILTIN_TEMPLATES } from './llm-types.js';

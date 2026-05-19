@@ -6,6 +6,22 @@ export function getScreenshotUrl(taskId: string, stepIndex: number): string {
   return `${API_BASE}/api/tasks/${taskId}/steps/${stepIndex}/screenshot`;
 }
 
+export interface LLMProviderConfig {
+  id: string;
+  name: string;
+  type: 'openai-compatible';
+  apiKey: string;
+  baseURL: string;
+  model: string;
+  enabled?: boolean;
+}
+
+export interface ProvidersConfig {
+  version: number;
+  providers: LLMProviderConfig[];
+  activeId: string;
+}
+
 export const api = {
   tasks: {
     list(params?: { status?: string; page?: number; limit?: number }): Promise<{
@@ -54,6 +70,16 @@ export const api = {
   feedback: {
     getPatterns(): Promise<{ patterns: FeedbackPattern[] }> {
       return fetch(`${API_BASE}/api/feedback/patterns`).then((r) => r.json());
+    },
+  },
+  providers: {
+    list(): Promise<ProvidersConfig> {
+      return fetch(`${API_BASE}/api/providers`).then((r) => r.json());
+    },
+    test(id: string): Promise<{ success: boolean; error?: string; message?: string }> {
+      return fetch(`${API_BASE}/api/providers/${id}/test`, {
+        method: 'POST',
+      }).then((r) => r.json());
     },
   },
 };

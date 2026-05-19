@@ -164,6 +164,20 @@ describe('WorkerManager', () => {
       expect(args).not.toContain('--max-steps');
     });
 
+    it('includes providerId arg when specified', () => {
+      manager.spawnWorker({ ...defaultOptions, providerId: 'deepseek-1' });
+      const args = getLastSpawnArgs();
+      const idx = args.indexOf('--provider-id');
+      expect(idx).not.toBe(-1);
+      expect(args[idx + 1]).toBe('deepseek-1');
+    });
+
+    it('does not include providerId when not specified', () => {
+      manager.spawnWorker(defaultOptions);
+      const args = getLastSpawnArgs();
+      expect(args).not.toContain('--provider-id');
+    });
+
     it('sets LLM_MODEL env variable', () => {
       manager.spawnWorker(defaultOptions);
       const envs = getLastSpawnEnvs();

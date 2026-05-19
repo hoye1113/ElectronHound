@@ -1,7 +1,8 @@
 import { createTestGraph } from './graph.js';
 import { createCheckpointer } from './checkpoint.js';
 import { getMCPClient } from './mcp/client.js';
-import { getGenerateObject } from './llm.js';
+import { getGenerateObject, getGenerateObjectForProvider } from './llm.js';
+import { loadProvidersConfig } from './config-manager.js';
 import type { TestState } from './state.js';
 
 export interface RunTestOptions {
@@ -12,14 +13,29 @@ export interface RunTestOptions {
   taskId?: string;
   checkpointPath?: string;
   cdpUrl?: string;
+  providerId?: string;
 }
 
 export async function runTest(
   options: RunTestOptions,
 ): Promise<typeof TestState.State> {
-  const generateObject = getGenerateObject({ model: options.llmModel });
+  let generateObject;
+
+  if (options.providerId) {
+    // Use the specified provider
+    const config = loadProvidersConfig();
+    const provider = config.providers.find(p => p.id === options.providerId);
+    if (!provider) {
+      throw new Error(`Provider '${options.providerId}' not found`);
+    }
+    generateObject = getGenerateObjectForProvider(provider);
+  } else {
+    // Fall back to env-based or default provider
+    generateObject = getGenerateObject({ model: options.llmModel });
+  }
+
   const graphOptions = generateObject
-    ? { plan: { generateObject }, verify: { generateObject } } as const
+    ? { plan: { generateObject: generateObject as never }, verify: { generateObject: generateObject as never } }
     : undefined;
   const graph = createTestGraph(graphOptions);
   const checkpointer = createCheckpointer(

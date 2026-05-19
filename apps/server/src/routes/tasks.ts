@@ -17,6 +17,7 @@ function dbRowToTask(row: Record<string, unknown>): Task {
     llmModel: row.llm_model as Task['llmModel'],
     status,
     maxSteps: row.max_steps as number,
+    providerId: (row.provider_id as string) ?? undefined,
     contextInjection: (row.context_injection as string) ?? undefined,
     stepCount: row.step_count as number,
     resultSummary: row.result_summary
@@ -117,16 +118,16 @@ export async function taskRoutes(server: FastifyInstance) {
       };
     }
 
-    const { goal, targetAppPath, llmModel, maxSteps, contextInjection } = parseResult.data;
+    const { goal, targetAppPath, llmModel, maxSteps, contextInjection, providerId } = parseResult.data;
     const id = randomUUID();
     const now = new Date().toISOString();
 
     server.db
       .prepare(
-        `INSERT INTO tasks (id, goal, target_app_path, llm_model, status, max_steps, context_injection, step_count, created_at, updated_at)
-         VALUES (?, ?, ?, ?, 'queued', ?, ?, 0, ?, ?)`
+        `INSERT INTO tasks (id, goal, target_app_path, llm_model, status, max_steps, context_injection, step_count, created_at, updated_at, provider_id)
+         VALUES (?, ?, ?, ?, 'queued', ?, ?, 0, ?, ?, ?)`
       )
-      .run(id, goal, targetAppPath, llmModel, maxSteps ?? 50, contextInjection ?? null, now, now);
+      .run(id, goal, targetAppPath, llmModel, maxSteps ?? 50, contextInjection ?? null, now, now, providerId ?? null);
 
     const createdRow = server.db
       .prepare('SELECT * FROM tasks WHERE id = ?')

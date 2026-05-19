@@ -10,17 +10,20 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@langchain/langgraph": "^0.3.0",
+    "@ai-sdk/anthropic": "^3.0.78",
+    "@ai-sdk/google": "^3.0.75",
+    "@ai-sdk/openai": "^3.0.0",
+    "@eata/shared-types": "workspace:*",
     "@langchain/core": "^0.3.0",
+    "@langchain/langgraph": "^0.3.0",
     "@langchain/langgraph-checkpoint-sqlite": "^0.1.0",
     "ai": "^6.0.0",
-    "@ai-sdk/openai": "^3.0.0",
-    "better-sqlite3": "^11.0.0",
-    "@eata/shared-types": "workspace:*"
+    "ai-sdk-ollama": "^3.8.4",
+    "better-sqlite3": "^11.0.0"
   },
   "devDependencies": {
+    "tsx": "^4.0.0",
     "typescript": "^5.8.0",
-    "vitest": "^3.2.0",
-    "tsx": "^4.0.0"
+    "vitest": "^3.2.0"
   }
 }

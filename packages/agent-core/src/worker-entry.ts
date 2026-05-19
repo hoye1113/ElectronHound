@@ -26,6 +26,7 @@ export function resolveArgs(
   targetAppPath: string;
   llmModel?: string;
   maxSteps?: number;
+  providerId?: string;
 } {
   // Set env vars for LLM config (runner reads from env)
   if (parsed['llm-base-url']) process.env.OPENAI_BASE_URL = parsed['llm-base-url'];
@@ -37,6 +38,7 @@ export function resolveArgs(
     targetAppPath: parsed['target-app'] || process.env.TARGET_APP || './fixtures/test-electron-app',
     llmModel: parsed['llm-model'] || process.env.LLM_MODEL,
     maxSteps: parsed['max-steps'] ? Number(parsed['max-steps']) : process.env.MAX_STEPS ? Number(process.env.MAX_STEPS) : undefined,
+    providerId: parsed['provider-id'] || process.env.PROVIDER_ID,
   };
 }
 
@@ -88,6 +90,7 @@ export async function workerMain(argv: string[] = process.argv): Promise<number>
       llmModel: args.llmModel,
       maxSteps: args.maxSteps,
       taskId: args.taskId,
+      providerId: args.providerId,
     });
     emit('step_complete', { taskId: args.taskId, phase: 'completed', status: result.status });
     emit('task_end', { taskId: args.taskId, success: result.status === 'completed', status: result.status, stepCount: result.stepCount });

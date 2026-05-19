@@ -10,6 +10,7 @@ export interface WorkerOptions {
   llmModel: string;
   maxSteps?: number;
   contextInjection?: string;
+  providerId?: string;
 }
 
 export type WorkerStatus =
@@ -194,6 +195,10 @@ export class WorkerManager {
 
     if (options.contextInjection) {
       args.push('--context-injection', options.contextInjection);
+    }
+
+    if (options.providerId) {
+      args.push('--provider-id', options.providerId);
     }
 
     return args;

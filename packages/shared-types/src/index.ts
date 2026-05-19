@@ -31,3 +31,6 @@ export {
   PerformanceReportSchema,
   AccessibilityReportSchema,
 } from './agent-state.js';
+
+// Provider schemas (v0.3)
+export * from './provider.js';

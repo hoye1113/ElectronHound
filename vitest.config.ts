@@ -7,6 +7,7 @@ export default defineConfig({
       './packages/*',
       './apps/*',
       './fixtures/*',
+      './tests/*',
     ],
   },
 });

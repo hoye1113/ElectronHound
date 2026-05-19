@@ -127,6 +127,24 @@ describe('resolveArgs', () => {
     expect(process.env.OPENAI_BASE_URL).toBe('https://api.example.com');
     expect(process.env.OPENAI_API_KEY).toBe('sk-test');
   });
+
+  it('maps provider-id from args', () => {
+    const result = resolveArgs({ 'task-id': 't1', 'goal': 'g', 'target-app': '/a', 'provider-id': 'deepseek-1' });
+    expect(result.providerId).toBe('deepseek-1');
+  });
+
+  it('maps provider-id from env', () => {
+    process.env.PROVIDER_ID = 'env-provider-1';
+    const result = resolveArgs({});
+    expect(result.providerId).toBe('env-provider-1');
+    delete process.env.PROVIDER_ID;
+  });
+
+  it('providerId is undefined when not provided', () => {
+    delete process.env.PROVIDER_ID;
+    const result = resolveArgs({ 'task-id': 'x', 'goal': 'g', 'target-app': '/a' });
+    expect(result.providerId).toBeUndefined();
+  });
 });
 
 // ── workerMain integration (mocked runTest) ───────────────

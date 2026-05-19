@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "active_work_id": null,
+  "active_work_id": "eata-eaf64e55",
   "works": {
     "eata-eaf64e55": {
       "work_id": "eata-eaf64e55",
@@ -8,7 +8,7 @@
       "plan_name": "eata",
       "status": "completed",
       "started_at": "2026-05-18T13:38:52.956Z",
-      "updated_at": "2026-05-19T09:00:00.000Z",
+      "updated_at": "2026-05-19T09:59:26.257Z",
       "session_ids": [
         "ses_1c54479b5ffebiz1WoOZ7mI0E6"
       ],
@@ -95,13 +95,15 @@
           "ended_at": "2026-05-19T09:00:00.000Z",
           "elapsed_ms": null
         }
-      }
+      },
+      "ended_at": "2026-05-19T09:59:26.239Z",
+      "elapsed_ms": 73233283
     }
   },
   "active_plan": "D:\\workSpace\\electron_playwright_test\\.sisyphus\\plans\\eata.md",
   "started_at": "2026-05-18T13:38:52.956Z",
   "status": "completed",
-  "updated_at": "2026-05-19T09:00:00.000Z",
+  "updated_at": "2026-05-19T09:59:26.257Z",
   "session_ids": [
     "ses_1c54479b5ffebiz1WoOZ7mI0E6"
   ],
@@ -165,7 +167,7 @@
     "todo:v02_1-to-14": {
       "task_key": "todo:v02_1-to-14",
       "task_label": "v0.2",
-      "task_title": "v0.2: Real LLM + MCP + UX (14 tasks)",
+      "task_title": "v0.2: Real LLM + MCP + UX (14 tasks: Schema, Deps, Graph DI, LLM, MCP, Worker, Wire LLM, Screenshot, E2E, Settings, Screenshot View, HTML Report, Cancel, Routes)",
       "session_id": "ses_1c54479b5ffebiz1WoOZ7mI0E6",
       "agent": "atlas",
       "category": "multiple",
@@ -189,5 +191,7 @@
       "elapsed_ms": null
     }
   },
-  "agent": "atlas"
+  "agent": "atlas",
+  "ended_at": "2026-05-19T09:59:26.239Z",
+  "elapsed_ms": 73233283
 }

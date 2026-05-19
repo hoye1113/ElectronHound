@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import CreateTaskForm from '../components/CreateTaskForm';
 
@@ -21,6 +21,17 @@ describe('CreateTaskForm', () => {
     mockCreateTask.mockClear();
     mockCreateTask.mockResolvedValue(undefined);
     (defaultProps.onOpenChange as ReturnType<typeof vi.fn>).mockClear();
+    // Mock fetch for api.providers.list() - returns empty list
+    vi.stubGlobal('fetch', vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ version: 1, providers: [], activeId: '' }),
+      }),
+    ));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('renders form fields when open', () => {

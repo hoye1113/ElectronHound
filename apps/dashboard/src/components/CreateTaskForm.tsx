@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Select from '@radix-ui/react-select';
-import { Check, ChevronDown, X, Plus } from 'lucide-react';
+import { Check, ChevronDown, X, Plus, Star } from 'lucide-react';
 import { CreateTaskRequestSchema } from '@eata/shared-types';
 import type { CreateTaskRequest } from '@eata/shared-types';
 import { useTaskStore } from '../stores/taskStore';
+import { api, type ProvidersConfig } from '../lib/api.js';
 
 const LLM_MODELS = ['gpt-4o', 'gpt-4o-mini', 'claude-3.5-sonnet'] as const;
 
@@ -19,6 +20,8 @@ export default function CreateTaskForm({ open, onOpenChange, onSuccess }: Create
   const [goal, setGoal] = useState('');
   const [targetAppPath, setTargetAppPath] = useState('');
   const [llmModel, setLlmModel] = useState<string>('gpt-4o');
+  const [providerId, setProviderId] = useState<string>('');
+  const [providersConfig, setProvidersConfig] = useState<ProvidersConfig | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -26,14 +29,34 @@ export default function CreateTaskForm({ open, onOpenChange, onSuccess }: Create
     setGoal('');
     setTargetAppPath('');
     setLlmModel('gpt-4o');
+    setProviderId('');
     setErrors({});
   };
+
+  // Load providers when dialog opens
+  useEffect(() => {
+    if (open) {
+      api
+        .providers.list()
+        .then((config) => {
+          setProvidersConfig(config);
+          // Default to active provider
+          if (config?.activeId) {
+            setProviderId(config.activeId);
+          }
+        })
+        .catch(() => {
+          // Providers list failed, continue without it
+        });
+    }
+  }, [open]);
 
   const validate = (): CreateTaskRequest | null => {
     const result = CreateTaskRequestSchema.safeParse({
       goal,
       targetAppPath,
       llmModel,
+      providerId: providerId || undefined,
     });
 
     if (!result.success) {
@@ -78,6 +101,9 @@ export default function CreateTaskForm({ open, onOpenChange, onSuccess }: Create
     if (!open) reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  const providers = providersConfig?.providers ?? [];
+  const activeId = providersConfig?.activeId;
 
   return (
     <Dialog.Root open={open} onOpenChange={handleOpenChange}>
@@ -163,6 +189,48 @@ export default function CreateTaskForm({ open, onOpenChange, onSuccess }: Create
               </Select.Root>
               {errors.llmModel && <p className="text-xs text-red-400">{errors.llmModel}</p>}
             </div>
+
+            {/* LLM Provider Selection */}
+            {providers.length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-zinc-300">LLM Provider</label>
+                <Select.Root value={providerId} onValueChange={setProviderId}>
+                  <Select.Trigger
+                    className="inline-flex items-center justify-between rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none transition-colors focus:ring-1 focus:ring-indigo-500"
+                  >
+                    <Select.Value placeholder="Select provider (default: active)" />
+                    <Select.Icon>
+                      <ChevronDown className="size-4 text-zinc-500" />
+                    </Select.Icon>
+                  </Select.Trigger>
+                  <Select.Portal>
+                    <Select.Content className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl">
+                      <Select.Viewport className="p-1">
+                        {providers.map((p) => (
+                          <Select.Item
+                            key={p.id}
+                            value={p.id}
+                            className="relative flex cursor-pointer items-center rounded-md px-8 py-2 text-sm text-zinc-200 outline-none select-none hover:bg-zinc-800 data-[highlighted]:bg-zinc-800"
+                          >
+                            <Select.ItemText>
+                              {p.name} ({p.model})
+                              {p.id === activeId && (
+                                <span className="ml-1.5 inline-flex items-center text-indigo-400">
+                                  <Star className="size-3 fill-current" />
+                                </span>
+                              )}
+                            </Select.ItemText>
+                            <Select.ItemIndicator className="absolute left-2">
+                              <Check className="size-3.5 text-indigo-400" />
+                            </Select.ItemIndicator>
+                          </Select.Item>
+                        ))}
+                      </Select.Viewport>
+                    </Select.Content>
+                  </Select.Portal>
+                </Select.Root>
+              </div>
+            )}
 
             {/* Form error */}
             {errors.form && <p className="text-xs text-red-400">{errors.form}</p>}

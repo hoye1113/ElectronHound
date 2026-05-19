@@ -1,6 +1,8 @@
 import type { FlexibleSchema } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject as aiGenerateObject } from 'ai';
+import type { LLMProviderConfig } from './llm-types.js';
+import { createProviderInstance } from './provider-factory.js';
 
 export interface LLMConfig {
   apiKey?: string;
@@ -61,6 +63,24 @@ export function getGenerateObject(config?: LLMConfig) {
     const { schema, prompt, system } = opts;
     return aiGenerateObject({
       model: provider.openai(provider.model),
+      schema,
+      prompt,
+      system,
+    });
+  };
+}
+
+/**
+ * 为指定供应商获取 generateObject 函数
+ * 用于 Dashboard 中选择供应商后创建测试任务
+ */
+export function getGenerateObjectForProvider(config: LLMProviderConfig) {
+  const model = createProviderInstance(config);
+
+  return async (opts: GenerateObjectOptions): Promise<{ object: unknown }> => {
+    const { schema, prompt, system } = opts;
+    return aiGenerateObject({
+      model,
       schema,
       prompt,
       system,

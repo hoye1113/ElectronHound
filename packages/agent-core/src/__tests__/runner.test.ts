@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { runTest } from '../runner.js';
 
 describe('runTest', () => {
@@ -59,7 +59,7 @@ describe('runTest with LLM DI injection', () => {
   it('runTest calls getGenerateObject with model from options and handles null result', async () => {
     // No mock needed — in test env without OPENAI_API_KEY,
     // getGenerateObject returns null and graph uses deterministic fallbacks.
-    // This verifies the runner correctly wires the null-through path.
+    // This verifies the runner correctly wires the null-through DI path.
     const result = await runTest({
       goal: 'DI fallback test',
       targetAppPath: '/test/app',
@@ -74,6 +74,32 @@ describe('runTest with LLM DI injection', () => {
     expect(result.status).toBeDefined();
     // Graph terminates because plan node uses deterministic fallback (browser_snapshot)
     // and verify uses fallback logic — this proves the null-through DI path works
+    expect(['completed', 'failed', 'aborted']).toContain(result.status);
+  });
+});
+
+describe('runTest with providerId', () => {
+  it('throws when providerId not found', async () => {
+    await expect(
+      runTest({
+        goal: 'Test',
+        targetAppPath: '/test/app',
+        providerId: 'nonexistent-provider-id',
+        taskId: 'provider-test-1',
+        checkpointPath: ':memory:',
+      }),
+    ).rejects.toThrow("Provider 'nonexistent-provider-id' not found");
+  });
+
+  it('falls back to env-based provider when providerId is not set', async () => {
+    // Without providerId, should use getGenerateObject (env-based path)
+    const result = await runTest({
+      goal: 'No providerId test',
+      targetAppPath: '/test/app',
+      taskId: 'no-provider-test',
+      checkpointPath: ':memory:',
+    });
+    expect(result).toBeDefined();
     expect(['completed', 'failed', 'aborted']).toContain(result.status);
   });
 });

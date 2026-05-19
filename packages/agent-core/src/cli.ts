@@ -113,7 +113,7 @@ export function formatStepProgress(
     case 'verify': {
       const verdictMark =
         record.status === 'success' ? '\u2713' : '\u2717';
-      return `${prefix} Verify: ${record.resultSummary ?? 'Checking...'} ${verdictMark}`;
+      return `${prefix} Verify: ${record.reasoning ?? record.observation ?? 'Checking...'} ${verdictMark}`;
     }
     default:
       return `${prefix} ${record.phase}: ${record.status}`;
@@ -229,7 +229,7 @@ export function savePatterns(
     const pattern: FeedbackPattern = {
       id: crypto.randomUUID(),
       errorType: `${actionName}_failure`,
-      targetDescription: record.resultSummary ?? record.observation ?? 'N/A',
+      targetDescription: record.reasoning ?? record.observation ?? 'N/A',
       remediationHint: `Step ${record.stepIndex} (${record.phase}) failed during action "${actionName}". Check the action parameters and retry.`,
       similarityKeywords: [actionName, record.phase, 'failure'],
       frequency: 1,

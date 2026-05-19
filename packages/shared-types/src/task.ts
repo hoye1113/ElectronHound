@@ -15,6 +15,7 @@ export const CreateTaskRequestSchema = z.object({
   llmModel: z.enum(['gpt-4o', 'gpt-4o-mini', 'claude-3.5-sonnet']),
   maxSteps: z.number().int().positive().default(50).optional(),
   contextInjection: z.string().optional(),
+  providerId: z.string().optional(),
 });
 
 export const TaskSchema = z.object({
@@ -23,9 +24,10 @@ export const TaskSchema = z.object({
   targetAppPath: z.string().min(1),
   llmModel: z.enum(['gpt-4o', 'gpt-4o-mini', 'claude-3.5-sonnet']),
   status: TaskStatusEnum,
-  maxSteps: z.number().int().positive(),
+  maxSteps: z.number().int(),
+  providerId: z.string().optional(),
   contextInjection: z.string().optional(),
-  stepCount: z.number().int().nonnegative(),
+  stepCount: z.number().int(),
   resultSummary: z
     .object({
       success: z.boolean(),
