@@ -1675,7 +1675,7 @@ Max Concurrent: 7 (Wave 1)
   - Message: `feat(ui): add TaskList page`
   - Files: apps/dashboard/src/pages/TaskList.tsx, components/
 
-- [ ] 17. Dashboard LiveMonitor Page
+- [x] 17. Dashboard LiveMonitor Page
 
   **What to do**:
   - Create `apps/dashboard/src/pages/LiveMonitor.tsx`:
@@ -1741,7 +1741,7 @@ Max Concurrent: 7 (Wave 1)
   - Message: `feat(ui): add LiveMonitor page`
   - Files: apps/dashboard/src/pages/LiveMonitor.tsx, components/
 
-- [ ] 18. Dashboard TaskDetail + Report Viewer
+- [x] 18. Dashboard TaskDetail + Report Viewer
 
   **What to do**:
   - Create `apps/dashboard/src/pages/TaskDetail.tsx`:
@@ -1855,7 +1855,7 @@ Max Concurrent: 7 (Wave 1)
   - Message: `feat(cli): add pnpm agent:run CLI mode`
   - Files: packages/agent-core/src/cli.ts, root package.json
 
-- [ ] 20. End-to-End Integration Test
+- [x] 20. End-to-End Integration Test
 
   **What to do**:
   - Create `tests/e2e/full-test-cycle.test.ts`:
