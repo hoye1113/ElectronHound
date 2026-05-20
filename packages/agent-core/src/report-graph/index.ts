@@ -10,4 +10,5 @@ export type { AccessibilityNodeOptions } from './nodes/accessibility.js';
 export { createPatternNode, patternNode } from './nodes/pattern.js';
 export type { PatternNodeOptions } from './nodes/pattern.js';
 export { createSummarizeNode, summarizeNode } from './nodes/summarize.js';
+export type { SummarizeNodeOptions } from './nodes/summarize.js';
 export { PatternStore } from './pattern-store.js';

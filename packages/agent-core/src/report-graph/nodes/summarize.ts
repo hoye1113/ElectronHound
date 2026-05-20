@@ -1,7 +1,11 @@
 import type { ReportState } from '../state.js';
 import type { SafetyReport, PerformanceReport, AccessibilityReport } from '@eata/shared-types';
 
-export function createSummarizeNode(): (
+export interface SummarizeNodeOptions {
+  // Currently no options, but defined for DI consistency
+}
+
+export function createSummarizeNode(_options?: SummarizeNodeOptions): (
   state: typeof ReportState.State,
 ) => Promise<Partial<typeof ReportState.State>> {
   return async (state: typeof ReportState.State): Promise<Partial<typeof ReportState.State>> => {
