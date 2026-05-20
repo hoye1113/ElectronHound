@@ -60,3 +60,13 @@ export { getGenerateObjectForProvider } from './llm.js';
 // Provider types
 export type { LLMProviderConfig, ProvidersConfig, LLMProviderType } from './llm-types.js';
 export { BUILTIN_TEMPLATES } from './llm-types.js';
+
+// Sub-agent types (audit chain)
+export type {
+  SubAgentRole,
+  SubAgentInput,
+  SubAgentOutput,
+  AuditReport,
+  AuditFinding,
+  AuditChainResult,
+} from './sub-agents/index.js';
