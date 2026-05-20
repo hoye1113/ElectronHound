@@ -43,7 +43,8 @@ export function loadProvidersConfig(): ProvidersConfig {
   try {
     const content = readFileSync(PROVIDERS_FILE, 'utf-8');
     return JSON.parse(content);
-  } catch {
+  } catch (err) {
+    console.warn(`Failed to parse providers.json: ${err instanceof Error ? err.message : String(err)}. Using defaults.`);
     return DEFAULT_PROVIDERS;
   }
 }

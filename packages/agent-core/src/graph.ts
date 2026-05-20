@@ -16,12 +16,15 @@ const routeAfterVerify = (
   state: typeof TestState.State,
 ): string => {
   if (state.stepCount >= state.maxSteps) {
+    console.log(`[routeAfterVerify] maxSteps reached (${state.stepCount}/${state.maxSteps}) → fail`);
     return 'fail';
   }
   if (state.stuckCounter >= 3) {
+    console.log(`[routeAfterVerify] stuck detected (stuckCounter=${state.stuckCounter}) → escalate`);
     return 'escalate';
   }
   const verdict = state.currentVerdict?.verdict;
+  console.log(`[routeAfterVerify] verdict=${verdict}`);
   if (verdict === 'pass') return 'pass';
   if (verdict === 'fail') return 'fail';
   if (verdict === 'escalate') return 'escalate';
@@ -31,8 +34,15 @@ const routeAfterVerify = (
 const routeAfterObserve = (
   state: typeof TestState.State,
 ): string => {
-  if (state.stuckCounter >= 3) return 'stuck';
-  if (state.stepCount >= state.maxSteps) return 'stuck';
+  if (state.stuckCounter >= 3) {
+    console.log(`[routeAfterObserve] stuck detected (stuckCounter=${state.stuckCounter}) → stuck`);
+    return 'stuck';
+  }
+  if (state.stepCount >= state.maxSteps) {
+    console.log(`[routeAfterObserve] maxSteps reached (${state.stepCount}/${state.maxSteps}) → stuck`);
+    return 'stuck';
+  }
+  console.log(`[routeAfterObserve] normal flow (step=${state.stepCount}) → normal`);
   return 'normal';
 };
 
