@@ -180,6 +180,15 @@ export class WorkerManager {
 
   // ── Private ─────────────────────────────────────────────────────
 
+  /**
+   * Sanitize user input to prevent shell command injection.
+   * Removes shell metacharacters: ; | & $ ` ( ) and enforces length limit.
+   */
+  static sanitizeArg(input: string, maxLength: number): string {
+    const sanitized = input.replace(/[;|&$`()]/g, '');
+    return sanitized.slice(0, maxLength);
+  }
+
   private buildArgs(options: WorkerOptions): string[] {
     const args = [
       '--task-id', options.taskId,
