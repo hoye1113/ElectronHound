@@ -10,3 +10,8 @@ Thumbs.db
 
 # Test artifacts
 data/reports/
+# TypeScript compilation output
+*.js
+*.js.map
+*.d.ts
+*.d.ts.map
