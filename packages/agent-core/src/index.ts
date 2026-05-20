@@ -12,10 +12,10 @@ export type {
 } from './mcp/client.js';
 export { guardObservation, guardPlan, guardExecResult, guardVerdict, GuardError } from './guards.js';
 export { observeNode } from './nodes/observe.js';
-export { createPlanNode, planNode } from './nodes/plan.js';
+export { createPlanNode } from './nodes/plan.js';
 export type { PlanNodeOptions } from './nodes/plan.js';
 export { executeNode } from './nodes/execute.js';
-export { createVerifyNode, verifyNode } from './nodes/verify.js';
+export { createVerifyNode } from './nodes/verify.js';
 export type { VerifyNodeOptions } from './nodes/verify.js';
 export { abortNode } from './nodes/abort.js';
 export { reportNode } from './nodes/report.js';

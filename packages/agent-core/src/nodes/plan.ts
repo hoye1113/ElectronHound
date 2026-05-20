@@ -72,4 +72,3 @@ export function createPlanNode(
   };
 }
 
-export const planNode = createPlanNode({});

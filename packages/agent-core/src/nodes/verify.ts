@@ -57,4 +57,3 @@ export function createVerifyNode(
   };
 }
 
-export const verifyNode = createVerifyNode({});
