@@ -56,7 +56,7 @@ describe.skipIf(!hasApiKey)('Real LLM E2E tests', () => {
       llmModel: task.llmModel,
       maxSteps: task.maxSteps,
       taskId: task.id,
-    }, { configurable: { thread_id: task.id } });
+    }, { configurable: { thread_id: task.id }, recursionLimit: 100 });
 
     expect(['completed', 'failed', 'aborted']).toContain(result.status);
     expect(result.stepCount).toBeGreaterThan(0);

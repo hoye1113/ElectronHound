@@ -49,6 +49,7 @@ describe('createTestGraph', () => {
 
     const result = await compiled.invoke(initialState, {
       configurable: { thread_id: 'test-thread' },
+      recursionLimit: 100,
     });
 
     expect(result).toBeDefined();
@@ -74,6 +75,7 @@ describe('createTestGraph', () => {
 
     const result = await compiled.invoke(initialState, {
       configurable: { thread_id: 'stuck-thread' },
+      recursionLimit: 100,
     });
 
     // With MCP disconnected, every observe gets same result → stuckCounter → abort
@@ -117,6 +119,7 @@ describe('createTestGraph', () => {
 
     const result = await compiled.invoke(initialState, {
       configurable: { thread_id: 'pass-thread' },
+      recursionLimit: 100,
     });
 
     // Should reach report node since verdict is 'pass'
@@ -140,6 +143,7 @@ describe('createTestGraph', () => {
 
     const result = await compiled.invoke(initialState, {
       configurable: { thread_id: 'max-thread' },
+      recursionLimit: 100,
     });
 
     // With stepCount already high, first observe puts us at 41 > maxSteps=2
@@ -186,6 +190,7 @@ describe('createTestGraph with DI options', () => {
 
     const result = await compiled.invoke(initialState, {
       configurable: { thread_id: 'di-thread' },
+      recursionLimit: 100,
     });
 
     // Plan node should use the injected generateObject
@@ -211,6 +216,7 @@ describe('createTestGraph with DI options', () => {
 
     const result = await compiled.invoke(initialState, {
       configurable: { thread_id: 'fallback-thread' },
+      recursionLimit: 100,
     });
 
     expect(result).toBeDefined();

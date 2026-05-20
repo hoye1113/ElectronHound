@@ -6,6 +6,7 @@ describe('runTest', () => {
     const result = await runTest({
       goal: 'Click the Settings button',
       targetAppPath: '/test/app',
+      maxSteps: 5,
       taskId: 'test-runner-1',
       checkpointPath: ':memory:',
     });
@@ -47,6 +48,7 @@ describe('runTest', () => {
     const result = await runTest({
       goal: 'Auto-generated ID',
       targetAppPath: '/test/app',
+      maxSteps: 5,
       checkpointPath: ':memory:',
     });
 
@@ -96,6 +98,7 @@ describe('runTest with providerId', () => {
     const result = await runTest({
       goal: 'No providerId test',
       targetAppPath: '/test/app',
+      maxSteps: 5,
       taskId: 'no-provider-test',
       checkpointPath: ':memory:',
     });

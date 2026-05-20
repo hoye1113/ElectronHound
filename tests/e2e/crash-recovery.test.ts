@@ -22,7 +22,7 @@ describe('Crash recovery and abort scenarios', () => {
         maxSteps: 20,
         taskId: 'crash-test-1',
       },
-      { configurable: { thread_id: 'crash-test-1' } },
+      { configurable: { thread_id: 'crash-test-1' }, recursionLimit: 100 },
     );
 
     // With MCP disconnected, observe gets same failure message every time
@@ -43,7 +43,7 @@ describe('Crash recovery and abort scenarios', () => {
         maxSteps: 2,
         taskId: 'maxsteps-test',
       },
-      { configurable: { thread_id: 'maxsteps-test' } },
+      { configurable: { thread_id: 'maxsteps-test' }, recursionLimit: 100 },
     );
 
     // Should NOT still be running — graph must terminate
@@ -64,7 +64,7 @@ describe('Crash recovery and abort scenarios', () => {
         maxSteps: 10,
         taskId: 'noloop-test',
       },
-      { configurable: { thread_id: 'noloop-test' } },
+      { configurable: { thread_id: 'noloop-test' }, recursionLimit: 100 },
     );
 
     // Graph must always terminate — never stays in 'running'
@@ -86,7 +86,7 @@ describe('Crash recovery and abort scenarios', () => {
         maxSteps: 10,
         taskId: 'reconnect-test',
       },
-      { configurable: { thread_id: 'reconnect-test' } },
+      { configurable: { thread_id: 'reconnect-test' }, recursionLimit: 100 },
     );
     expect(result1.status).toBe('aborted');
 
@@ -106,7 +106,7 @@ describe('Crash recovery and abort scenarios', () => {
         maxSteps: 10,
         taskId: 'reconnect-test-2',
       },
-      { configurable: { thread_id: 'reconnect-test-2' } },
+      { configurable: { thread_id: 'reconnect-test-2' }, recursionLimit: 100 },
     );
     expect(result2.status).not.toBe('running');
     expect(result2.stepCount).toBeGreaterThan(0);

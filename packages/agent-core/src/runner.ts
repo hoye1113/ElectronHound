@@ -60,6 +60,7 @@ export async function runTest(
 
   const result = await compiled.invoke(initialState, {
     configurable: { thread_id: taskId },
+    recursionLimit: 100,
   });
 
   return result;

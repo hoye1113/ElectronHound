@@ -48,6 +48,7 @@ describe('Report Sub Graph parallel execution', () => {
 
     const result = await compiled.invoke(makeInitialState(), {
       configurable: { thread_id: 'report-default' },
+      recursionLimit: 100,
     });
 
     // All 4 nodes should produce reports even without generateObject
@@ -92,6 +93,7 @@ describe('Report Sub Graph parallel execution', () => {
 
     const result = await compiled.invoke(makeInitialState(), {
       configurable: { thread_id: 'report-mock' },
+      recursionLimit: 100,
     });
 
     // generateObject should have been called for each node

@@ -556,7 +556,7 @@ describe('createReportGraph', () => {
       ],
     });
 
-    const result = await compiled.invoke(state);
+    const result = await compiled.invoke(state, { recursionLimit: 100 });
 
     expect(result.safetyReport).toBeDefined();
     expect(result.safetyReport!.riskLevel).toBe('low');
@@ -590,7 +590,7 @@ describe('createReportGraph', () => {
       ],
     });
 
-    const result = await compiled.invoke(state);
+    const result = await compiled.invoke(state, { recursionLimit: 100 });
 
     expect(result.safetyReport!.riskLevel).toBe('none');
     expect(result.performanceReport!.avgStepDuration).toBe(150);
@@ -617,7 +617,7 @@ describe('createReportGraph', () => {
       ],
     });
 
-    const result = await compiled.invoke(state);
+    const result = await compiled.invoke(state, { recursionLimit: 100 });
 
     expect(result.safetyReport!.riskLevel).toBe('medium');
     expect(result.performanceReport!.avgStepDuration).toBe(100);

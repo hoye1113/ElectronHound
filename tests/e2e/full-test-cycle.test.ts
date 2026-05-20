@@ -90,7 +90,7 @@ describe('Full test cycle: REST API + Graph + PatternStore', () => {
         maxSteps: 10,
         taskId: 'e2e-full-cycle',
       },
-      { configurable: { thread_id: 'e2e-full-cycle' } },
+      { configurable: { thread_id: 'e2e-full-cycle' }, recursionLimit: 100 },
     );
 
     expect(result).toBeDefined();
