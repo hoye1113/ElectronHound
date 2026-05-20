@@ -35,7 +35,7 @@ export async function runTest(
   }
 
   const graphOptions = generateObject
-    ? { plan: { generateObject: generateObject as never }, verify: { generateObject: generateObject as never } }
+    ? { plan: { generateObject }, verify: { generateObject } }
     : undefined;
   const graph = createTestGraph(graphOptions);
   const checkpointer = createCheckpointer(

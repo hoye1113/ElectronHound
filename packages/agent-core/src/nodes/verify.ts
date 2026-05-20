@@ -11,11 +11,11 @@ const verifyPrompt = readFileSync(join(__dirname, '..', 'prompts', 'verify.txt')
 
 export interface VerifyNodeOptions {
   generateObject?: (params: {
-    model: ReturnType<typeof import('@ai-sdk/openai').openai>;
+    model: unknown;
     schema: typeof VerdictResultSchema;
     prompt: string;
     system: string;
-  }) => Promise<{ object: Partial<VerdictResult> }>;
+  }) => Promise<{ object: unknown }>;
 }
 
 export function createVerifyNode(
@@ -35,7 +35,7 @@ export function createVerifyNode(
 
     if (options.generateObject) {
       const result = await options.generateObject({
-        model: {} as ReturnType<typeof import('@ai-sdk/openai').openai>,
+        model: {},
         schema: VerdictResultSchema,
         prompt,
         system: verifyPrompt,

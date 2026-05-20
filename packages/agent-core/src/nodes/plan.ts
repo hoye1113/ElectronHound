@@ -11,11 +11,11 @@ const planPrompt = readFileSync(join(__dirname, '..', 'prompts', 'plan.txt'), 'u
 
 export interface PlanNodeOptions {
   generateObject?: (params: {
-    model: ReturnType<typeof import('@ai-sdk/openai').openai>;
+    model: unknown;
     schema: typeof PlanResultSchema;
     prompt: string;
     system: string;
-  }) => Promise<{ object: Partial<PlanResult> }>;
+  }) => Promise<{ object: unknown }>;
   getRelevantPatterns?: (goal: string) => FeedbackPattern[];
 }
 
@@ -52,7 +52,7 @@ export function createPlanNode(
 
     if (options.generateObject) {
       const result = await options.generateObject({
-        model: {} as ReturnType<typeof import('@ai-sdk/openai').openai>,
+        model: {},
         schema: PlanResultSchema,
         prompt,
         system: planPrompt,

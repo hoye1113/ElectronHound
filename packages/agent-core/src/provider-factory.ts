@@ -41,11 +41,14 @@ export function getGenerateObjectForProvider(config: LLMProviderConfig) {
 /**
  * 测试供应商连接
  */
-export async function testProviderConnection(): Promise<boolean> {
-  // 简化的连接测试
+export async function testProviderConnection(config: LLMProviderConfig): Promise<{ success: boolean; message: string; latencyMs: number }> {
+  const t0 = Date.now();
+  const model = createProviderInstance(config);
   try {
-    return true;
-  } catch {
-    return false;
+    const { generateText } = await import('ai');
+    await generateText({ model, prompt: 'OK', maxOutputTokens: 5 });
+    return { success: true, message: 'Connection successful', latencyMs: Date.now() - t0 };
+  } catch (err) {
+    return { success: false, message: err instanceof Error ? err.message : String(err), latencyMs: Date.now() - t0 };
   }
 }
