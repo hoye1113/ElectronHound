@@ -3,6 +3,16 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { TaskStatusEnum, type Task, type StepRecord } from '@eata/shared-types';
 import { generateHTMLReport } from '../services/htmlReport.js';
+import { validatePath, PathTraversalError } from '../services/fileSecurity.js';
+
+function safeJsonParse(value: unknown): unknown {
+  if (!value) return undefined;
+  try {
+    return JSON.parse(value as string);
+  } catch {
+    return undefined;
+  }
+}
 
 function dbRowToTask(row: Record<string, unknown>): Task {
   const status = TaskStatusEnum.parse(row.status);
@@ -15,9 +25,7 @@ function dbRowToTask(row: Record<string, unknown>): Task {
     maxSteps: row.max_steps as number,
     contextInjection: (row.context_injection as string) ?? undefined,
     stepCount: row.step_count as number,
-    resultSummary: row.result_summary
-      ? (JSON.parse(row.result_summary as string) as Task['resultSummary'])
-      : undefined,
+    resultSummary: safeJsonParse(row.result_summary) as Task['resultSummary'],
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -31,10 +39,8 @@ function dbRowToStep(row: Record<string, unknown>): StepRecord {
     phase: row.phase as StepRecord['phase'],
     status: row.status as StepRecord['status'],
     observation: (row.observation as string) ?? undefined,
-    action: row.action
-      ? (JSON.parse(row.action as string) as StepRecord['action'])
-      : undefined,
-    result: row.result ? JSON.parse(row.result as string) : undefined,
+    action: safeJsonParse(row.action) as StepRecord['action'],
+    result: safeJsonParse(row.result),
     reasoning: (row.reasoning as string) ?? undefined,
     screenshotPath: (row.screenshot_path as string) ?? undefined,
     accessibilitySnapshotPath: (row.accessibility_snapshot_path as string) ?? undefined,
@@ -46,7 +52,14 @@ function dbRowToStep(row: Record<string, unknown>): StepRecord {
 export async function reportRoutes(server: FastifyInstance) {
   server.get('/tasks/:id/report', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const reportDir = join('data', 'reports', id);
+
+    let reportDir: string;
+    try {
+      reportDir = validatePath(join('data', 'reports'), id);
+    } catch {
+      reply.code(400);
+      return { error: 'Invalid report path' };
+    }
 
     if (!existsSync(reportDir)) {
       reply.code(404);

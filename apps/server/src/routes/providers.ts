@@ -29,16 +29,28 @@ export async function providersRoutes(server: FastifyInstance) {
 
   // POST /providers - 添加新供应商
   server.post('/providers', async (request, reply) => {
-    const data = CreateProviderSchema.parse(request.body);
-    const config = addProvider(data);
+    const parseResult = CreateProviderSchema.safeParse(request.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: 'Validation failed',
+        details: parseResult.error.errors,
+      });
+    }
+    const config = addProvider(parseResult.data);
     return reply.status(201).send(config);
   });
 
   // PUT /providers/:id - 更新供应商
   server.put('/providers/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const updates = UpdateProviderSchema.parse(request.body);
-    const config = updateProvider(id, updates);
+    const parseResult = UpdateProviderSchema.safeParse(request.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: 'Validation failed',
+        details: parseResult.error.errors,
+      });
+    }
+    const config = updateProvider(id, parseResult.data);
     if (!config) return reply.status(404).send({ error: 'Provider not found' });
     return config;
   });

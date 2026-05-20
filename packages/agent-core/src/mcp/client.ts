@@ -164,7 +164,7 @@ export class MCPClient {
       });
 
       return {
-        success: true,
+        success: !result.isError,
         result,
       };
     } catch (error) {

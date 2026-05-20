@@ -23,7 +23,10 @@ export const TestState = Annotation.Root({
     default: () => '',
   }),
   history: Annotation<StepRecord[]>({
-    reducer: (left: StepRecord[], right: StepRecord[]) => [...left, ...right],
+    reducer: (left: StepRecord[], right: StepRecord[]) => {
+      const combined = [...left, ...right];
+      return combined.length > 50 ? combined.slice(-50) : combined;
+    },
     default: () => [],
   }),
   currentObservation: Annotation<ObservationResult | null>({

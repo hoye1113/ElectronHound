@@ -9,6 +9,36 @@ export const observeNode = async (
 
   const snapshotResult = await mcp.callTool('playwright', 'browser_snapshot', {});
 
+  if (!snapshotResult.success) {
+    const observationResult: ObservationResult = {
+      ariaTree: '[Screenshot capture failed]',
+      pageTitle: '[Capture failed]',
+      url: '',
+      timestamp: new Date().toISOString(),
+    };
+
+    const newStepCount = state.stepCount + 1;
+
+    const stepRecord = {
+      id: crypto.randomUUID(),
+      taskId: state.taskId,
+      stepIndex: newStepCount - 1,
+      phase: 'observe' as const,
+      status: 'failed' as const,
+      observation: '[Screenshot capture failed]',
+      timestamp: new Date().toISOString(),
+      duration: 0,
+    };
+
+    return {
+      currentObservation: observationResult,
+      stepCount: newStepCount,
+      stuckCounter: 0,
+      lastObservationHash: '',
+      history: [stepRecord],
+    };
+  }
+
   const observationResult: ObservationResult = {
     ariaTree: typeof snapshotResult.result === 'string'
       ? snapshotResult.result

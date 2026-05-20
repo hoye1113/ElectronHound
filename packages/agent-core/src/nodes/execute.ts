@@ -80,8 +80,11 @@ export const executeNode = async (
 
   const mcp = getMCPClient();
 
+  const stepStart = performance.now();
+
   try {
     const toolResult = await mcp.callTool(server, name, args);
+    const duration = Math.round(performance.now() - stepStart);
 
     // Capture screenshot after tool execution (browser tools only)
     let screenshotPath: string | undefined;
@@ -104,7 +107,7 @@ export const executeNode = async (
       action: { name, args },
       result: execResult.result,
       timestamp: new Date().toISOString(),
-      duration: 0,
+      duration,
     };
 
     return {
@@ -112,6 +115,8 @@ export const executeNode = async (
       history: [stepRecord],
     };
   } catch (err) {
+    const duration = Math.round(performance.now() - stepStart);
+
     const execResult: ExecResult = {
       success: false,
       result: String(err),
@@ -126,7 +131,7 @@ export const executeNode = async (
       action: { name, args },
       result: String(err),
       timestamp: new Date().toISOString(),
-      duration: 0,
+      duration,
     };
 
     return {

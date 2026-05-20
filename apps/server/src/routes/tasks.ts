@@ -8,6 +8,15 @@ import {
 } from '@eata/shared-types';
 import { sseHub } from '../streams/sseHub.js';
 
+function safeJsonParse(value: unknown): unknown {
+  if (!value) return undefined;
+  try {
+    return JSON.parse(value as string);
+  } catch {
+    return undefined;
+  }
+}
+
 function dbRowToTask(row: Record<string, unknown>): Task {
   const status = TaskStatusEnum.parse(row.status);
   return {
@@ -20,9 +29,7 @@ function dbRowToTask(row: Record<string, unknown>): Task {
     providerId: (row.provider_id as string) ?? undefined,
     contextInjection: (row.context_injection as string) ?? undefined,
     stepCount: row.step_count as number,
-    resultSummary: row.result_summary
-      ? (JSON.parse(row.result_summary as string) as Task['resultSummary'])
-      : undefined,
+    resultSummary: safeJsonParse(row.result_summary) as Task['resultSummary'],
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -36,10 +43,8 @@ function dbRowToStep(row: Record<string, unknown>): StepRecord {
     phase: row.phase as StepRecord['phase'],
     status: row.status as StepRecord['status'],
     observation: (row.observation as string) ?? undefined,
-    action: row.action
-      ? (JSON.parse(row.action as string) as StepRecord['action'])
-      : undefined,
-    result: row.result ? JSON.parse(row.result as string) : undefined,
+    action: safeJsonParse(row.action) as StepRecord['action'],
+    result: safeJsonParse(row.result),
     reasoning: (row.reasoning as string) ?? undefined,
     screenshotPath: (row.screenshot_path as string) ?? undefined,
     accessibilitySnapshotPath: (row.accessibility_snapshot_path as string) ?? undefined,
@@ -194,9 +199,11 @@ export async function taskRoutes(server: FastifyInstance) {
         .prepare("UPDATE tasks SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?")
         .run(id);
     } else {
-      // queued or other terminal states — delete
-      server.db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
-      server.db.prepare('DELETE FROM steps WHERE task_id = ?').run(id);
+      // queued or other terminal states — delete (atomic transaction)
+      server.db.transaction(() => {
+        server.db.prepare('DELETE FROM steps WHERE task_id = ?').run(id);
+        server.db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
+      })();
     }
 
     reply.code(204);
