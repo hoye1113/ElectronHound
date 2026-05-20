@@ -5,6 +5,7 @@ import TaskDetail from './pages/TaskDetail';
 import LiveMonitor from './pages/LiveMonitor';
 import FeedbackLoop from './pages/FeedbackLoop';
 import SettingsPage from './pages/Settings';
+import './i18n/config';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -26,3 +27,4 @@ function App() {
 }
 
 export default App;
+

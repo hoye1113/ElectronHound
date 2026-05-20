@@ -3,7 +3,12 @@
   "version": "0.1.0",
   "type": "module",
   "main": "src/server.ts",
-  "scripts": {\n    "dev": "tsx watch src/server.ts",\n    "build": "tsc",\n    "start": "node dist/server.js",\n    "test": "vitest run",\n    "typecheck": "tsc --noEmit"
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@eata/agent-core": "workspace:*",
@@ -20,4 +25,3 @@
     "tsx": "^4.0.0"
   }
 }
-

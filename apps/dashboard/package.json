@@ -3,9 +3,16 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "scripts": {\n    "dev": "vite",\n    "build": "tsc -b && vite build",\n    "lint": "eslint .",\n    "preview": "vite preview",\n    "typecheck": "tsc --noEmit"
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "react-i18next": "^16.2.3",
+    "i18next": "^25.3.3",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-tabs": "^1.1.12",
@@ -36,4 +43,3 @@
     "vitest": "^3.2.0"
   }
 }
-
