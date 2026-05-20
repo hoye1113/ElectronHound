@@ -70,3 +70,7 @@ export type {
   AuditFinding,
   AuditChainResult,
 } from './sub-agents/index.js';
+
+// Few-shot examples
+export { loadExamples } from './prompts/few-shot/index.js';
+export type { FewShotExample, FewShotContext } from './prompts/few-shot/index.js';
