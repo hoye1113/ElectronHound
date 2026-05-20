@@ -14,6 +14,8 @@ function safeJsonParse(value: unknown): unknown {
   }
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function dbRowToTask(row: Record<string, unknown>): Task {
   const status = TaskStatusEnum.parse(row.status);
   return {
@@ -52,6 +54,9 @@ function dbRowToStep(row: Record<string, unknown>): StepRecord {
 export async function reportRoutes(server: FastifyInstance) {
   server.get('/tasks/:id/report', async (request, reply) => {
     const { id } = request.params as { id: string };
+    if (!UUID_REGEX.test(id)) {
+      return reply.status(400).send({ error: 'Invalid task ID format' });
+    }
 
     let reportDir: string;
     try {
@@ -79,6 +84,9 @@ export async function reportRoutes(server: FastifyInstance) {
   // GET /tasks/:id/report/html — generate and return HTML report
   server.get('/tasks/:id/report/html', async (request, reply) => {
     const { id } = request.params as { id: string };
+    if (!UUID_REGEX.test(id)) {
+      return reply.status(400).send({ error: 'Invalid task ID format' });
+    }
 
     const taskRow = server.db
       .prepare('SELECT * FROM tasks WHERE id = ?')
@@ -109,6 +117,10 @@ export async function reportRoutes(server: FastifyInstance) {
     const { id, stepIndex } = request.params as { id: string; stepIndex: string };
     const stepIdx = parseInt(stepIndex, 10);
 
+    if (!UUID_REGEX.test(id)) {
+      return reply.status(400).send({ error: 'Invalid task ID format' });
+    }
+
     if (Number.isNaN(stepIdx)) {
       reply.code(400);
       return { error: 'Invalid step index' };
@@ -125,7 +137,7 @@ export async function reportRoutes(server: FastifyInstance) {
     }
 
     // Resolve screenshot file path (relative to data/screenshots)
-    const screenshotPath = join('data', 'screenshots', stepRow.screenshot_path);
+    const screenshotPath = validatePath(join('data', 'screenshots'), stepRow.screenshot_path);
 
     if (!existsSync(screenshotPath)) {
       reply.code(404);

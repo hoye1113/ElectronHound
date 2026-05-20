@@ -466,17 +466,17 @@ describe('Route: GET /api/tasks/:id/report', () => {
   });
 
   it('returns 404 when report directory does not exist', async () => {
-    const res = await server.inject({ method: 'GET', url: '/api/tasks/no-report/report' });
+    const res = await server.inject({ method: 'GET', url: '/api/tasks/550e8400-e29b-41d4-a716-446655440099/report' });
     expect(res.statusCode).toBe(404);
     const body = JSON.parse(res.body);
     expect(body.error).toBe('Report not found');
   });
 
   it('returns manifest when report exists', async () => {
-    const reportDir = join('data', 'reports', 'task-report-1');
+    const reportDir = join('data', 'reports', '550e8400-e29b-41d4-a716-446655440001');
     mkdirSync(reportDir, { recursive: true });
     const manifest = {
-      taskId: 'task-report-1',
+      taskId: '550e8400-e29b-41d4-a716-446655440001',
       goal: 'Test goal',
       status: 'completed',
       totalSteps: 5,
@@ -489,10 +489,10 @@ describe('Route: GET /api/tasks/:id/report', () => {
     };
     writeFileSync(join(reportDir, 'manifest.json'), JSON.stringify(manifest));
 
-    const res = await server.inject({ method: 'GET', url: '/api/tasks/task-report-1/report' });
+    const res = await server.inject({ method: 'GET', url: '/api/tasks/550e8400-e29b-41d4-a716-446655440001/report' });
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.body);
-    expect(body.taskId).toBe('task-report-1');
+    expect(body.taskId).toBe('550e8400-e29b-41d4-a716-446655440001');
     expect(body.goal).toBe('Test goal');
     expect(body.totalSteps).toBe(5);
   });

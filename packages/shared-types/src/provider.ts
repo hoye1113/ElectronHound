@@ -10,7 +10,7 @@ export const LLMProviderConfigSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   type: LLMProviderTypeSchema,
-  apiKey: z.string(),
+  apiKey: z.string().min(1, { message: 'API key cannot be empty' }),
   baseURL: z.string().url(),
   model: z.string().min(1),
   enabled: z.boolean().optional().default(true),
