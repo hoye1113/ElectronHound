@@ -1,0 +1,36 @@
+version: '3.8'
+
+name: eata
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eata-server
+    ports:
+      - "3000:3000"
+    command: ["pnpm", "run", "dev", "--filter", "@eata/server"]
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eata-dashboard
+    ports:
+      - "5173:5173"
+    command: ["pnpm", "run", "dev", "--filter", "@eata/dashboard", "--", "--host", "0.0.0.0"]
+    depends_on:
+      - server
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:3000

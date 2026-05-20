@@ -3,11 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "pnpm -r --parallel run dev",
+  "scripts": {\n    "dev": "pnpm -r --parallel run dev",
     "build": "pnpm -r run build",
     "test": "vitest run",
-    "test:watch": "vitest",
+    "test:watch": "vitest",\n    "lint": "eslint .",\n    "format": "prettier --write .",\n    "typecheck": "pnpm -r run typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",
     "agent:run": "npx tsx packages/agent-core/src/cli.ts"
@@ -28,3 +27,4 @@
     "onlyBuiltDependencies": ["better-sqlite3", "esbuild", "electron"]
   }
 }
+

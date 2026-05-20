@@ -4,8 +4,7 @@
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
-  "scripts": {
-    "test": "vitest run"
+  "scripts": {\n    "test": "vitest run",\n    "typecheck": "tsc --noEmit"
   },
   "dependencies": {},
   "devDependencies": {
@@ -13,3 +12,4 @@
     "vitest": "^3.2.0"
   }
 }
+
