@@ -211,3 +211,164 @@ export interface ElectronContext {
 export interface ExecutionContext {
   execute(code: string, options?: { runtime?: string; timeout?: number; env?: Record<string, string> }): Promise<any>;
 }
+
+// ─── CDP types (Playwright CDP integration, replaces MCP) ───────────────
+
+/**
+ * Configuration for a CDP connection (Playwright or Electron).
+ */
+export interface CDPConfig {
+  /** CDP endpoint URL (e.g., ws://127.0.0.1:9222/devtools/browser/...) */
+  endpoint?: string;
+  /** Host for CDP server */
+  host?: string;
+  /** Port for CDP server */
+  port?: number;
+  /** Connection timeout in ms */
+  timeout?: number;
+  /** Type of target to connect to */
+  targetType?: 'browser' | 'electron';
+}
+
+/**
+ * Information about an active CDP session.
+ */
+export interface CDPSessionInfo {
+  /** Unique session identifier */
+  sessionId: string;
+  /** Optional CDP target ID */
+  targetId?: string;
+  /** Session type */
+  type: 'browser' | 'page' | 'electron-main' | 'electron-renderer';
+}
+
+/**
+ * Raw CDP command result from the protocol.
+ */
+export interface CDPRawResult {
+  /** CDP method result payload */
+  result?: any;
+  /** CDP error if any */
+  error?: { code: number; message: string };
+}
+
+/**
+ * CDP-specific tool params (shared by all CDP tools).
+ */
+export interface CDPToolParams {
+  /** Target session ID to execute the tool on */
+  sessionId?: string;
+  /** Additional CDP-specific options */
+  options?: Record<string, any>;
+}
+
+/**
+ * CDP-specific tool result.
+ */
+export interface CDPToolResult {
+  /** Whether the CDP command succeeded */
+  success: boolean;
+  /** Result data from the CDP command */
+  data?: any;
+  /** Error message if the command failed */
+  error?: string;
+  /** CDP session info */
+  sessionInfo?: CDPSessionInfo;
+}
+
+/**
+ * Abstraction over a CDP connection for CDP tools.
+ * CDPClient manages the WebSocket connection to Playwright/Electron DevTools.
+ */
+export interface CDPContext {
+  /** Establish a CDP connection */
+  connect(config: CDPConfig): Promise<CDPSessionInfo>;
+  /** Close the CDP connection */
+  disconnect(): Promise<void>;
+  /** Check if connected */
+  isConnected(): boolean;
+  /** Send a CDP command and return the result */
+  sendCommand(method: string, params?: Record<string, any>, sessionId?: string): Promise<CDPRawResult>;
+  /** Create a new CDP session for a specific target */
+  createSession(targetId?: string, type?: CDPSessionInfo['type']): Promise<CDPSessionInfo>;
+  /** Close a CDP session */
+  closeSession(sessionId: string): Promise<void>;
+  /** List active sessions */
+  listSessions(): CDPSessionInfo[];
+}
+
+/**
+ * CDP Browser tool params (for tools that interact via CDP protocol).
+ */
+export interface CDPBrowserSnapshotParams extends CDPToolParams {
+  format?: 'aria' | 'screenshot';
+}
+
+export interface CDPBrowserClickParams extends CDPToolParams {
+  selector: string;
+  button?: 'left' | 'right' | 'middle';
+  clickCount?: number;
+  timeout?: number;
+}
+
+export interface CDPBrowserTypeParams extends CDPToolParams {
+  selector: string;
+  text: string;
+  clear?: boolean;
+  delay?: number;
+}
+
+export interface CDPBrowserNavigateParams extends CDPToolParams {
+  url: string;
+  waitUntil?: 'load' | 'domcontentloaded' | 'networkidle';
+  timeout?: number;
+}
+
+export interface CDPBrowserPressKeyParams extends CDPToolParams {
+  key: string;
+  selector?: string;
+}
+
+export interface CDPBrowserHoverParams extends CDPToolParams {
+  selector: string;
+  timeout?: number;
+}
+
+export interface CDPBrowserDragParams extends CDPToolParams {
+  sourceSelector: string;
+  targetSelector: string;
+  timeout?: number;
+}
+
+/**
+ * CDP Electron tool params.
+ */
+export interface CDPLaunchParams extends CDPToolParams {
+  appPath: string;
+  args?: string[];
+  env?: Record<string, string>;
+  cdpPort?: number;
+}
+
+export interface CDPCloseParams extends CDPToolParams {
+  force?: boolean;
+  timeout?: number;
+}
+
+export interface CDPExecuteMainParams extends CDPToolParams {
+  code: string;
+  timeout?: number;
+}
+
+export interface CDPTriggerIpcParams extends CDPToolParams {
+  channel: string;
+  payload?: any;
+  expectResponse?: boolean;
+  timeout?: number;
+}
+
+export interface CDPMockDialogParams extends CDPToolParams {
+  type: 'alert' | 'confirm' | 'prompt';
+  response?: string | boolean;
+  dismiss?: boolean;
+}

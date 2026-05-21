@@ -81,3 +81,31 @@ export {
 // Few-shot examples
 export { loadExamples } from './prompts/few-shot/index.js';
 export type { FewShotExample, FewShotContext } from './prompts/few-shot/index.js';
+
+// CDP integration (replaces MCP architecture)
+export {
+  CDPClient,
+  CDPSession,
+  CDPTool,
+  createCDPTools,
+  BrowserSnapshotTool,
+  BrowserClickTool,
+  BrowserTypeTool,
+  BrowserNavigateTool,
+  BrowserPressKeyTool,
+  BrowserHoverTool,
+  BrowserDragTool,
+  CDPLaunchTool,
+  CDPCloseTool,
+  CDPExecuteMainTool,
+  CDPTriggerIpcTool,
+  CDPMockDialogTool,
+} from './tools/cdp.js';
+export type {
+  CDPConfig,
+  CDPSessionInfo,
+  CDPRawResult,
+  CDPToolParams,
+  CDPToolResult,
+  CDPContext,
+} from './tools/types.js';

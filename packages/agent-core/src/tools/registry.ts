@@ -10,7 +10,9 @@ import type {
   ToolResult,
   ToolRegistry as ToolRegistryType,
   ToolStreamChunk,
+  CDPContext,
 } from './types.js';
+import { createCDPTools } from './cdp.js';
 
 /**
  * Default ToolRegistry implementation.
@@ -171,5 +173,22 @@ export class ToolRegistry implements ToolRegistryType {
    */
   clear(): void {
     this.tools.clear();
+  }
+
+  /**
+   * Register all CDP tools (12 tools: 7 browser + 5 electron).
+   * Creates a CDPClient-backed tool set.
+   */
+  registerCDPTools(client: CDPContext): void {
+    this.registerAll(createCDPTools(client));
+  }
+
+  /**
+   * Create a ToolRegistry pre-populated with CDP tools.
+   */
+  static withCDP(client: CDPContext): ToolRegistry {
+    const registry = new ToolRegistry();
+    registry.registerCDPTools(client);
+    return registry;
   }
 }
