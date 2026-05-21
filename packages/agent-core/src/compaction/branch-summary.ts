@@ -7,233 +7,97 @@
  */
 
 import type { CompactionMessage } from './cut-point.js';
-import {
-  serializeConversation,
-  parseFileOperations,
-  formatFileOperations,
-} from './summary.js';
 
 /**
- * Configuration for branch summary generation.
+ * Key information keyword categories (case-insensitive detection).
  */
-export interface BranchSummaryConfig {
-  /**
-   * Minimum message count to trigger branch summary.
-   * @default 3
-   */
-  minMessages?: number;
-
-  /**
-   * Minimum token count to trigger branch summary.
-   * @default 500
-   */
-  minTokens?: number;
-
-  /**
-   * Maximum characters for tool results in summary.
-   * @default 2000
-   */
-  toolResultMaxChars?: number;
-}
+const KEY_INFORMATION_CATEGORIES = {
+  decisions: ['decided', 'because', 'chose', 'selected', 'opted'],
+  problemsSolutions: ['problem', 'solution', 'fixed', 'resolved', 'issue'],
+  unfinishedTasks: ['todo', 'fixme', 'pending', 'outstanding', 'incomplete'],
+  nextSteps: ['next', 'then', 'later', 'after', 'finally'],
+} as const;
 
 /**
- * Default branch summary configuration.
+ * Get all text content from messages as a single string.
  */
-export const BRANCH_SUMMARY_DEFAULTS: Required<BranchSummaryConfig> = {
-  minMessages: 3,
-  minTokens: 500,
-  toolResultMaxChars: 2000,
-};
-
-/**
- * Options for shouldGenerateBranchSummary.
- */
-export interface ShouldGenerateOptions {
-  /**
-   * Messages from the source branch.
-   */
-  sourceBranchMessages: CompactionMessage[];
-
-  /**
-   * Whether a branch summary already exists.
-   * @default false
-   */
-  existingSummary?: boolean;
-}
-
-/**
- * Branch summary result.
- */
-export interface BranchSummaryResult {
-  /**
-   * The formatted branch summary (markdown).
-   */
-  summary: string;
-
-  /**
-   * Files read in the source branch.
-   */
-  readFiles: string[];
-
-  /**
-   * Files modified in the source branch.
-   */
-  modifiedFiles: string[];
-
-  /**
-   * Token estimate of the summary.
-   */
-  tokenEstimate: number;
-}
-
-/**
- * Options for branch summary generation.
- */
-export interface GenerateOptions {
-  /**
-   * Custom title for the branch.
-   */
-  branchTitle?: string;
-
-  /**
-   * Custom summarization prompt.
-   */
-  customPrompt?: string;
-
-  /**
-   * Maximum characters for tool results.
-   * @default 2000
-   */
-  toolResultMaxChars?: number;
-}
-
-/**
- * Check if a branch summary should be generated for the given source branch.
- *
- * A branch summary should be generated when:
- * 1. The source branch has sufficient messages (>= minMessages)
- * 2. The source branch has sufficient content (>= minTokens estimated)
- * 3. No existing branch summary is present
- *
- * @param options - Options containing source branch messages
- * @param config - Optional configuration overrides
- * @returns Whether a branch summary should be generated
- */
-export function shouldGenerateBranchSummary(
-  options: ShouldGenerateOptions,
-  config: BranchSummaryConfig = {},
-): boolean {
-  const {
-    sourceBranchMessages,
-    existingSummary = false,
-  } = options;
-
-  const {
-    minMessages = BRANCH_SUMMARY_DEFAULTS.minMessages,
-    minTokens = BRANCH_SUMMARY_DEFAULTS.minTokens,
-  } = config;
-
-  // Don't generate if summary already exists
-  if (existingSummary) {
-    return false;
-  }
-
-  // Don't generate for empty or very small branches
-  if (!sourceBranchMessages || sourceBranchMessages.length < minMessages) {
-    return false;
-  }
-
-  // Estimate token count from messages
-  const estimatedTokens = estimateBranchTokens(sourceBranchMessages);
-
-  // Don't generate if branch is too small
-  if (estimatedTokens < minTokens) {
-    return false;
-  }
-
-  return true;
-}
-
-/**
- * Estimate token count from messages.
- * Rough approximation: 1 token ≈ 4 characters for English text.
- */
-function estimateBranchTokens(messages: CompactionMessage[]): number {
-  let totalChars = 0;
+function extractTextContent(messages: CompactionMessage[]): string {
+  const parts: string[] = [];
 
   for (const msg of messages) {
     if (typeof msg.content === 'string') {
-      totalChars += msg.content.length;
+      parts.push(msg.content);
     } else if (Array.isArray(msg.content)) {
       for (const block of msg.content) {
         if (typeof block === 'object' && block !== null && 'text' in block) {
           const text = (block as { text: string }).text;
           if (typeof text === 'string') {
-            totalChars += text.length;
+            parts.push(text);
           }
         }
       }
     }
   }
 
-  return Math.ceil(totalChars / 4);
+  return parts.join('\n');
 }
 
 /**
- * Generate a branch summary from source branch messages.
- *
- * The branch summary includes:
- * - Branch context header
- * - Serialized conversation
- * - File operations (read/modified files)
- *
- * @param messages - Messages from the source branch
- * @param options - Generation options
- * @returns The branch summary result
+ * Estimate token count from messages.
+ * Rough approximation: 1 token ≈ 4 characters for English text.
  */
-export function generateBranchSummary(
-  messages: CompactionMessage[],
-  options: GenerateOptions = {},
-): BranchSummaryResult {
-  const {
-    branchTitle = 'Source Branch Context',
-    toolResultMaxChars = BRANCH_SUMMARY_DEFAULTS.toolResultMaxChars,
-  } = options;
-
-  // Serialize the conversation
-  const serialized = serializeConversation(messages, toolResultMaxChars);
-
-  // Extract file operations from messages
-  const { readFiles, modifiedFiles } = extractFileOpsFromMessages(messages);
-
-  // Format file operations
-  const fileOpsSection = formatFileOperations(readFiles, modifiedFiles);
-
-  // Build the summary
-  const summaryParts: string[] = [
-    `## ${branchTitle}`,
-    '',
-    'The following context is from a previous branch and should be used as background knowledge:',
-    '',
-    serialized,
-    fileOpsSection,
-    '',
-    '---',
-    'End of branch context.',
-  ];
-
-  const summary = summaryParts.join('\n');
-
-  return {
-    summary,
-    readFiles,
-    modifiedFiles,
-    tokenEstimate: Math.ceil(summary.length / 4),
-  };
+function estimateTokens(messages: CompactionMessage[]): number {
+  const text = extractTextContent(messages);
+  return Math.ceil(text.length / 4);
 }
 
 /**
- * Extract file operations from messages.
+ * Check if the message history contains key information worth preserving.
+ *
+ * Detects 4 categories (case-insensitive):
+ * - Decisions: decided, because, chose, selected, opted
+ * - Problems/Solutions: problem, solution, fixed, resolved, issue
+ * - Unfinished Tasks: TODO, FIXME, pending, outstanding, incomplete
+ * - Next Steps: next, then, later, after, finally
+ */
+function containsKeyInformation(messages: CompactionMessage[]): boolean {
+  const text = extractTextContent(messages).toLowerCase();
+
+  const allKeywords = Object.values(KEY_INFORMATION_CATEGORIES).flat();
+  return allKeywords.some((keyword) => text.includes(keyword));
+}
+
+/**
+ * Extract lines matching specific keywords from message text.
+ * Returns deduplicated lines containing at least one keyword (case-insensitive).
+ */
+function extractKeywordLines(
+  messages: CompactionMessage[],
+  keywords: readonly string[],
+): string[] {
+  const text = extractTextContent(messages);
+  const lines = text.split('\n');
+  const seen = new Set<string>();
+  const results: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.length === 0) continue;
+
+    const lowerLine = trimmed.toLowerCase();
+    const matches = keywords.some((kw) => lowerLine.includes(kw));
+    if (!matches) continue;
+    if (seen.has(trimmed)) continue;
+
+    seen.add(trimmed);
+    results.push(trimmed);
+  }
+
+  return results;
+}
+
+/**
+ * Extract file operations from messages (tool calls for read/write/edit).
  */
 function extractFileOpsFromMessages(messages: CompactionMessage[]): {
   readFiles: string[];
@@ -280,28 +144,190 @@ function extractFileOpsFromMessages(messages: CompactionMessage[]): {
 }
 
 /**
- * Inject a branch summary into the target branch messages.
+ * Check if a branch summary should be generated.
  *
- * The summary is injected as a system message at the beginning of the conversation,
- * providing context from the source branch.
+ * Logic:
+ * 1. currentBranch !== targetBranch → true (switching branches)
+ * 2. messageHistory.length === 0 → false (empty history)
+ * 3. Token estimate > 500 → true (above threshold)
+ * 4. Message history contains key information → true
+ * 5. Otherwise → false
  *
- * @param targetMessages - Messages in the target branch
- * @param summary - The branch summary to inject
- * @returns New messages array with summary injected
+ * @param currentBranch - The current branch name
+ * @param targetBranch - The target branch name being switched to
+ * @param messageHistory - Messages from the conversation
+ * @returns Whether a branch summary should be generated
+ */
+export function shouldGenerateBranchSummary(
+  currentBranch: string,
+  targetBranch: string,
+  messageHistory: CompactionMessage[],
+): boolean {
+  // 1. Switching branches → always generate
+  if (currentBranch !== targetBranch) {
+    return true;
+  }
+
+  // 2. Empty history → nothing to summarize
+  if (messageHistory.length === 0) {
+    return false;
+  }
+
+  // 3. Token estimate > 500 → generate (substantial content)
+  const tokens = estimateTokens(messageHistory);
+  if (tokens > 500) {
+    return true;
+  }
+
+  // 4. Contains key information → generate
+  if (containsKeyInformation(messageHistory)) {
+    return true;
+  }
+
+  // 5. Otherwise → skip
+  return false;
+}
+
+/**
+ * Generate a branch summary from message history.
+ *
+ * Extracts decisions, file operations, problems/solutions, unfinished tasks,
+ * and next steps from the messages, then builds a structured Markdown summary.
+ *
+ * @param messageHistory - Messages from the branch to summarize
+ * @param branchName - Name of the branch
+ * @param options - Optional generation parameters
+ * @returns Structured Markdown summary string (synchronous)
+ */
+export function generateBranchSummary(
+  messageHistory: CompactionMessage[],
+  branchName: string,
+  options?: {
+    model?: string;
+    temperature?: number;
+    maxTokens?: number;
+  },
+): string {
+  // Suppress unused options (reserved for future LLM integration)
+  void options;
+
+  // 1. Extract categorized information from messages
+  const decisions = extractKeywordLines(
+    messageHistory,
+    KEY_INFORMATION_CATEGORIES.decisions,
+  );
+  const problemsSolutions = extractKeywordLines(
+    messageHistory,
+    KEY_INFORMATION_CATEGORIES.problemsSolutions,
+  );
+  const unfinishedTasks = extractKeywordLines(
+    messageHistory,
+    KEY_INFORMATION_CATEGORIES.unfinishedTasks,
+  );
+  const nextSteps = extractKeywordLines(
+    messageHistory,
+    KEY_INFORMATION_CATEGORIES.nextSteps,
+  );
+
+  // 2. Extract file operations from tool calls
+  const { readFiles, modifiedFiles } = extractFileOpsFromMessages(messageHistory);
+
+  // 3. Build Markdown summary
+  const sections: string[] = [];
+
+  // Header
+  sections.push(`# ${branchName} Branch Summary`);
+
+  // Key Decisions
+  sections.push('');
+  sections.push('## Key Decisions');
+  if (decisions.length > 0) {
+    for (const d of decisions) {
+      sections.push(`- ${d}`);
+    }
+  } else {
+    sections.push('- None');
+  }
+
+  // File Operations
+  sections.push('');
+  sections.push('## File Operations');
+  if (readFiles.length > 0) {
+    sections.push('<read-files>');
+    for (const f of readFiles) {
+      sections.push(`- ${f}`);
+    }
+    sections.push('</read-files>');
+  }
+
+  if (modifiedFiles.length > 0) {
+    sections.push('');
+    sections.push('<modified-files>');
+    for (const f of modifiedFiles) {
+      sections.push(`- ${f}`);
+    }
+    sections.push('</modified-files>');
+  }
+
+  if (readFiles.length === 0 && modifiedFiles.length === 0) {
+    sections.push('- None');
+  }
+
+  // Problems & Solutions
+  sections.push('');
+  sections.push('## Problems & Solutions');
+  if (problemsSolutions.length > 0) {
+    for (const ps of problemsSolutions) {
+      sections.push(`- ${ps}`);
+    }
+  } else {
+    sections.push('- None');
+  }
+
+  // Unfinished Tasks
+  sections.push('');
+  sections.push('## Unfinished Tasks');
+  if (unfinishedTasks.length > 0) {
+    for (const t of unfinishedTasks) {
+      sections.push(`- TODO: ${t}`);
+    }
+  } else {
+    sections.push('- None');
+  }
+
+  // Next Steps
+  sections.push('');
+  sections.push('## Next Steps');
+  if (nextSteps.length > 0) {
+    for (const s of nextSteps) {
+      sections.push(`- ${s}`);
+    }
+  } else {
+    sections.push('- None');
+  }
+
+  return sections.join('\n');
+}
+
+/**
+ * Inject a branch summary as a system message.
+ *
+ * Creates a single system message containing the branch summary context,
+ * formatted with a branch prefix for clear attribution.
+ *
+ * @param targetBranch - The target branch name
+ * @param summary - The branch summary content
+ * @returns Single-element array containing the system message
  */
 export function injectBranchSummary(
-  targetMessages: CompactionMessage[],
-  summary: BranchSummaryResult | string,
+  targetBranch: string,
+  summary: string,
 ): CompactionMessage[] {
-  const summaryText = typeof summary === 'string' ? summary : summary.summary;
-
-  // Create the system message with branch summary
-  const summaryMessage: CompactionMessage = {
+  const systemMessage: CompactionMessage = {
     role: 'system',
-    content: summaryText,
+    content: `You are continuing work from the ${targetBranch} branch. Here is the previous context:\n\n${summary}`,
     messageType: 'branch_summary',
   };
 
-  // Inject at the beginning of the messages
-  return [summaryMessage, ...targetMessages];
+  return [systemMessage];
 }

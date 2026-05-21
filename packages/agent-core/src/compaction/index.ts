@@ -62,12 +62,4 @@ export {
   shouldGenerateBranchSummary,
   generateBranchSummary,
   injectBranchSummary,
-  BRANCH_SUMMARY_DEFAULTS,
-} from './branch-summary.js';
-
-export type {
-  BranchSummaryConfig,
-  ShouldGenerateOptions,
-  BranchSummaryResult,
-  GenerateOptions,
 } from './branch-summary.js';
