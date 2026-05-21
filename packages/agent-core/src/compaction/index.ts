@@ -69,12 +69,21 @@ export type {
   SummaryData,
 } from './summary.js';
 
-// Branch summarization
+// Branch summarization (function-based)
 export {
   shouldGenerateBranchSummary,
   generateBranchSummary,
   injectBranchSummary,
 } from './branch-summary.js';
+
+// Branch summarization (class-based, with cumulative tracking)
+export { BranchSummarization } from './branchSummarization.js';
+
+// Types
+export type {
+  BranchSummaryResult,
+  BranchSummaryEntry,
+} from './types.js';
 
 // Split turn detection
 export {
