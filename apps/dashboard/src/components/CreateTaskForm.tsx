@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Select from '@radix-ui/react-select';
 import { Check, ChevronDown, X, Plus, Star } from 'lucide-react';
@@ -16,6 +17,7 @@ interface CreateTaskFormProps {
 }
 
 export default function CreateTaskForm({ open, onOpenChange, onSuccess }: CreateTaskFormProps) {
+  const { t } = useTranslation();
   const createTask = useTaskStore((s) => s.createTask);
   const [goal, setGoal] = useState('');
   const [targetAppPath, setTargetAppPath] = useState('');
@@ -85,7 +87,7 @@ export default function CreateTaskForm({ open, onOpenChange, onSuccess }: Create
       onOpenChange(false);
       onSuccess?.();
     } catch {
-      setErrors({ form: 'Failed to create task. Please try again.' });
+      setErrors({ form: t('createTask.submitError') });
     } finally {
       setSubmitting(false);
     }
@@ -111,7 +113,7 @@ export default function CreateTaskForm({ open, onOpenChange, onSuccess }: Create
         <Dialog.Overlay className="fixed inset-0 bg-black/60 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <Dialog.Content aria-describedby={undefined} className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
           <div className="flex items-center justify-between">
-            <Dialog.Title className="text-lg font-semibold text-zinc-100">New Task</Dialog.Title>
+            <Dialog.Title className="text-lg font-semibold text-zinc-100">{t('createTask.title')}</Dialog.Title>
             <Dialog.Close className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100">
               <X className="size-4" />
             </Dialog.Close>
@@ -121,13 +123,13 @@ export default function CreateTaskForm({ open, onOpenChange, onSuccess }: Create
             {/* Goal */}
             <div className="flex flex-col gap-1.5">
               <label htmlFor="goal" className="text-sm font-medium text-zinc-300">
-                Goal
+                {t('createTask.goalLabel')}
               </label>
               <textarea
                 id="goal"
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
-                placeholder="What should the AI agent accomplish?"
+                placeholder={t('createTask.goalPlaceholder')}
                 rows={3}
                 className={`rounded-lg border bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 outline-none transition-colors focus:ring-1 focus:ring-indigo-500 ${
                   errors.goal ? 'border-red-500' : 'border-zinc-700'
@@ -139,14 +141,14 @@ export default function CreateTaskForm({ open, onOpenChange, onSuccess }: Create
             {/* Target App Path */}
             <div className="flex flex-col gap-1.5">
               <label htmlFor="targetAppPath" className="text-sm font-medium text-zinc-300">
-                Target App Path
+                {t('createTask.targetAppLabel')}
               </label>
               <input
                 id="targetAppPath"
                 type="text"
                 value={targetAppPath}
                 onChange={(e) => setTargetAppPath(e.target.value)}
-                placeholder="/path/to/electron/app"
+                placeholder={t('createTask.targetAppPlaceholder')}
                 className={`rounded-lg border bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 outline-none transition-colors focus:ring-1 focus:ring-indigo-500 ${
                   errors.targetAppPath ? 'border-red-500' : 'border-zinc-700'
                 }`}
@@ -156,7 +158,7 @@ export default function CreateTaskForm({ open, onOpenChange, onSuccess }: Create
 
             {/* LLM Model */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-zinc-300">LLM Model</label>
+              <label className="text-sm font-medium text-zinc-300">{t('createTask.modelLabel')}</label>
               <Select.Root value={llmModel} onValueChange={setLlmModel}>
                 <Select.Trigger
                   className={`inline-flex items-center justify-between rounded-lg border bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none transition-colors focus:ring-1 focus:ring-indigo-500 ${
@@ -193,12 +195,12 @@ export default function CreateTaskForm({ open, onOpenChange, onSuccess }: Create
             {/* LLM Provider Selection */}
             {providers.length > 0 && (
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-zinc-300">LLM Provider</label>
+                <label className="text-sm font-medium text-zinc-300">{t('createTask.providerLabel')}</label>
                 <Select.Root value={providerId} onValueChange={setProviderId}>
                   <Select.Trigger
                     className="inline-flex items-center justify-between rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none transition-colors focus:ring-1 focus:ring-indigo-500"
                   >
-                    <Select.Value placeholder="Select provider (default: active)" />
+                    <Select.Value placeholder={t('createTask.providerPlaceholder')} />
                     <Select.Icon>
                       <ChevronDown className="size-4 text-zinc-500" />
                     </Select.Icon>
@@ -242,7 +244,7 @@ export default function CreateTaskForm({ open, onOpenChange, onSuccess }: Create
               className="mt-2 inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus className="size-4" />
-              {submitting ? 'Creating...' : 'Create Task'}
+              {submitting ? t('createTask.submitting') : t('createTask.submit')}
             </button>
           </form>
         </Dialog.Content>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   Download,
@@ -13,13 +14,13 @@ import { api, getScreenshotUrl } from '../lib/api';
 import StepTimeline from '../components/StepTimeline';
 import ScreenshotGallery from '../components/ScreenshotGallery';
 
-const statusConfig: Record<TaskStatus, { label: string; classes: string }> = {
-  queued: { label: 'Queued', classes: 'bg-zinc-700 text-zinc-300' },
-  running: { label: 'Running', classes: 'bg-blue-500/20 text-blue-300' },
-  completed: { label: 'Completed', classes: 'bg-emerald-500/20 text-emerald-300' },
-  failed: { label: 'Failed', classes: 'bg-red-500/20 text-red-300' },
-  cancelled: { label: 'Cancelled', classes: 'bg-amber-500/20 text-amber-300' },
-  aborted: { label: 'Aborted', classes: 'bg-zinc-600 text-zinc-400' },
+const statusConfig: Record<TaskStatus, { labelKey: string; classes: string }> = {
+  queued: { labelKey: 'taskCard.status_queued', classes: 'bg-zinc-700 text-zinc-300' },
+  running: { labelKey: 'taskCard.status_running', classes: 'bg-blue-500/20 text-blue-300' },
+  completed: { labelKey: 'taskCard.status_completed', classes: 'bg-emerald-500/20 text-emerald-300' },
+  failed: { labelKey: 'taskCard.status_failed', classes: 'bg-red-500/20 text-red-300' },
+  cancelled: { labelKey: 'taskCard.status_cancelled', classes: 'bg-amber-500/20 text-amber-300' },
+  aborted: { labelKey: 'taskCard.status_aborted', classes: 'bg-zinc-600 text-zinc-400' },
 };
 
 interface ScreenshotItem {
@@ -29,6 +30,7 @@ interface ScreenshotItem {
 }
 
 export default function TaskDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [task, setTask] = useState<Task | null>(null);
@@ -97,7 +99,7 @@ export default function TaskDetail() {
       <div className="flex items-center justify-center py-20">
         <div className="flex flex-col items-center gap-3">
           <div className="size-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
-          <p className="text-sm text-zinc-500">Loading task details...</p>
+          <p className="text-sm text-zinc-500">{t('taskDetail.loading')}</p>
         </div>
       </div>
     );
@@ -106,12 +108,12 @@ export default function TaskDetail() {
   if (error || !task) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <p className="text-sm text-red-400">{error ?? 'Task not found'}</p>
+        <p className="text-sm text-red-400">{error ?? t('taskDetail.notFound')}</p>
         <button
           onClick={() => navigate('/')}
           className="mt-4 text-sm font-medium text-indigo-400 hover:text-indigo-300"
         >
-          ← Back to tasks
+          {t('taskDetail.backToTasks')}
         </button>
       </div>
     );
@@ -128,7 +130,7 @@ export default function TaskDetail() {
           <button
             onClick={() => navigate('/')}
             className="mt-1 rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
-            aria-label="Back to task list"
+            aria-label={t('common.backToTaskList')}
           >
             <ArrowLeft className="size-5" />
           </button>
@@ -136,7 +138,7 @@ export default function TaskDetail() {
             <h1 className="text-xl font-bold text-zinc-100">{task.goal}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${status.classes}`}>
-                {status.label}
+                {t(status.labelKey)}
               </span>
               <span className="flex items-center gap-1.5 text-xs text-zinc-500">
                 <Cpu className="size-3.5" />
@@ -158,25 +160,25 @@ export default function TaskDetail() {
           <button
             onClick={handleDownloadReport}
             className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800/60 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
-            aria-label="Download JSON report"
+            aria-label={t('common.downloadJson')}
           >
             <Download className="size-4" />
-            JSON
+            {t('taskDetail.downloadJson')}
           </button>
           <button
             onClick={handleDownloadHtmlReport}
             className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800/60 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
-            aria-label="Download HTML report"
+            aria-label={t('common.downloadHtml')}
           >
             <Download className="size-4" />
-            HTML Report
+            {t('taskDetail.downloadHtml')}
           </button>
         </div>
       </div>
 
       {/* Steps timeline */}
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-zinc-400">Steps</h2>
+        <h2 className="mb-3 text-sm font-semibold text-zinc-400">{t('taskDetail.stepsSection')}</h2>
         <StepTimeline steps={steps} currentStepIndex={currentStepIndex} />
       </section>
 
@@ -185,7 +187,7 @@ export default function TaskDetail() {
         <section>
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-400">
             <ImageIcon className="size-4" />
-            Screenshots ({screenshots.length})
+            {t('taskDetail.screenshotsSection', { count: screenshots.length })}
           </h2>
           <ScreenshotGallery screenshots={screenshots} />
         </section>

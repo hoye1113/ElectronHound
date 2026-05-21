@@ -70,7 +70,7 @@ async function fetchCDPVersion(port: number): Promise<{
       throw new Error(`CDP endpoint returned ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as { webSocketDebuggerUrl?: string; Browser?: string };
 
     if (!data.webSocketDebuggerUrl) {
       throw new Error('CDP response missing webSocketDebuggerUrl');

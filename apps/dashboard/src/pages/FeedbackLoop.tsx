@@ -1,10 +1,12 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 import type { FeedbackPattern } from '@eata/shared-types';
 import { api } from '../lib/api';
 import PatternList from '../components/PatternList';
 
 export default function FeedbackLoop() {
+  const { t } = useTranslation();
   const [patterns, setPatterns] = useState<FeedbackPattern[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,7 +52,7 @@ export default function FeedbackLoop() {
     <div className="flex flex-col gap-6 p-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-zinc-100">Feedback Loop</h1>
+        <h1 className="text-2xl font-bold text-zinc-100">{t('feedbackLoop.title')}</h1>
         <p className="mt-1 text-sm text-zinc-500">
           {sorted.length} pattern{sorted.length !== 1 ? 's' : ''} detected across tasks
         </p>
@@ -61,11 +63,11 @@ export default function FeedbackLoop() {
         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
         <input
           type="text"
-          placeholder="Search by error type, description, or keyword..."
+          placeholder={t('feedbackLoop.searchPlaceholder')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full rounded-lg border border-zinc-800 bg-zinc-900/60 py-2.5 pl-10 pr-4 text-sm text-zinc-100 placeholder-zinc-600 outline-none transition-colors focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20"
-          aria-label="Search feedback patterns"
+          aria-label={t('common.searchFeedback')}
         />
       </div>
 
@@ -74,7 +76,7 @@ export default function FeedbackLoop() {
         <div className="flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-3">
             <div className="size-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
-            <p className="text-sm text-zinc-500">Loading patterns...</p>
+            <p className="text-sm text-zinc-500">{t('feedbackLoop.loading')}</p>
           </div>
         </div>
       ) : (

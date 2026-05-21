@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Eye, Lightbulb, Play, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { StepRecord, StepPhase, StepStatus } from '@eata/shared-types';
 
@@ -7,18 +8,18 @@ interface StepTimelineProps {
   currentStepIndex: number;
 }
 
-const phaseConfig: Record<StepPhase, { icon: typeof Eye; label: string }> = {
-  observe: { icon: Eye, label: 'Observe' },
-  plan: { icon: Lightbulb, label: 'Plan' },
-  execute: { icon: Play, label: 'Execute' },
-  verify: { icon: CheckCircle2, label: 'Verify' },
+const phaseConfig: Record<StepPhase, { icon: typeof Eye; labelKey: string }> = {
+  observe: { icon: Eye, labelKey: 'stepTimeline.phase_observe' },
+  plan: { icon: Lightbulb, labelKey: 'stepTimeline.phase_plan' },
+  execute: { icon: Play, labelKey: 'stepTimeline.phase_execute' },
+  verify: { icon: CheckCircle2, labelKey: 'stepTimeline.phase_verify' },
 };
 
-const statusConfig: Record<StepStatus, { label: string; classes: string }> = {
-  success: { label: 'Pass', classes: 'bg-emerald-500/20 text-emerald-300' },
-  retry: { label: 'Retry', classes: 'bg-amber-500/20 text-amber-300' },
-  failed: { label: 'Fail', classes: 'bg-red-500/20 text-red-300' },
-  skipped: { label: 'Skip', classes: 'bg-zinc-600 text-zinc-400' },
+const statusConfig: Record<StepStatus, { labelKey: string; classes: string }> = {
+  success: { labelKey: 'stepTimeline.status_pass', classes: 'bg-emerald-500/20 text-emerald-300' },
+  retry: { labelKey: 'stepTimeline.status_retry', classes: 'bg-amber-500/20 text-amber-300' },
+  failed: { labelKey: 'stepTimeline.status_fail', classes: 'bg-red-500/20 text-red-300' },
+  skipped: { labelKey: 'stepTimeline.status_skip', classes: 'bg-zinc-600 text-zinc-400' },
 };
 
 const lineColors: Record<StepStatus, string> = {
@@ -29,6 +30,7 @@ const lineColors: Record<StepStatus, string> = {
 };
 
 export default function StepTimeline({ steps, currentStepIndex }: StepTimelineProps) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,8 +45,8 @@ export default function StepTimeline({ steps, currentStepIndex }: StepTimelinePr
         <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-zinc-800/60">
           <Eye className="size-5 text-zinc-500" />
         </div>
-        <p className="text-sm text-zinc-500">Waiting for steps...</p>
-        <p className="mt-1 text-xs text-zinc-600">Steps will appear here as the task runs</p>
+        <p className="text-sm text-zinc-500">{t('stepTimeline.empty')}</p>
+        <p className="mt-1 text-xs text-zinc-600">{t('stepTimeline.emptyHint')}</p>
       </div>
     );
   }
@@ -54,7 +56,7 @@ export default function StepTimeline({ steps, currentStepIndex }: StepTimelinePr
       ref={containerRef}
       className="flex max-h-[calc(100vh-280px)] flex-col gap-0 overflow-y-auto pr-2"
       role="list"
-      aria-label="Step timeline"
+      aria-label={t('common.stepTimeline')}
     >
       {steps.map((step, index) => {
         const isCurrent = index === currentStepIndex;
@@ -98,11 +100,11 @@ export default function StepTimeline({ steps, currentStepIndex }: StepTimelinePr
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-zinc-400">
-                    Step {index + 1}
+                    {t('common.stepPrefix')} {index + 1}
                   </span>
                   <span className="text-xs text-zinc-500">·</span>
                   <span className="text-xs font-medium text-zinc-300">
-                    {phase.label}
+                    {t(phase.labelKey)}
                   </span>
                 </div>
                 <span
@@ -111,7 +113,7 @@ export default function StepTimeline({ steps, currentStepIndex }: StepTimelinePr
                   {step.status === 'retry' && (
                     <AlertCircle className="size-3" />
                   )}
-                  {status.label}
+                  {t(status.labelKey)}
                 </span>
               </div>
 
@@ -140,7 +142,7 @@ export default function StepTimeline({ steps, currentStepIndex }: StepTimelinePr
                     <span className="relative inline-flex size-2 rounded-full bg-indigo-400" />
                   </span>
                   <span className="text-xs font-medium text-indigo-400">
-                    Running...
+                    {t('stepTimeline.running')}
                   </span>
                 </div>
               )}

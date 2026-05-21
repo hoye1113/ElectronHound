@@ -1,1 +1,188 @@
-{}
+{
+  "common": {
+    "cancel": "取消",
+    "delete": "删除",
+    "save": "保存",
+    "add": "添加",
+    "edit": "编辑",
+    "test": "测试",
+    "ok": "确定",
+    "failed": "失败",
+    "loading": "加载中...",
+    "active": "活跃",
+    "default": "默认",
+    "confirm": "确认",
+    "close": "关闭",
+    "back": "返回",
+    "next": "下一步",
+    "previous": "上一步",
+    "pageOf": "第 {{current}} 页，共 {{total}} 页",
+    "steps": "步骤",
+    "patterns": "模式",
+    "providers": "提供商",
+    "cancelTask": "取消任务",
+    "deleteTask": "删除任务",
+    "a11yTree": "无障碍树",
+    "stepTimeline": "步骤时间线",
+    "logOutput": "任务日志输出",
+    "backToTaskList": "返回任务列表",
+    "downloadJson": "下载 JSON 报告",
+    "downloadHtml": "下载 HTML 报告",
+    "searchFeedback": "搜索反馈模式",
+    "stepPrefix": "步骤"
+  },
+  "nav": {
+    "tasks": "任务",
+    "monitor": "监控",
+    "feedback": "反馈",
+    "settings": "设置"
+  },
+  "layout": {
+    "footer": "Electron AI 测试代理"
+  },
+  "notFound": {
+    "title": "页面未找到",
+    "message": "您访问的页面不存在。",
+    "backToTasks": "← 返回任务列表"
+  },
+  "logPanel": {
+    "info": "信息",
+    "warn": "警告",
+    "error": "错误",
+    "debug": "调试",
+    "empty": "暂无日志",
+    "emptyHint": "任务运行时日志将显示在此处"
+  },
+  "a11yTree": {
+    "empty": "暂无无障碍快照",
+    "emptyHint": "步骤捕获无障碍数据后快照将显示在此处"
+  },
+  "patternList": {
+    "empty": "未找到模式",
+    "fixLabel": "修复：",
+    "lastSeen": "最近出现："
+  },
+  "screenshotGallery": {
+    "empty": "暂无截图",
+    "previewTitle": "截图预览",
+    "closeViewer": "关闭截图查看器",
+    "viewScreenshot": "查看第 {{step}} 步截图（{{phase}} 阶段）"
+  },
+  "a11yTree": {
+    "empty": "暂无无障碍快照",
+    "emptyHint": "步骤捕获无障碍数据后快照将显示在此处",
+    "nodeLabel": "{{role}}：{{name}}",
+    "nodeLabelSimple": "{{role}}"
+  },
+  "stepTimeline": {
+    "phase_observe": "观察",
+    "phase_plan": "规划",
+    "phase_execute": "执行",
+    "phase_verify": "验证",
+    "status_pass": "通过",
+    "status_retry": "重试",
+    "status_fail": "失败",
+    "status_skip": "跳过",
+    "empty": "等待步骤...",
+    "emptyHint": "任务运行时步骤将显示在此处",
+    "running": "运行中..."
+  },
+  "taskCard": {
+    "status_queued": "排队中",
+    "status_running": "运行中",
+    "status_completed": "已完成",
+    "status_failed": "已失败",
+    "status_cancelled": "已取消",
+    "status_aborted": "已中止",
+    "cancelConfirm": "取消此任务？",
+    "deleteConfirm": "删除此任务？此操作无法撤销。",
+    "timeAgo_seconds": "{{count}}秒前",
+    "timeAgo_minutes": "{{count}}分钟前",
+    "timeAgo_hours": "{{count}}小时前",
+    "timeAgo_days": "{{count}}天前",
+    "taskLabel": "任务：{{goal}}"
+  },
+  "createTask": {
+    "title": "新建任务",
+    "goalLabel": "目标",
+    "goalPlaceholder": "AI 代理需要完成什么任务？",
+    "targetAppLabel": "目标应用路径",
+    "targetAppPlaceholder": "/path/to/electron/app",
+    "modelLabel": "LLM 模型",
+    "providerLabel": "LLM 提供商",
+    "providerPlaceholder": "选择提供商（默认：活跃）",
+    "submitError": "创建任务失败，请重试。",
+    "submitting": "创建中...",
+    "submit": "创建任务"
+  },
+  "taskList": {
+    "title": "任务",
+    "newTask": "新建任务",
+    "filter_all": "全部",
+    "filter_queued": "排队中",
+    "filter_running": "运行中",
+    "filter_completed": "已完成",
+    "filter_failed": "已失败",
+    "filter_cancelled": "已取消",
+    "loading": "加载任务中...",
+    "empty": "未找到任务",
+    "emptyHint": "创建您的第一个任务 →"
+  },
+  "feedbackLoop": {
+    "title": "反馈循环",
+    "searchPlaceholder": "按错误类型、描述或关键词搜索...",
+    "loading": "加载模式中..."
+  },
+  "taskDetail": {
+    "loading": "加载任务详情...",
+    "notFound": "任务未找到",
+    "backToTasks": "← 返回任务列表",
+    "stepsSection": "步骤",
+    "screenshotsSection": "截图 ({{count}})",
+    "downloadJson": "JSON",
+    "downloadHtml": "HTML 报告"
+  },
+  "liveMonitor": {
+    "noTaskId": "未提供任务 ID",
+    "selectTask": "请选择一个任务进行监控",
+    "loading": "加载任务数据...",
+    "stepTimeline": "步骤时间线",
+    "liveLogs": "实时日志",
+    "accessibilityTree": "无障碍树"
+  },
+  "settings": {
+    "title": "LLM 提供商",
+    "subtitle": "管理您的 LLM 提供商配置",
+    "empty": "尚未配置任何提供商。",
+    "emptyHint": "添加一个提供商以开始使用。",
+    "addNew": "添加新提供商",
+    "editTitle": "编辑提供商",
+    "addTitle": "添加提供商",
+    "quickTemplate": "快速模板",
+    "templatePlaceholder": "选择模板（可选）",
+    "nameLabel": "名称",
+    "nameRequired": "名称为必填项",
+    "baseUrlLabel": "基础 URL",
+    "baseUrlRequired": "基础 URL 为必填项",
+    "modelLabel": "模型",
+    "modelRequired": "模型为必填项",
+    "apiKeyLabel": "API 密钥",
+    "apiKeyRequired": "API 密钥为必填项",
+    "hideApiKey": "隐藏 API 密钥",
+    "showApiKey": "显示 API 密钥",
+    "deleteTitle": "删除提供商",
+    "cannotDeleteActive": "无法删除活跃提供商。请先将另一个提供商设为默认。",
+    "deleteConfirm": "确定要删除 {{name}} 吗？",
+    "deleteConfirmWarning": "此操作无法撤销。",
+    "testing": "测试中...",
+    "setAsDefault": "设为默认",
+    "providerNamePlaceholder": "OpenAI GPT-4o",
+    "baseUrlPlaceholder": "https://api.openai.com/v1",
+    "modelPlaceholder": "gpt-4o",
+    "apiKeyPlaceholder": "sk-...",
+    "editProvider": "编辑 {{name}}",
+    "deleteProvider": "删除 {{name}}",
+    "testProvider": "测试 {{name}} 连接",
+    "setDefaultProvider": "将 {{name}} 设为默认"
+  }
+}

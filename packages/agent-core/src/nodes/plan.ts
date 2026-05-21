@@ -5,6 +5,7 @@ import { guardPlan } from '../guards.js';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadExamples } from '../prompts/few-shot/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const planPrompt = readFileSync(join(__dirname, '..', 'prompts', 'plan.txt'), 'utf-8');
@@ -38,6 +39,13 @@ export function createPlanNode(
           .join('\n')}`
       : '';
 
+    const fewShotExamples = await loadExamples({ goal: state.goal, maxExamples: 3 });
+    const fewShotContext = fewShotExamples.length > 0
+      ? `\n### Few-shot Examples:\n${fewShotExamples
+          .map((ex) => `Goal: ${ex.goal}\nSteps: ${ex.steps.map((s) => JSON.stringify(s)).join(', ')}\nExpected Result: ${ex.expectedResult}`)
+          .join('\n\n')}`
+      : '';
+
     const prompt = [
       `Goal: ${state.goal}`,
       `Current page: ${state.currentObservation?.ariaTree ?? 'No observation yet'}`,
@@ -46,6 +54,7 @@ export function createPlanNode(
       `Stuck counter: ${state.stuckCounter}`,
       `Recent history:\n${historyContext}`,
       patternsContext,
+      fewShotContext,
     ].join('\n\n');
 
     let planResult: PlanResult;

@@ -5,6 +5,7 @@ import { guardVerdict } from '../guards.js';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadExamples } from '../prompts/few-shot/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const verifyPrompt = readFileSync(join(__dirname, '..', 'prompts', 'verify.txt'), 'utf-8');
@@ -22,6 +23,13 @@ export function createVerifyNode(
   options: VerifyNodeOptions,
 ): (state: typeof TestState.State) => Promise<Partial<typeof TestState.State>> {
   return async (state: typeof TestState.State): Promise<Partial<typeof TestState.State>> => {
+    const fewShotExamples = await loadExamples({ goal: state.goal, maxExamples: 3 });
+    const fewShotContext = fewShotExamples.length > 0
+      ? `\n### Few-shot Examples:\n${fewShotExamples
+          .map((ex) => `Goal: ${ex.goal}\nSteps: ${ex.steps.map((s) => JSON.stringify(s)).join(', ')}\nExpected Result: ${ex.expectedResult}`)
+          .join('\n\n')}`
+      : '';
+
     const prompt = [
       `Goal: ${state.goal}`,
       `Expected outcome: ${state.currentPlan?.expectedOutcome ?? 'N/A'}`,
@@ -29,6 +37,7 @@ export function createVerifyNode(
       `Action success: ${state.currentExecResult?.success ?? false}`,
       `Step: ${state.stepCount}/${state.maxSteps}`,
       `Stuck counter: ${state.stuckCounter}`,
+      fewShotContext,
     ].join('\n');
 
     let verdictResult: VerdictResult;

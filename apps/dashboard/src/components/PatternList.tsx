@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { FeedbackPattern } from '@eata/shared-types';
 
 interface PatternListProps {
@@ -6,10 +7,12 @@ interface PatternListProps {
 }
 
 export default function PatternList({ patterns, maxFrequency }: PatternListProps) {
+  const { t } = useTranslation();
+
   if (patterns.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-800 py-12">
-        <p className="text-sm text-zinc-500">No patterns found</p>
+        <p className="text-sm text-zinc-500">{t('patternList.empty')}</p>
       </div>
     );
   }
@@ -48,8 +51,7 @@ export default function PatternList({ patterns, maxFrequency }: PatternListProps
             {/* Remediation hint */}
             <div className="mt-3 rounded-lg border border-zinc-800/60 bg-zinc-900/40 p-3">
               <p className="text-xs text-zinc-400">
-                <span className="font-medium text-zinc-300">Fix: </span>
-                {pattern.remediationHint}
+                <span className="font-medium text-zinc-300">{t('patternList.fixLabel')}</span> {pattern.remediationHint}
               </p>
             </div>
 
@@ -69,7 +71,7 @@ export default function PatternList({ patterns, maxFrequency }: PatternListProps
 
             {/* Last seen */}
             <p className="mt-2 text-[11px] text-zinc-600">
-              Last seen: {formatDate(pattern.lastSeen)}
+              {t('patternList.lastSeen')} {formatDate(pattern.lastSeen)}
             </p>
           </div>
         );

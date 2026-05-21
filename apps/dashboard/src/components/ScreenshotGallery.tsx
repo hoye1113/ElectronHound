@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 
@@ -13,12 +14,13 @@ interface ScreenshotGalleryProps {
 }
 
 export default function ScreenshotGallery({ screenshots }: ScreenshotGalleryProps) {
+  const { t } = useTranslation();
   const [selectedScreenshot, setSelectedScreenshot] = useState<ScreenshotItem | null>(null);
 
   if (screenshots.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-800 py-12">
-        <p className="text-sm text-zinc-500">No screenshots available</p>
+        <p className="text-sm text-zinc-500">{t('screenshotGallery.empty')}</p>
       </div>
     );
   }
@@ -32,7 +34,7 @@ export default function ScreenshotGallery({ screenshots }: ScreenshotGalleryProp
             key={index}
             onClick={() => setSelectedScreenshot(screenshot)}
             className="group relative aspect-video overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-colors hover:border-zinc-600"
-            aria-label={`View screenshot from step ${screenshot.stepIndex + 1} (${screenshot.phase} phase)`}
+            aria-label={t('screenshotGallery.viewScreenshot', { step: screenshot.stepIndex + 1, phase: screenshot.phase })}
           >
             <img
               src={screenshot.url}
@@ -42,7 +44,7 @@ export default function ScreenshotGallery({ screenshots }: ScreenshotGalleryProp
             />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-zinc-950/80 to-transparent p-2">
               <span className="text-xs font-medium text-zinc-300">
-                Step {screenshot.stepIndex + 1}
+                {t('common.stepPrefix')} {screenshot.stepIndex + 1}
               </span>
               <span className="ml-1.5 rounded bg-zinc-800/80 px-1.5 py-0.5 text-[10px] text-zinc-400">
                 {screenshot.phase}
@@ -60,9 +62,9 @@ export default function ScreenshotGallery({ screenshots }: ScreenshotGalleryProp
             className="fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] max-w-[90vw] flex-col items-center -translate-x-1/2 -translate-y-1/2 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
             aria-describedby={undefined}
           >
-            <Dialog.Title className="sr-only">Screenshot Preview</Dialog.Title>
+            <Dialog.Title className="sr-only">{t('screenshotGallery.previewTitle')}</Dialog.Title>
 
-            <Dialog.Close className="absolute -right-3 -top-3 z-10 flex size-8 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 shadow-lg transition-colors hover:bg-zinc-700 hover:text-zinc-100" aria-label="Close screenshot viewer">
+            <Dialog.Close className="absolute -right-3 -top-3 z-10 flex size-8 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 shadow-lg transition-colors hover:bg-zinc-700 hover:text-zinc-100" aria-label={t('screenshotGallery.closeViewer')}>
               <X className="size-4" />
             </Dialog.Close>
 
@@ -76,7 +78,7 @@ export default function ScreenshotGallery({ screenshots }: ScreenshotGalleryProp
                   />
                   <div className="flex items-center gap-3 px-4 py-3">
                     <span className="text-sm font-medium text-zinc-300">
-                      Step {selectedScreenshot.stepIndex + 1}
+                      {t('common.stepPrefix')} {selectedScreenshot.stepIndex + 1}
                     </span>
                     <span className="rounded bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
                       {selectedScreenshot.phase}

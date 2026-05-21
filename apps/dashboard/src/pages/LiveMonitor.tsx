@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Activity, Loader2, AlertTriangle, Terminal, TreePine, XCircle } from 'lucide-react';
 import type { TaskStatus, StepRecord } from '@eata/shared-types';
 import { useTaskStore } from '../stores/taskStore';
@@ -14,23 +15,24 @@ interface AccessibilityTreeNode {
   children?: AccessibilityTreeNode[];
 }
 
-const statusConfig: Record<TaskStatus, { label: string; classes: string }> = {
-  queued: { label: 'Queued', classes: 'bg-zinc-700 text-zinc-300' },
-  running: { label: 'Running', classes: 'bg-blue-500/20 text-blue-300' },
-  completed: { label: 'Completed', classes: 'bg-emerald-500/20 text-emerald-300' },
-  failed: { label: 'Failed', classes: 'bg-red-500/20 text-red-300' },
-  cancelled: { label: 'Cancelled', classes: 'bg-amber-500/20 text-amber-300' },
-  aborted: { label: 'Aborted', classes: 'bg-zinc-600 text-zinc-400' },
+const statusConfig: Record<TaskStatus, { labelKey: string; classes: string }> = {
+  queued: { labelKey: 'taskCard.status_queued', classes: 'bg-zinc-700 text-zinc-300' },
+  running: { labelKey: 'taskCard.status_running', classes: 'bg-blue-500/20 text-blue-300' },
+  completed: { labelKey: 'taskCard.status_completed', classes: 'bg-emerald-500/20 text-emerald-300' },
+  failed: { labelKey: 'taskCard.status_failed', classes: 'bg-red-500/20 text-red-300' },
+  cancelled: { labelKey: 'taskCard.status_cancelled', classes: 'bg-amber-500/20 text-amber-300' },
+  aborted: { labelKey: 'taskCard.status_aborted', classes: 'bg-zinc-600 text-zinc-400' },
 };
 
-const phaseLabels: Record<string, string> = {
-  observe: 'Observe',
-  plan: 'Plan',
-  execute: 'Execute',
-  verify: 'Verify',
+const phaseLabelKeys: Record<string, string> = {
+  observe: 'stepTimeline.phase_observe',
+  plan: 'stepTimeline.phase_plan',
+  execute: 'stepTimeline.phase_execute',
+  verify: 'stepTimeline.phase_verify',
 };
 
 export default function LiveMonitor() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const currentTask = useTaskStore((s) => s.currentTask);
   const currentTaskSteps = useTaskStore((s) => s.currentTaskSteps) as StepRecord[];
@@ -92,7 +94,7 @@ export default function LiveMonitor() {
   }, [currentTaskSteps]);
 
   const handleCancel = async () => {
-    if (id && window.confirm('Cancel this task?')) {
+    if (id && window.confirm(t('taskCard.cancelConfirm'))) {
       await cancelTask(id);
     }
   };
@@ -101,8 +103,8 @@ export default function LiveMonitor() {
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-6">
         <AlertTriangle className="size-8 text-amber-400" />
-        <h1 className="text-xl font-bold text-zinc-100">No task ID provided</h1>
-        <p className="text-sm text-zinc-500">Please select a task to monitor</p>
+        <h1 className="text-xl font-bold text-zinc-100">{t('liveMonitor.noTaskId')}</h1>
+        <p className="text-sm text-zinc-500">{t('liveMonitor.selectTask')}</p>
       </div>
     );
   }
@@ -144,12 +146,12 @@ export default function LiveMonitor() {
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${config.classes}`}
             >
               {status === 'running' && <Loader2 className="size-3 animate-spin" />}
-              {config.label}
+              {t(config.labelKey)}
             </span>
           )}
           {currentPhase && (
             <span className="rounded-md bg-indigo-500/15 px-2.5 py-1 text-xs font-semibold text-indigo-300">
-              {phaseLabels[currentPhase]}
+              {t(phaseLabelKeys[currentPhase])}
             </span>
           )}
           {(status === 'running' || status === 'queued') && (
@@ -158,7 +160,7 @@ export default function LiveMonitor() {
               className="inline-flex items-center gap-1.5 rounded-lg bg-red-600/80 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-600"
             >
               <XCircle className="size-3.5" />
-              Cancel
+              {t('common.cancel')}
             </button>
           )}
         </div>
@@ -168,7 +170,7 @@ export default function LiveMonitor() {
         <div className="flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-3">
             <div className="size-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
-            <p className="text-sm text-zinc-500">Loading task data...</p>
+            <p className="text-sm text-zinc-500">{t('liveMonitor.loading')}</p>
           </div>
         </div>
       ) : (
@@ -177,7 +179,7 @@ export default function LiveMonitor() {
           {/* Left column (2/3): Step timeline */}
           <div className="lg:col-span-2">
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-              <h2 className="mb-3 text-sm font-semibold text-zinc-300">Step Timeline</h2>
+              <h2 className="mb-3 text-sm font-semibold text-zinc-300">{t('liveMonitor.stepTimeline')}</h2>
               <StepTimeline steps={steps} currentStepIndex={currentStepIndex} />
             </div>
           </div>
@@ -188,7 +190,7 @@ export default function LiveMonitor() {
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
               <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-300">
                 <Terminal className="size-4" />
-                Live Logs
+                {t('liveMonitor.liveLogs')}
               </h2>
               <LogPanel logs={logs} />
             </div>
@@ -197,7 +199,7 @@ export default function LiveMonitor() {
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
               <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-300">
                 <TreePine className="size-4" />
-                Accessibility Tree
+                {t('liveMonitor.accessibilityTree')}
               </h2>
               <div className="max-h-64 overflow-auto">
                 <AccessibilityTreeView snapshot={a11ySnapshot} />

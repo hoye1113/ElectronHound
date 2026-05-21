@@ -5,6 +5,7 @@ import { registerRoutes } from './routes/index.js';
 import { streamRoutes } from './routes/stream.js';
 import { sseHub } from './streams/sseHub.js';
 import { configSchema, type ServerConfig } from './types/config.js';
+import { getWorkerPool, closeWorkerPool, attachPoolEventListeners } from './tasks/runner.js';
 import type Database from 'better-sqlite3';
 
 export interface ServerBundle {
@@ -41,6 +42,16 @@ export async function buildServer(config?: Partial<ServerConfig>): Promise<Serve
 
   // Decorate sseHub
   server.decorate('sseHub', sseHub);
+
+  // Initialize worker pool and decorate server
+  const workerPool = getWorkerPool();
+  server.decorate('workerPool', workerPool);
+  attachPoolEventListeners(db);
+
+  // Shutdown pool on server close
+  server.addHook('onClose', async () => {
+    await closeWorkerPool();
+  });
 
   // Graceful shutdown
   process.on('SIGINT', async () => {

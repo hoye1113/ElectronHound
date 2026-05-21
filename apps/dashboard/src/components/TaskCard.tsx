@@ -1,15 +1,16 @@
 import type { Task, TaskStatus } from '@eata/shared-types';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Clock, Trash2, XCircle, Loader2 } from 'lucide-react';
 import { useTaskStore } from '../stores/taskStore';
 
-const statusConfig: Record<TaskStatus, { label: string; classes: string }> = {
-  queued: { label: 'Queued', classes: 'bg-zinc-700 text-zinc-300' },
-  running: { label: 'Running', classes: 'bg-blue-500/20 text-blue-300' },
-  completed: { label: 'Completed', classes: 'bg-emerald-500/20 text-emerald-300' },
-  failed: { label: 'Failed', classes: 'bg-red-500/20 text-red-300' },
-  cancelled: { label: 'Cancelled', classes: 'bg-amber-500/20 text-amber-300' },
-  aborted: { label: 'Aborted', classes: 'bg-zinc-600 text-zinc-400' },
+const statusConfig: Record<TaskStatus, { labelKey: string; classes: string }> = {
+  queued: { labelKey: 'taskCard.status_queued', classes: 'bg-zinc-700 text-zinc-300' },
+  running: { labelKey: 'taskCard.status_running', classes: 'bg-blue-500/20 text-blue-300' },
+  completed: { labelKey: 'taskCard.status_completed', classes: 'bg-emerald-500/20 text-emerald-300' },
+  failed: { labelKey: 'taskCard.status_failed', classes: 'bg-red-500/20 text-red-300' },
+  cancelled: { labelKey: 'taskCard.status_cancelled', classes: 'bg-amber-500/20 text-amber-300' },
+  aborted: { labelKey: 'taskCard.status_aborted', classes: 'bg-zinc-600 text-zinc-400' },
 };
 
 interface TaskCardProps {
@@ -17,6 +18,7 @@ interface TaskCardProps {
 }
 
 export default function TaskCard({ task }: TaskCardProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const cancelTask = useTaskStore((s) => s.cancelTask);
   const deleteTask = useTaskStore((s) => s.deleteTask);
@@ -31,14 +33,14 @@ export default function TaskCard({ task }: TaskCardProps) {
 
   const handleCancel = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm('Cancel this task?')) {
+    if (window.confirm(t('taskCard.cancelConfirm'))) {
       await cancelTask(task.id);
     }
   };
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm('Delete this task? This cannot be undone.')) {
+    if (window.confirm(t('taskCard.deleteConfirm'))) {
       await deleteTask(task.id);
     }
   };
@@ -47,13 +49,13 @@ export default function TaskCard({ task }: TaskCardProps) {
     navigate(`/task/${task.id}`);
   };
 
-  const timeAgo = getTimeAgo(task.createdAt);
+  const timeAgo = getTimeAgo(task.createdAt, t);
 
   return (
     <div
       role="button"
       tabIndex={0}
-      aria-label={`Task: ${task.goal}`}
+      aria-label={t('taskCard.taskLabel', { goal: task.goal })}
       onClick={handleClick}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -67,14 +69,14 @@ export default function TaskCard({ task }: TaskCardProps) {
       <div className="flex items-center justify-between">
         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${config.classes}`}>
           {task.status === 'running' && <Loader2 className="mr-1 size-3 animate-spin" />}
-          {config.label}
+          {t(config.labelKey)}
         </span>
 
         <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
           {isCancelable && (
             <button
               onClick={handleCancel}
-              aria-label="Cancel task"
+              aria-label={t('common.cancelTask')}
               className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-amber-300"
             >
               <XCircle className="size-4" />
@@ -83,7 +85,7 @@ export default function TaskCard({ task }: TaskCardProps) {
           {isDeletable && (
             <button
               onClick={handleDelete}
-              aria-label="Delete task"
+              aria-label={t('common.deleteTask')}
               className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-red-300"
             >
               <Trash2 className="size-4" />
@@ -108,20 +110,20 @@ export default function TaskCard({ task }: TaskCardProps) {
   );
 }
 
-function getTimeAgo(dateStr: string): string {
+function getTimeAgo(dateStr: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
   const now = Date.now();
   const then = new Date(dateStr).getTime();
   const diff = Math.max(0, now - then);
 
   const seconds = Math.floor(diff / 1000);
-  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 60) return t('taskCard.timeAgo_seconds', { count: seconds });
 
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60) return t('taskCard.timeAgo_minutes', { count: minutes });
 
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return t('taskCard.timeAgo_hours', { count: hours });
 
   const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return t('taskCard.timeAgo_days', { count: days });
 }

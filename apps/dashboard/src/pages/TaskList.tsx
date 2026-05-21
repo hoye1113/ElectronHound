@@ -1,22 +1,24 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Filter } from 'lucide-react';
 import type { TaskStatus } from '@eata/shared-types';
 import { useTaskStore } from '../stores/taskStore';
 import TaskCard from '../components/TaskCard';
 import CreateTaskForm from '../components/CreateTaskForm';
 
-const STATUS_FILTERS: { label: string; value: TaskStatus | 'all' }[] = [
-  { label: 'All', value: 'all' },
-  { label: 'Queued', value: 'queued' },
-  { label: 'Running', value: 'running' },
-  { label: 'Completed', value: 'completed' },
-  { label: 'Failed', value: 'failed' },
-  { label: 'Cancelled', value: 'cancelled' },
+const STATUS_FILTERS: { labelKey: string; value: TaskStatus | 'all' }[] = [
+  { labelKey: 'taskList.filter_all', value: 'all' },
+  { labelKey: 'taskList.filter_queued', value: 'queued' },
+  { labelKey: 'taskList.filter_running', value: 'running' },
+  { labelKey: 'taskList.filter_completed', value: 'completed' },
+  { labelKey: 'taskList.filter_failed', value: 'failed' },
+  { labelKey: 'taskList.filter_cancelled', value: 'cancelled' },
 ];
 
 const PAGE_SIZE = 10;
 
 export default function TaskList() {
+  const { t } = useTranslation();
   const tasks = useTaskStore((s) => s.tasks);
   const isLoading = useTaskStore((s) => s.isLoading);
   const fetchTasks = useTaskStore((s) => s.fetchTasks);
@@ -43,7 +45,7 @@ export default function TaskList() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Tasks</h1>
+          <h1 className="text-2xl font-bold text-zinc-100">{t('taskList.title')}</h1>
           <p className="mt-1 text-sm text-zinc-500">
             {filtered.length} task{filtered.length !== 1 ? 's' : ''}
             {statusFilter !== 'all' && ` · ${statusFilter}`}
@@ -54,14 +56,14 @@ export default function TaskList() {
           className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
         >
           <Plus className="size-4" />
-          New Task
+          {t('taskList.newTask')}
         </button>
       </div>
 
       {/* Status filter bar */}
       <div className="flex items-center gap-2 overflow-x-auto">
         <Filter className="size-4 shrink-0 text-zinc-500" />
-        {STATUS_FILTERS.map(({ label, value }) => (
+        {STATUS_FILTERS.map(({ labelKey, value }) => (
           <button
             key={value}
             onClick={() => setStatusFilter(value)}
@@ -71,7 +73,7 @@ export default function TaskList() {
                 : 'bg-zinc-800/60 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
             }`}
           >
-            {label}
+            {t(labelKey)}
           </button>
         ))}
       </div>
@@ -81,17 +83,17 @@ export default function TaskList() {
         <div className="flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-3">
             <div className="size-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
-            <p className="text-sm text-zinc-500">Loading tasks...</p>
+            <p className="text-sm text-zinc-500">{t('taskList.loading')}</p>
           </div>
         </div>
       ) : paginated.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-800 py-20">
-          <p className="text-sm text-zinc-500">No tasks found</p>
+          <p className="text-sm text-zinc-500">{t('taskList.empty')}</p>
           <button
             onClick={() => setDialogOpen(true)}
             className="mt-3 text-sm font-medium text-indigo-400 hover:text-indigo-300"
           >
-            Create your first task →
+            {t('taskList.emptyHint')}
           </button>
         </div>
       ) : (
@@ -106,7 +108,7 @@ export default function TaskList() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-xs text-zinc-500">
-            Page {page} of {totalPages}
+            {t('common.pageOf', { current: page, total: totalPages })}
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -114,14 +116,14 @@ export default function TaskList() {
               disabled={page === 1}
               className="rounded-md border border-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Previous
+              {t('common.previous')}
             </button>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
               className="rounded-md border border-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Next
+              {t('common.next')}
             </button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronRight, ChevronDown, TreePine } from 'lucide-react';
 
 interface AccessibilityTreeNode {
@@ -12,12 +13,14 @@ interface AccessibilityTreeViewProps {
 }
 
 export default function AccessibilityTreeView({ snapshot }: AccessibilityTreeViewProps) {
+  const { t } = useTranslation();
+
   if (!snapshot) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <TreePine className="mb-2 size-6 text-zinc-600" />
-        <p className="text-sm text-zinc-500">No accessibility snapshot</p>
-        <p className="mt-1 text-xs text-zinc-600">Snapshot will appear when steps capture a11y data</p>
+        <p className="text-sm text-zinc-500">{t('a11yTree.empty')}</p>
+        <p className="mt-1 text-xs text-zinc-600">{t('a11yTree.emptyHint')}</p>
       </div>
     );
   }
@@ -33,7 +36,7 @@ export default function AccessibilityTreeView({ snapshot }: AccessibilityTreeVie
   }
 
   return (
-    <div className="overflow-auto" role="tree" aria-label="Accessibility tree">
+    <div className="overflow-auto" role="tree" aria-label={t('common.a11yTree')}>
       <TreeNode node={snapshot} depth={0} />
     </div>
   );
@@ -57,7 +60,7 @@ function TreeNode({ node, depth }: TreeNodeProps) {
           hasChildren ? 'cursor-pointer' : 'cursor-default'
         }`}
         style={{ paddingLeft: `${depth * 16 + 4}px` }}
-        aria-label={`${node.role}${node.name ? `: ${node.name}` : ''}`}
+        aria-label={node.name ? t('a11yTree.nodeLabel', { role: node.role, name: node.name }) : t('a11yTree.nodeLabelSimple', { role: node.role })}
       >
         {hasChildren ? (
           expanded ? (

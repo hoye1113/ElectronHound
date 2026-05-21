@@ -1,1 +1,184 @@
-{}
+{
+  "common": {
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "save": "Save",
+    "add": "Add",
+    "edit": "Edit",
+    "test": "Test",
+    "ok": "OK",
+    "failed": "Failed",
+    "loading": "Loading...",
+    "active": "Active",
+    "default": "Default",
+    "confirm": "Confirm",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "pageOf": "Page {{current}} of {{total}}",
+    "steps": "steps",
+    "patterns": "patterns",
+    "providers": "providers",
+    "cancelTask": "Cancel task",
+    "deleteTask": "Delete task",
+    "a11yTree": "Accessibility tree",
+    "stepTimeline": "Step timeline",
+    "logOutput": "Task log output",
+    "backToTaskList": "Back to task list",
+    "downloadJson": "Download JSON report",
+    "downloadHtml": "Download HTML report",
+    "searchFeedback": "Search feedback patterns",
+    "stepPrefix": "Step"
+  },
+  "nav": {
+    "tasks": "Tasks",
+    "monitor": "Monitor",
+    "feedback": "Feedback",
+    "settings": "Settings"
+  },
+  "layout": {
+    "footer": "Electron AI Testing Agent"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "message": "The page you're looking for doesn't exist.",
+    "backToTasks": "← Back to tasks"
+  },
+  "logPanel": {
+    "info": "INFO",
+    "warn": "WARN",
+    "error": "ERROR",
+    "debug": "DBG",
+    "empty": "No log entries",
+    "emptyHint": "Logs will appear here as the task runs"
+  },
+  "a11yTree": {
+    "empty": "No accessibility snapshot",
+    "emptyHint": "Snapshot will appear when steps capture a11y data",
+    "nodeLabel": "{{role}}: {{name}}",
+    "nodeLabelSimple": "{{role}}"
+  },
+  "patternList": {
+    "empty": "No patterns found",
+    "fixLabel": "Fix:",
+    "lastSeen": "Last seen:"
+  },
+  "screenshotGallery": {
+    "empty": "No screenshots available",
+    "previewTitle": "Screenshot Preview",
+    "closeViewer": "Close screenshot viewer",
+    "viewScreenshot": "View screenshot from step {{step}} ({{phase}} phase)"
+  },
+  "stepTimeline": {
+    "phase_observe": "Observe",
+    "phase_plan": "Plan",
+    "phase_execute": "Execute",
+    "phase_verify": "Verify",
+    "status_pass": "Pass",
+    "status_retry": "Retry",
+    "status_fail": "Fail",
+    "status_skip": "Skip",
+    "empty": "Waiting for steps...",
+    "emptyHint": "Steps will appear here as the task runs",
+    "running": "Running..."
+  },
+  "taskCard": {
+    "status_queued": "Queued",
+    "status_running": "Running",
+    "status_completed": "Completed",
+    "status_failed": "Failed",
+    "status_cancelled": "Cancelled",
+    "status_aborted": "Aborted",
+    "cancelConfirm": "Cancel this task?",
+    "deleteConfirm": "Delete this task? This cannot be undone.",
+    "timeAgo_seconds": "{{count}}s ago",
+    "timeAgo_minutes": "{{count}}m ago",
+    "timeAgo_hours": "{{count}}h ago",
+    "timeAgo_days": "{{count}}d ago",
+    "taskLabel": "Task: {{goal}}"
+  },
+  "createTask": {
+    "title": "New Task",
+    "goalLabel": "Goal",
+    "goalPlaceholder": "What should the AI agent accomplish?",
+    "targetAppLabel": "Target App Path",
+    "targetAppPlaceholder": "/path/to/electron/app",
+    "modelLabel": "LLM Model",
+    "providerLabel": "LLM Provider",
+    "providerPlaceholder": "Select provider (default: active)",
+    "submitError": "Failed to create task. Please try again.",
+    "submitting": "Creating...",
+    "submit": "Create Task"
+  },
+  "taskList": {
+    "title": "Tasks",
+    "newTask": "New Task",
+    "filter_all": "All",
+    "filter_queued": "Queued",
+    "filter_running": "Running",
+    "filter_completed": "Completed",
+    "filter_failed": "Failed",
+    "filter_cancelled": "Cancelled",
+    "loading": "Loading tasks...",
+    "empty": "No tasks found",
+    "emptyHint": "Create your first task →"
+  },
+  "feedbackLoop": {
+    "title": "Feedback Loop",
+    "searchPlaceholder": "Search by error type, description, or keyword...",
+    "loading": "Loading patterns..."
+  },
+  "taskDetail": {
+    "loading": "Loading task details...",
+    "notFound": "Task not found",
+    "backToTasks": "← Back to tasks",
+    "stepsSection": "Steps",
+    "screenshotsSection": "Screenshots ({{count}})",
+    "downloadJson": "JSON",
+    "downloadHtml": "HTML Report"
+  },
+  "liveMonitor": {
+    "noTaskId": "No task ID provided",
+    "selectTask": "Please select a task to monitor",
+    "loading": "Loading task data...",
+    "stepTimeline": "Step Timeline",
+    "liveLogs": "Live Logs",
+    "accessibilityTree": "Accessibility Tree"
+  },
+  "settings": {
+    "title": "LLM Providers",
+    "subtitle": "Manage your LLM provider configurations",
+    "empty": "No providers configured yet.",
+    "emptyHint": "Add a provider to get started.",
+    "addNew": "Add New Provider",
+    "editTitle": "Edit Provider",
+    "addTitle": "Add Provider",
+    "quickTemplate": "Quick Template",
+    "templatePlaceholder": "Choose a template (optional)",
+    "nameLabel": "Name",
+    "nameRequired": "Name is required",
+    "baseUrlLabel": "Base URL",
+    "baseUrlRequired": "Base URL is required",
+    "modelLabel": "Model",
+    "modelRequired": "Model is required",
+    "apiKeyLabel": "API Key",
+    "apiKeyRequired": "API Key is required",
+    "hideApiKey": "Hide API key",
+    "showApiKey": "Show API key",
+    "deleteTitle": "Delete Provider",
+    "cannotDeleteActive": "Cannot delete the active provider. Please set another provider as default first.",
+    "deleteConfirm": "Are you sure you want to delete {{name}}?",
+    "deleteConfirmWarning": "This action cannot be undone.",
+    "testing": "Testing...",
+    "setAsDefault": "Set Default",
+    "providerNamePlaceholder": "OpenAI GPT-4o",
+    "baseUrlPlaceholder": "https://api.openai.com/v1",
+    "modelPlaceholder": "gpt-4o",
+    "apiKeyPlaceholder": "sk-...",
+    "editProvider": "Edit {{name}}",
+    "deleteProvider": "Delete {{name}}",
+    "testProvider": "Test {{name}} connection",
+    "setDefaultProvider": "Set {{name}} as default"
+  }
+}

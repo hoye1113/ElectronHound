@@ -1,14 +1,16 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, ListTodo, Activity, MessageSquare, Settings } from 'lucide-react';
 
 const navItems = [
-  { to: '/', label: 'Tasks', icon: ListTodo },
-  { to: '/monitor', label: 'Monitor', icon: Activity },
-  { to: '/feedback', label: 'Feedback', icon: MessageSquare },
-  { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/', labelKey: 'nav.tasks', icon: ListTodo },
+  { to: '/monitor', labelKey: 'nav.monitor', icon: Activity },
+  { to: '/feedback', labelKey: 'nav.feedback', icon: MessageSquare },
+  { to: '/settings', labelKey: 'nav.settings', icon: Settings },
 ];
 
 export default function Layout() {
+  const { t } = useTranslation();
   return (
     <div className="flex h-screen bg-zinc-950 text-zinc-100">
       {/* Sidebar */}
@@ -21,7 +23,7 @@ export default function Layout() {
 
         {/* Nav */}
         <nav className="flex flex-1 flex-col gap-1 px-3 py-2">
-          {navItems.map(({ to, label, icon: Icon }) => (
+          {navItems.map(({ to, labelKey, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
@@ -35,14 +37,14 @@ export default function Layout() {
               }
             >
               <Icon className="size-4" />
-              {label}
+              {t(labelKey)}
             </NavLink>
           ))}
         </nav>
 
         {/* Footer */}
         <div className="border-t border-zinc-800 px-5 py-4 text-xs text-zinc-500">
-          Electron AI Testing Agent
+          {t('layout.footer')}
         </div>
       </aside>
 

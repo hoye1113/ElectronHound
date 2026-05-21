@@ -54,6 +54,13 @@ export class WorkerManager {
     this.eventListeners.push(listener);
   }
 
+  removeListener(listener: (event: WorkerEvent) => void): void {
+    const idx = this.eventListeners.indexOf(listener);
+    if (idx !== -1) {
+      this.eventListeners.splice(idx, 1);
+    }
+  }
+
   spawnWorker(options: WorkerOptions): WorkerHandle {
     if (this.workers.has(options.taskId)) {
       throw new Error(`Worker already exists for task ${options.taskId}`);
@@ -114,21 +121,18 @@ export class WorkerManager {
     const handle = this.workers.get(taskId);
     if (!handle) return;
 
+    // Mark as cancelled BEFORE sending signal so handleExit() emits the right event
+    handle.status = 'cancelled';
+
     // Send JSON-RPC cancel control message
     this.sendControl(taskId, 'cancel', { taskId });
 
     // Force kill after timeout if still running
-    const killTimer = setTimeout(() => {
+    setTimeout(() => {
       if (handle.process.exitCode === null && handle.process.signalCode === null) {
         handle.process.kill('SIGTERM');
       }
     }, CANCEL_TIMEOUT);
-
-    handle.process.on('exit', () => {
-      clearTimeout(killTimer);
-      handle.status = 'cancelled';
-      this.emit({ taskId, type: 'cancelled' });
-    });
   }
 
   sendControl(
@@ -297,7 +301,10 @@ export class WorkerManager {
     const handle = this.workers.get(taskId);
     if (!handle) return;
 
-    if (handle.status === 'running' || handle.status === 'starting') {
+    if (handle.status === 'cancelled') {
+      // Cancel was requested — emit cancellation event
+      this.emit({ taskId, type: 'cancelled' });
+    } else if (handle.status === 'running' || handle.status === 'starting') {
       // Unexpected exit while still running
       handle.status = 'failed';
       this.emit({

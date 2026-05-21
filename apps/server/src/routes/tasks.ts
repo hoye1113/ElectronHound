@@ -7,6 +7,7 @@ import {
   type StepRecord,
 } from '@eata/shared-types';
 import { sseHub } from '../streams/sseHub.js';
+import { getWorkerPool } from '../tasks/runner.js';
 
 function safeJsonParse(value: unknown): unknown {
   if (!value) return undefined;
@@ -138,6 +139,19 @@ export async function taskRoutes(server: FastifyInstance) {
       .prepare('SELECT * FROM tasks WHERE id = ?')
       .get(id) as Record<string, unknown>;
 
+    // Submit to the worker pool (max 3 concurrent executions)
+    const pool = getWorkerPool();
+    pool.submit({
+      id,
+      goal,
+      targetAppPath,
+      llmModel,
+      maxSteps,
+      contextInjection,
+      providerId,
+      priority: 'medium',
+    });
+
     reply.code(201);
     return dbRowToTask(createdRow);
   });
@@ -165,6 +179,10 @@ export async function taskRoutes(server: FastifyInstance) {
     server.db
       .prepare("UPDATE tasks SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?")
       .run(id);
+
+    // Cancel in the worker pool (no-op if task wasn't in the pool)
+    const pool = getWorkerPool();
+    pool.cancel(id);
 
     // Broadcast cancellation to SSE clients
     sseHub.broadcast(id, {
@@ -198,6 +216,9 @@ export async function taskRoutes(server: FastifyInstance) {
       server.db
         .prepare("UPDATE tasks SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?")
         .run(id);
+      // Cancel in the worker pool
+      const pool = getWorkerPool();
+      pool.cancel(id);
     } else {
       // queued or other terminal states — delete (atomic transaction)
       server.db.transaction(() => {
