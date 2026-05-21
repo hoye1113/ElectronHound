@@ -22,6 +22,39 @@ export interface ProvidersConfig {
   activeId: string;
 }
 
+export interface FewShotStep {
+  action: string;
+  observation: string;
+}
+
+export interface FewShotExample {
+  id: string;
+  goal: string;
+  steps: FewShotStep[];
+  expectedResult: string;
+  metadata: {
+    tags?: string[];
+    domain?: string;
+    difficulty?: 'easy' | 'medium' | 'hard';
+  };
+}
+
+const FEW_SHOT_STORAGE_KEY = 'eata-few-shot-examples';
+
+function loadFewShotExamples(): FewShotExample[] {
+  try {
+    const raw = localStorage.getItem(FEW_SHOT_STORAGE_KEY);
+    if (raw) return JSON.parse(raw) as FewShotExample[];
+  } catch {
+    // ignore parse errors
+  }
+  return [];
+}
+
+function saveFewShotExamples(examples: FewShotExample[]): void {
+  localStorage.setItem(FEW_SHOT_STORAGE_KEY, JSON.stringify(examples));
+}
+
 export const api = {
   tasks: {
     list(params?: { status?: string; page?: number; limit?: number }): Promise<{
@@ -80,6 +113,35 @@ export const api = {
       return fetch(`${API_BASE}/api/providers/${id}/test`, {
         method: 'POST',
       }).then((r) => r.json());
+    },
+  },
+  fewShot: {
+    list(): FewShotExample[] {
+      return loadFewShotExamples();
+    },
+    add(example: Omit<FewShotExample, 'id'>): FewShotExample {
+      const id = `fs-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      const newItem: FewShotExample = { ...example, id };
+      const examples = loadFewShotExamples();
+      examples.push(newItem);
+      saveFewShotExamples(examples);
+      return newItem;
+    },
+    update(id: string, patch: Partial<Omit<FewShotExample, 'id'>>): FewShotExample | null {
+      const examples = loadFewShotExamples();
+      const index = examples.findIndex((e) => e.id === id);
+      if (index === -1) return null;
+      const updated = { ...examples[index], ...patch, id };
+      examples[index] = updated;
+      saveFewShotExamples(examples);
+      return updated;
+    },
+    remove(id: string): boolean {
+      const examples = loadFewShotExamples();
+      const next = examples.filter((e) => e.id !== id);
+      if (next.length === examples.length) return false;
+      saveFewShotExamples(next);
+      return true;
     },
   },
 };

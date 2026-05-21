@@ -5,6 +5,7 @@ import {
   TaskStatusEnum,
   type Task,
   type StepRecord,
+  type TaskPriority,
 } from '@eata/shared-types';
 import { sseHub } from '../streams/sseHub.js';
 import { getWorkerPool } from '../tasks/runner.js';
@@ -26,6 +27,7 @@ function dbRowToTask(row: Record<string, unknown>): Task {
     targetAppPath: row.target_app_path as string,
     llmModel: row.llm_model as Task['llmModel'],
     status,
+    priority: (row.priority as TaskPriority) ?? 'medium',
     maxSteps: row.max_steps as number,
     providerId: (row.provider_id as string) ?? undefined,
     contextInjection: (row.context_injection as string) ?? undefined,
@@ -124,22 +126,22 @@ export async function taskRoutes(server: FastifyInstance) {
       };
     }
 
-    const { goal, targetAppPath, llmModel, maxSteps, contextInjection, providerId } = parseResult.data;
+    const { goal, targetAppPath, llmModel, maxSteps, contextInjection, providerId, priority } = parseResult.data;
     const id = randomUUID();
     const now = new Date().toISOString();
 
     server.db
       .prepare(
-        `INSERT INTO tasks (id, goal, target_app_path, llm_model, status, max_steps, context_injection, step_count, created_at, updated_at, provider_id)
-         VALUES (?, ?, ?, ?, 'queued', ?, ?, 0, ?, ?, ?)`
+        `INSERT INTO tasks (id, goal, target_app_path, llm_model, status, priority, max_steps, context_injection, step_count, created_at, updated_at, provider_id)
+         VALUES (?, ?, ?, ?, 'queued', ?, ?, ?, 0, ?, ?, ?)`
       )
-      .run(id, goal, targetAppPath, llmModel, maxSteps ?? 50, contextInjection ?? null, now, now, providerId ?? null);
+      .run(id, goal, targetAppPath, llmModel, priority ?? 'medium', maxSteps ?? 50, contextInjection ?? null, now, now, providerId ?? null);
 
     const createdRow = server.db
       .prepare('SELECT * FROM tasks WHERE id = ?')
       .get(id) as Record<string, unknown>;
 
-    // Submit to the worker pool (max 3 concurrent executions)
+    // Submit to the worker pool with priority (max 3 concurrent executions)
     const pool = getWorkerPool();
     pool.submit({
       id,
@@ -149,7 +151,7 @@ export async function taskRoutes(server: FastifyInstance) {
       maxSteps,
       contextInjection,
       providerId,
-      priority: 'medium',
+      priority: priority ?? 'medium',
     });
 
     reply.code(201);

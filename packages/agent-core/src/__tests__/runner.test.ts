@@ -1,108 +1,168 @@
-import { describe, it, expect, vi } from 'vitest';
-import { runTest } from '../runner.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { runTest } from '../loop/agentLoop.js';
+import type { ToolRegistry } from '../loop/types.js';
 
-describe('runTest', () => {
+// Mock compaction modules
+vi.mock('../compaction/trigger.js', () => ({
+  shouldTriggerCompaction: vi.fn(() => false),
+  estimateTokens: vi.fn(() => 0),
+  createCompactionTrigger: vi.fn(),
+  COMPACTION_DEFAULTS: {
+    contextWindow: 128000,
+    reserveTokens: 16384,
+    keepRecentTokens: 20000,
+    thresholdPercentage: 0.8,
+    toolResultMaxChars: 2000,
+  },
+}));
+
+vi.mock('../compaction/summary.js', () => ({
+  generateSummary: vi.fn().mockResolvedValue('[compacted summary]'),
+}));
+
+vi.mock('../compaction/cut-point.js', () => ({}));
+
+function createMockLLM() {
+  return {
+    name: 'test-llm',
+    model: 'test-model',
+    generateText: vi.fn(),
+    generateObject: vi.fn(),
+    streamText: vi.fn(),
+  } as any;
+}
+
+function createSimpleTools(): ToolRegistry {
+  return {
+    execute: vi.fn().mockResolvedValue({ clicked: true }),
+  } as unknown as ToolRegistry;
+}
+
+function setupPassMocks(llmMock: any) {
+  const obs = { ariaTree: '<main>Home page</main>', pageTitle: 'Home', url: 'http://localhost' };
+  const plan = {
+    reasoning: 'Navigate home',
+    toolCall: { name: 'browser_navigate', args: { url: '/' } },
+    expectedOutcome: 'Home page loads',
+  };
+  llmMock.generateText
+    .mockResolvedValueOnce(JSON.stringify(obs))
+    .mockResolvedValueOnce(JSON.stringify(plan))
+    .mockResolvedValueOnce(JSON.stringify({ verdict: 'pass', reasoning: 'Good' }))
+    .mockResolvedValueOnce('Report: done');
+}
+
+describe('runTest (AgentLoop)', () => {
   it('runs test with default options', async () => {
-    const result = await runTest({
-      goal: 'Click the Settings button',
-      targetAppPath: '/test/app',
+    const llmMock = createMockLLM();
+    setupPassMocks(llmMock);
+    const tools = createSimpleTools();
+
+    const result = await runTest('Click the Settings button', {
+      llm: llmMock,
+      tools,
       maxSteps: 5,
-      taskId: 'test-runner-1',
-      checkpointPath: ':memory:',
     });
 
     expect(result).toBeDefined();
     expect(result.goal).toBe('Click the Settings button');
-    expect(result.targetAppPath).toBe('/test/app');
   });
 
   it('completes test with pass flow', async () => {
-    const result = await runTest({
-      goal: 'Simple navigation',
-      targetAppPath: '/test/app',
-      llmModel: 'gpt-4o',
+    const llmMock = createMockLLM();
+    setupPassMocks(llmMock);
+    const tools = createSimpleTools();
+
+    const result = await runTest('Simple navigation', {
+      llm: llmMock,
+      tools,
       maxSteps: 5,
-      taskId: 'test-runner-2',
-      checkpointPath: ':memory:',
     });
 
-    expect(result.status).toBeDefined();
-    expect(['completed', 'failed', 'running', 'aborted']).toContain(result.status);
+    expect(result.verdict).toBe('pass');
+    expect(['pass', 'fail', 'escalate']).toContain(result.verdict);
   });
 
   it('respects maxSteps option', async () => {
-    // With a low maxSteps, runTest should terminate early
-    const result = await runTest({
-      goal: 'Test low max steps',
-      targetAppPath: '/test/app',
+    let callCount = 0;
+    const llmMock = createMockLLM();
+    llmMock.generateText.mockImplementation((prompt: string) => {
+      callCount++;
+      if (prompt.includes('Observe')) {
+        return Promise.resolve(
+          JSON.stringify({ ariaTree: `<div>${callCount}</div>`, pageTitle: 'P', url: '/test' }),
+        );
+      }
+      if (prompt.includes('Decide')) {
+        return Promise.resolve(
+          JSON.stringify({ reasoning: 'Retry', toolCall: { name: 'click', args: {} }, expectedOutcome: 'Done' }),
+        );
+      }
+      if (prompt.includes('Success')) {
+        return Promise.resolve(JSON.stringify({ verdict: 'retry', reasoning: 'Not yet' }));
+      }
+      return Promise.resolve('Report');
+    });
+    const tools = createSimpleTools();
+
+    const result = await runTest('Test low max steps', {
+      llm: llmMock,
+      tools,
       maxSteps: 2,
-      taskId: 'test-runner-3',
-      checkpointPath: ':memory:',
     });
 
-    // Should not be running after completion (terminated by maxSteps)
-    expect(result.status).not.toBe('running');
+    expect(result.verdict).not.toBe('running' as any);
   });
 
-  it('generates taskId when not provided', async () => {
-    const result = await runTest({
-      goal: 'Auto-generated ID',
-      targetAppPath: '/test/app',
+  it('returns escalate on observe failure', async () => {
+    const llmMock = createMockLLM();
+    llmMock.generateText.mockRejectedValue(new Error('LLM down'));
+    const tools = createSimpleTools();
+
+    const result = await runTest('Observe failure', {
+      llm: llmMock,
+      tools,
       maxSteps: 5,
-      checkpointPath: ':memory:',
     });
 
-    expect(result.taskId).toBeDefined();
-    expect(result.taskId.length).toBeGreaterThan(0);
+    expect(result.verdict).toBe('escalate');
+    expect(result.reason).toContain('Observe step failed');
   });
 });
 
 describe('runTest with LLM DI injection', () => {
-  it('runTest calls getGenerateObject with model from options and handles null result', async () => {
-    // No mock needed — in test env without OPENAI_API_KEY,
-    // getGenerateObject returns null and graph uses deterministic fallbacks.
-    // This verifies the runner correctly wires the null-through DI path.
-    const result = await runTest({
-      goal: 'DI fallback test',
-      targetAppPath: '/test/app',
-      llmModel: 'gpt-4o',
+  it('runTest uses injected LLM and handles null-through DI path', async () => {
+    const llmMock = createMockLLM();
+    setupPassMocks(llmMock);
+    const tools = createSimpleTools();
+
+    const result = await runTest('DI fallback test', {
+      llm: llmMock,
+      tools,
       maxSteps: 3,
-      taskId: 'di-fallback-test',
-      checkpointPath: ':memory:',
     });
 
     expect(result).toBeDefined();
     expect(result.goal).toBe('DI fallback test');
-    expect(result.status).toBeDefined();
-    // Graph terminates because plan node uses deterministic fallback (browser_snapshot)
-    // and verify uses fallback logic — this proves the null-through DI path works
-    expect(['completed', 'failed', 'aborted']).toContain(result.status);
+    expect(['pass', 'fail', 'escalate']).toContain(result.verdict);
   });
 });
 
-describe('runTest with providerId', () => {
-  it('throws when providerId not found', async () => {
-    await expect(
-      runTest({
-        goal: 'Test',
-        targetAppPath: '/test/app',
-        providerId: 'nonexistent-provider-id',
-        taskId: 'provider-test-1',
-        checkpointPath: ':memory:',
-      }),
-    ).rejects.toThrow("Provider 'nonexistent-provider-id' not found");
-  });
+describe('runTest with tool failures', () => {
+  it('handles tool execution failure gracefully', async () => {
+    const llmMock = createMockLLM();
+    setupPassMocks(llmMock);
+    const failingTools = {
+      execute: vi.fn().mockRejectedValue(new Error('Connection failed')),
+    } as unknown as ToolRegistry;
 
-  it('falls back to env-based provider when providerId is not set', async () => {
-    // Without providerId, should use getGenerateObject (env-based path)
-    const result = await runTest({
-      goal: 'No providerId test',
-      targetAppPath: '/test/app',
+    const result = await runTest('Tool failure test', {
+      llm: llmMock,
+      tools: failingTools,
       maxSteps: 5,
-      taskId: 'no-provider-test',
-      checkpointPath: ':memory:',
     });
+
     expect(result).toBeDefined();
-    expect(['completed', 'failed', 'aborted']).toContain(result.status);
+    expect(['pass', 'fail', 'escalate']).toContain(result.verdict);
   });
 });

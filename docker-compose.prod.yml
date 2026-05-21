@@ -1,0 +1,82 @@
+# =============================================================================
+# EATA Production Deployment
+# -----------------------------------------------------------------------------
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d
+#   docker compose -f docker-compose.prod.yml logs -f
+#   docker compose -f docker-compose.prod.yml down
+#
+# Before first run, create a .env.production file (see DEPLOYMENT.md)
+# =============================================================================
+
+name: eata-prod
+
+services:
+  server:
+    image: eata:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eata-server-prod
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT:-3000}:3000"
+    command: ["node", "apps/server/dist/server.js"]
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+      - LLM_MODEL=${LLM_MODEL:-gpt-4o}
+      - PROVIDER_ID=${PROVIDER_ID:-}
+    volumes:
+      # Persist SQLite database and provider config across restarts
+      - eata-data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    # Resource limits for production stability
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+        reservations:
+          memory: 128M
+          cpus: "0.25"
+
+  # Dashboard: serve built static files via Node (vite preview)
+  # In production, consider replacing this with an nginx container
+  # serving apps/server/dist/public for a single binary deployment.
+  dashboard:
+    image: eata:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eata-dashboard-prod
+    restart: unless-stopped
+    ports:
+      - "${DASHBOARD_PORT:-5173}:5173"
+    command: ["pnpm", "run", "--filter", "@eata/dashboard", "preview", "--", "--host", "0.0.0.0", "--port", "5173"]
+    depends_on:
+      server:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:3000}
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+        reservations:
+          memory: 64M
+          cpus: "0.1"
+
+volumes:
+  eata-data:
+    driver: local

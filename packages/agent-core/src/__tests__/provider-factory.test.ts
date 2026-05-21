@@ -1,130 +1,100 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Use vi.hoisted to define mock before vi.mock hoists the factory
-const { mockCreateOpenAI } = vi.hoisted(() => ({
-  mockCreateOpenAI: vi.fn().mockImplementation(() => {
-    return vi.fn().mockReturnValue({ provider: 'mock-openai-model' });
-  }),
-}));
+// Mock fetch used by all LLM providers
+const mockFetch = vi.fn();
+vi.stubGlobal('fetch', mockFetch);
 
-vi.mock('@ai-sdk/openai', () => ({
-  createOpenAI: mockCreateOpenAI,
-}));
+import { createProvider } from '../llm/index.js';
+import type { ProviderConfig } from '../llm/provider.js';
 
-import { createProviderInstance } from '../provider-factory.js';
-import type { LLMProviderConfig } from '../llm-types.js';
-
-describe('ProviderFactory', () => {
+describe('createProvider (unified factory)', () => {
   beforeEach(() => {
-    mockCreateOpenAI.mockClear();
+    mockFetch.mockReset();
   });
 
-  const baseConfig: LLMProviderConfig = {
-    id: 'test-provider',
-    name: 'Test Provider',
-    type: 'openai-compatible',
-    apiKey: 'sk-test-key-123',
-    baseURL: 'https://api.test.com/v1',
-    model: 'test-model',
-    enabled: true,
-  };
-
-  it('creates provider with correct apiKey and baseURL', () => {
-    createProviderInstance(baseConfig);
-
-    expect(mockCreateOpenAI).toHaveBeenCalledWith({
-      apiKey: 'sk-test-key-123',
-      baseURL: 'https://api.test.com/v1',
-    });
-  });
-
-  it('returns a model instance for the given model name', () => {
-    const result = createProviderInstance(baseConfig);
-    expect(result).toBeDefined();
-  });
-
-  it('creates OpenAI provider correctly', () => {
-    const config: LLMProviderConfig = {
-      id: 'openai',
-      name: 'OpenAI',
-      type: 'openai-compatible',
-      apiKey: 'sk-openai-key',
-      baseURL: 'https://api.openai.com/v1',
+  it('creates OpenAI provider', () => {
+    const provider = createProvider({
+      provider: 'openai',
       model: 'gpt-4o',
-    };
-
-    createProviderInstance(config);
-
-    expect(mockCreateOpenAI).toHaveBeenCalledWith({
-      apiKey: 'sk-openai-key',
-      baseURL: 'https://api.openai.com/v1',
+      apiKey: 'sk-test',
     });
+    expect(provider).toBeDefined();
+    expect(provider.name).toBe('openai');
+    expect(provider.model).toBe('gpt-4o');
   });
 
-  it('creates DeepSeek provider with correct baseURL', () => {
-    const config: LLMProviderConfig = {
-      id: 'deepseek',
-      name: 'DeepSeek',
-      type: 'openai-compatible',
-      apiKey: 'sk-deepseek-key',
-      baseURL: 'https://api.deepseek.com/v1',
-      model: 'deepseek-chat',
-    };
-
-    createProviderInstance(config);
-
-    expect(mockCreateOpenAI).toHaveBeenCalledWith({
-      apiKey: 'sk-deepseek-key',
-      baseURL: 'https://api.deepseek.com/v1',
+  it('creates Anthropic provider', () => {
+    const provider = createProvider({
+      provider: 'anthropic',
+      model: 'claude-3-opus',
+      apiKey: 'sk-ant-test',
     });
+    expect(provider.name).toBe('anthropic');
+    expect(provider.model).toBe('claude-3-opus');
   });
 
-  it('creates Qwen provider with correct baseURL', () => {
-    const config: LLMProviderConfig = {
-      id: 'qwen',
-      name: 'Qwen',
-      type: 'openai-compatible',
-      apiKey: 'sk-qwen-key',
-      baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-      model: 'qwen-plus',
-    };
-
-    createProviderInstance(config);
-
-    expect(mockCreateOpenAI).toHaveBeenCalledWith({
-      apiKey: 'sk-qwen-key',
-      baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+  it('creates Google provider', () => {
+    const provider = createProvider({
+      provider: 'google',
+      model: 'gemini-pro',
+      apiKey: 'google-key',
     });
+    expect(provider.name).toBe('google');
+    expect(provider.model).toBe('gemini-pro');
   });
 
-  it('creates Groq provider with correct baseURL', () => {
-    const config: LLMProviderConfig = {
-      id: 'groq',
-      name: 'Groq',
-      type: 'openai-compatible',
-      apiKey: 'gsk_groq-key',
-      baseURL: 'https://api.groq.com/openai/v1',
-      model: 'llama-3.1-70b-versatile',
-    };
-
-    createProviderInstance(config);
-
-    expect(mockCreateOpenAI).toHaveBeenCalledWith({
-      apiKey: 'gsk_groq-key',
-      baseURL: 'https://api.groq.com/openai/v1',
+  it('creates Ollama provider', () => {
+    const provider = createProvider({
+      provider: 'ollama',
+      model: 'llama2',
     });
+    expect(provider.name).toBe('ollama');
+    expect(provider.model).toBe('llama2');
   });
 
-  it('passes model name to the factory function', () => {
-    const config: LLMProviderConfig = {
-      ...baseConfig,
-      model: 'gpt-4o-mini',
-    };
+  it('throws for unsupported provider type', () => {
+    expect(() =>
+      createProvider({ provider: 'unknown' as any, model: 'x' }),
+    ).toThrow('Unsupported provider');
+  });
 
-    createProviderInstance(config);
+  it('passes baseUrl to OpenAI provider', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ choices: [{ message: { content: 'hello' } }] }),
+    });
 
-    // The inner mock function should be called with the model name
-    const factoryFn = mockCreateOpenAI.mock.results[0].value;
-    expect(factoryFn).toHaveBeenCalledWith('gpt-4o-mini');
+    const provider = createProvider({
+      provider: 'openai',
+      model: 'gpt-4o',
+      apiKey: 'sk-test',
+      baseUrl: 'https://custom.api.com/v1',
+    });
+
+    await provider.generateText('test');
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://custom.api.com/v1/chat/completions',
+      expect.anything(),
+    );
+  });
+
+  it('passes baseUrl to Anthropic provider', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ content: [{ type: 'text', text: 'hi' }] }),
+    });
+
+    const provider = createProvider({
+      provider: 'anthropic',
+      model: 'claude-3',
+      apiKey: 'sk-ant',
+      baseUrl: 'https://proxy.anthropic.com',
+    });
+
+    await provider.generateText('test');
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://proxy.anthropic.com/v1/messages',
+      expect.anything(),
+    );
   });
 });

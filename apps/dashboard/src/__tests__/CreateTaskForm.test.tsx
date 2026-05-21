@@ -65,6 +65,7 @@ describe('CreateTaskForm', () => {
         targetAppPath: '/apps/checkout',
         llmModel: 'gpt-4o',
         maxSteps: 50,
+        priority: 'medium',
       });
     });
   });

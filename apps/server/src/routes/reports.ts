@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { TaskStatusEnum, type Task, type StepRecord } from '@eata/shared-types';
+import { TaskStatusEnum, type Task, type StepRecord, type TaskPriority } from '@eata/shared-types';
 import { generateHTMLReport } from '../services/htmlReport.js';
 import { validatePath, PathTraversalError } from '../services/fileSecurity.js';
 
@@ -24,6 +24,7 @@ function dbRowToTask(row: Record<string, unknown>): Task {
     targetAppPath: row.target_app_path as string,
     llmModel: row.llm_model as Task['llmModel'],
     status,
+    priority: (row.priority as TaskPriority) ?? 'medium',
     maxSteps: row.max_steps as number,
     contextInjection: (row.context_injection as string) ?? undefined,
     stepCount: row.step_count as number,

@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   target_app_path TEXT NOT NULL,
   llm_model TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'queued',
+  priority TEXT NOT NULL DEFAULT 'medium',
   max_steps INTEGER DEFAULT 50,
   context_injection TEXT,
   step_count INTEGER DEFAULT 0,
@@ -71,6 +72,12 @@ export function runMigrations(db: Database.Database): boolean {
   const hasProviderId = columns.some((c) => c.name === 'provider_id');
   if (!hasProviderId) {
     db.exec('ALTER TABLE tasks ADD COLUMN provider_id TEXT');
+  }
+
+  // Add priority column to tasks table if missing
+  const hasPriority = columns.some((c) => c.name === 'priority');
+  if (!hasPriority) {
+    db.exec("ALTER TABLE tasks ADD COLUMN priority TEXT NOT NULL DEFAULT 'medium'");
   }
 
   return wasNeeded;

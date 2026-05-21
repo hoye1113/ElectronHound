@@ -35,6 +35,7 @@
     "tasks": "任务",
     "monitor": "监控",
     "feedback": "反馈",
+    "fewShot": "示例",
     "settings": "设置"
   },
   "layout": {
@@ -100,7 +101,13 @@
     "timeAgo_minutes": "{{count}}分钟前",
     "timeAgo_hours": "{{count}}小时前",
     "timeAgo_days": "{{count}}天前",
-    "taskLabel": "任务：{{goal}}"
+    "taskLabel": "任务：{{goal}}",
+    "priority": "优先级"
+  },
+  "priority": {
+    "high": "高",
+    "medium": "中",
+    "low": "低"
   },
   "createTask": {
     "title": "新建任务",
@@ -112,6 +119,7 @@
     "providerLabel": "LLM 提供商",
     "providerPlaceholder": "选择提供商（默认：活跃）",
     "submitError": "创建任务失败，请重试。",
+    "priorityLabel": "优先级",
     "submitting": "创建中...",
     "submit": "创建任务"
   },
@@ -184,5 +192,74 @@
     "deleteProvider": "删除 {{name}}",
     "testProvider": "测试 {{name}} 连接",
     "setDefaultProvider": "将 {{name}} 设为默认"
+  },
+  "fewShot": {
+    "title": "示例管理",
+    "subtitle": "管理在任务执行时引导代理的示例",
+    "searchPlaceholder": "按目标、标签或领域搜索...",
+    "empty": "暂无示例",
+    "emptyHint": "添加示例以帮助代理理解类似场景。",
+    "addFirst": "添加第一个示例",
+    "addNew": "添加新示例",
+    "addTitle": "添加示例",
+    "editTitle": "编辑示例",
+    "deleteTitle": "删除示例",
+    "deleteConfirm": "确定要删除示例 \"{{goal}}\" 吗？",
+    "goalLabel": "目标",
+    "goalPlaceholder": "描述此示例中代理应完成的操作",
+    "goalRequired": "目标为必填项",
+    "stepsLabel": "步骤",
+    "stepActionPlaceholder": "执行的操作（如：点击按钮）",
+    "stepObservationPlaceholder": "执行操作后观察到的结果",
+    "addStep": "添加步骤",
+    "removeStep": "删除步骤",
+    "stepsCount_one": "个步骤",
+    "stepsCount_other": "个步骤",
+    "stepsCount": "步骤",
+    "expectedResultLabel": "预期结果",
+    "expectedResultPlaceholder": "描述完成步骤后的预期结果",
+    "expectedResultRequired": "预期结果为必填项",
+    "expectedResultShort": "预期结果",
+    "tagsLabel": "标签",
+    "tagsPlaceholder": "如：登录、表单、按钮",
+    "tagsHint": "按回车或逗号添加标签",
+    "removeTag": "删除标签 {{tag}}",
+    "domainLabel": "领域",
+    "domain_testing": "测试",
+    "domain_navigation": "导航",
+    "domain_general": "通用",
+    "difficultyLabel": "难度",
+    "difficulty_easy": "简单",
+    "difficulty_medium": "中等",
+    "difficulty_hard": "困难",
+    "editExample": "编辑示例：{{goal}}",
+    "deleteExample": "删除示例：{{goal}}",
+    "noResults": "没有匹配的示例"
+  },
+  "langSwitcher": {
+    "title": "语言",
+    "en": "English",
+    "zh": "中文"
+  },
+  "auditReport": {
+    "title": "审核报告",
+    "noData": "暂无审核数据",
+    "noDataHint": "验证链完成后审核结果将显示在此处",
+    "duration": "{{ms}}毫秒",
+    "completedAt": "完成于 {{time}}",
+    "findingsLabel": "发现 ({{count}})",
+    "recommendationsLabel": "建议 ({{count}})",
+    "role": {
+      "test-planner": "测试规划师",
+      "execution-analyst": "执行分析师",
+      "security-reviewer": "安全审核员",
+      "report-synthesizer": "报告综合师"
+    },
+    "verdict": {
+      "pass": "通过",
+      "info": "信息",
+      "warn": "警告",
+      "fail": "失败"
+    }
   }
 }

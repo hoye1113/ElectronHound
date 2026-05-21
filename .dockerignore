@@ -1,3 +1,8 @@
+# =============================================================================
+# Docker build context exclusions
+# Reduces image build time and size by omitting unnecessary files
+# =============================================================================
+
 # Version control
 .git
 .gitignore
@@ -23,6 +28,8 @@ data
 .idea
 .DS_Store
 Thumbs.db
+*.swp
+*.swo
 
 # Documentation (not needed at runtime)
 *.md
@@ -35,6 +42,33 @@ Thumbs.db
 test-results
 playwright-report
 playwright/.cache
+playwright-blob-storage
+
+# Test / spec files (not needed in production image)
+# Note: vitest.config.ts is NOT excluded — the Dockerfile COPY needs it
+**/src/__tests__
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
 
 # CI / misc
 .github
+.gitlab-ci.yml
+.circleci
+
+# Environment secrets (never include in image)
+.env
+.env.*
+
+# Test coverage output
+coverage
+
+# Docker files (avoid recursive context)
+docker-compose*.yml
+Dockerfile.prod
+
+# Misc build/IDE artifacts
+.eslintcache
+*.tgz
+*.tar.gz

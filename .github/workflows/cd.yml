@@ -1,0 +1,169 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - 'release/**'
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+# Prevent parallel CD runs for the same branch/ref
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Gate: Run CI checks before building & pushing Docker images
+  # ---------------------------------------------------------------------------
+  test:
+    name: CI Gate — Test, Lint, Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run typecheck
+        run: pnpm -r run typecheck
+
+      - name: Run lint
+        run: pnpm run lint
+
+      - name: Run tests
+        run: pnpm test
+
+  # ---------------------------------------------------------------------------
+  # Build & push Docker images to GHCR
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    needs: test
+    if: success()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # -- Multi-platform support (amd64 + arm64) --
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # -----------------------------------------------------------------------
+      # Server image: ghcr.io/<owner>/eata-server
+      # -----------------------------------------------------------------------
+      - name: Server — Extract metadata (tags, labels)
+        id: server-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/eata-server
+          tags: |
+            type=raw,value=server-${{ github.ref_name }}-${{ github.sha }}
+            type=semver,pattern=server-{{version}},enable=${{ startsWith(github.ref, 'refs/tags/') }}
+            type=raw,value=server-latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+
+      - name: Server — Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          target: runner
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.server-meta.outputs.tags }}
+          labels: ${{ steps.server-meta.outputs.labels }}
+          cache-from: type=gha,scope=server
+          cache-to: type=gha,mode=max,scope=server
+
+      # -----------------------------------------------------------------------
+      # Dashboard image: ghcr.io/<owner>/eata-dashboard
+      # -----------------------------------------------------------------------
+      - name: Dashboard — Extract metadata (tags, labels)
+        id: dashboard-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/eata-dashboard
+          tags: |
+            type=raw,value=dashboard-${{ github.ref_name }}-${{ github.sha }}
+            type=semver,pattern=dashboard-{{version}},enable=${{ startsWith(github.ref, 'refs/tags/') }}
+            type=raw,value=dashboard-latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+
+      - name: Dashboard — Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          target: runner
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.dashboard-meta.outputs.tags }}
+          labels: ${{ steps.dashboard-meta.outputs.labels }}
+          cache-from: type=gha,scope=dashboard
+          cache-to: type=gha,mode=max,scope=dashboard
+
+      # -----------------------------------------------------------------------
+      # Combined image: ghcr.io/<owner>/eata (optional — same image, full stack)
+      # -----------------------------------------------------------------------
+      - name: Combined — Extract metadata (tags, labels)
+        id: combined-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/eata
+          tags: |
+            type=raw,value=${{ github.ref_name }}-${{ github.sha }}
+            type=semver,pattern={{version}},enable=${{ startsWith(github.ref, 'refs/tags/') }}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+
+      - name: Combined — Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          target: runner
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.combined-meta.outputs.tags }}
+          labels: ${{ steps.combined-meta.outputs.labels }}
+          cache-from: type=gha,scope=combined
+          cache-to: type=gha,mode=max,scope=combined
+
+      # -----------------------------------------------------------------------
+      # Summary
+      # -----------------------------------------------------------------------
+      - name: Image summary
+        run: |
+          echo "## Docker Images Published" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Image | Tags |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| \`ghcr.io/${{ github.repository }}/eata-server\` | ${{ steps.server-meta.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "| \`ghcr.io/${{ github.repository }}/eata-dashboard\` | ${{ steps.dashboard-meta.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "| \`ghcr.io/${{ github.repository }}/eata\` | ${{ steps.combined-meta.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"

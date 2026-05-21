@@ -8,11 +8,14 @@ import {
   Cpu,
   ListChecks,
   Image as ImageIcon,
+  Shield,
 } from 'lucide-react';
 import type { Task, TaskStatus, StepRecord } from '@eata/shared-types';
 import { api, getScreenshotUrl } from '../lib/api';
 import StepTimeline from '../components/StepTimeline';
 import ScreenshotGallery from '../components/ScreenshotGallery';
+import AuditReportView from '../components/AuditReportView';
+import type { AuditChainData } from '../components/AuditReportView';
 
 const statusConfig: Record<TaskStatus, { labelKey: string; classes: string }> = {
   queued: { labelKey: 'taskCard.status_queued', classes: 'bg-zinc-700 text-zinc-300' },
@@ -36,6 +39,7 @@ export default function TaskDetail() {
   const [task, setTask] = useState<Task | null>(null);
   const [steps, setSteps] = useState<StepRecord[]>([]);
   const [screenshots, setScreenshots] = useState<ScreenshotItem[]>([]);
+  const [auditData, setAuditData] = useState<AuditChainData | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,8 +62,18 @@ export default function TaskDetail() {
             phase: s.phase,
           })) ?? [];
         setScreenshots(ss);
+
+        // Fetch audit chain data from report (may not exist for all tasks)
+        try {
+          const report = await api.reports.get(id) as Record<string, unknown>;
+          if (report && typeof report === 'object' && isAuditChainData(report.auditChainResult)) {
+            setAuditData(report.auditChainResult);
+          }
+        } catch {
+          // Report may not exist yet — that's fine
+        }
       } catch {
-        // Fetch screenshot failure - gracefully skip
+        // Fetch task failure - gracefully skip
         setError('Failed to load task details');
       } finally {
         setIsLoading(false);
@@ -192,6 +206,15 @@ export default function TaskDetail() {
           <ScreenshotGallery screenshots={screenshots} />
         </section>
       )}
+
+      {/* Audit Report */}
+      <section>
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-400">
+          <Shield className="size-4" />
+          {t('auditReport.title')}
+        </h2>
+        <AuditReportView auditData={auditData} />
+      </section>
     </div>
   );
 }
@@ -210,4 +233,19 @@ function formatTimeRange(start: string, end: string): string {
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
   return `${hours}h ${remainingMinutes}m`;
+}
+
+function isAuditChainData(value: unknown): value is AuditChainData {
+  if (!value || typeof value !== 'object') return false;
+  const obj = value as Record<string, unknown>;
+  return (
+    typeof obj.goal === 'string' &&
+    Array.isArray(obj.chainOrder) &&
+    typeof obj.durationMs === 'number' &&
+    typeof obj.completedAt === 'string' &&
+    typeof obj.testPlanner === 'object' && obj.testPlanner !== null &&
+    typeof obj.executionAnalyst === 'object' && obj.executionAnalyst !== null &&
+    typeof obj.securityReviewer === 'object' && obj.securityReviewer !== null &&
+    typeof obj.reportSynthesizer === 'object' && obj.reportSynthesizer !== null
+  );
 }

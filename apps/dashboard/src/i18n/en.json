@@ -35,6 +35,7 @@
     "tasks": "Tasks",
     "monitor": "Monitor",
     "feedback": "Feedback",
+    "fewShot": "Few-Shot",
     "settings": "Settings"
   },
   "layout": {
@@ -96,7 +97,13 @@
     "timeAgo_minutes": "{{count}}m ago",
     "timeAgo_hours": "{{count}}h ago",
     "timeAgo_days": "{{count}}d ago",
-    "taskLabel": "Task: {{goal}}"
+    "taskLabel": "Task: {{goal}}",
+    "priority": "Priority"
+  },
+  "priority": {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
   },
   "createTask": {
     "title": "New Task",
@@ -107,6 +114,7 @@
     "modelLabel": "LLM Model",
     "providerLabel": "LLM Provider",
     "providerPlaceholder": "Select provider (default: active)",
+    "priorityLabel": "Priority",
     "submitError": "Failed to create task. Please try again.",
     "submitting": "Creating...",
     "submit": "Create Task"
@@ -180,5 +188,74 @@
     "deleteProvider": "Delete {{name}}",
     "testProvider": "Test {{name}} connection",
     "setDefaultProvider": "Set {{name}} as default"
+  },
+  "fewShot": {
+    "title": "Few-Shot Examples",
+    "subtitle": "Manage examples that guide the agent during task execution",
+    "searchPlaceholder": "Search by goal, tags, or domain...",
+    "empty": "No examples yet",
+    "emptyHint": "Add examples to help the agent understand similar scenarios.",
+    "addFirst": "Add Your First Example",
+    "addNew": "Add New Example",
+    "addTitle": "Add Example",
+    "editTitle": "Edit Example",
+    "deleteTitle": "Delete Example",
+    "deleteConfirm": "Are you sure you want to delete the example \"{{goal}}\"?",
+    "goalLabel": "Goal",
+    "goalPlaceholder": "Describe what the agent should accomplish in this example",
+    "goalRequired": "Goal is required",
+    "stepsLabel": "Steps",
+    "stepActionPlaceholder": "Action taken (e.g. click on button)",
+    "stepObservationPlaceholder": "What was observed after the action",
+    "addStep": "Add Step",
+    "removeStep": "Remove step",
+    "stepsCount_one": "step",
+    "stepsCount_other": "steps",
+    "stepsCount": "step(s)",
+    "expectedResultLabel": "Expected Result",
+    "expectedResultPlaceholder": "Describe the expected outcome after completing the steps",
+    "expectedResultRequired": "Expected result is required",
+    "expectedResultShort": "Expected Result",
+    "tagsLabel": "Tags",
+    "tagsPlaceholder": "e.g. login, form, button",
+    "tagsHint": "Press Enter or comma to add a tag",
+    "removeTag": "Remove tag {{tag}}",
+    "domainLabel": "Domain",
+    "domain_testing": "Testing",
+    "domain_navigation": "Navigation",
+    "domain_general": "General",
+    "difficultyLabel": "Difficulty",
+    "difficulty_easy": "Easy",
+    "difficulty_medium": "Medium",
+    "difficulty_hard": "Hard",
+    "editExample": "Edit example: {{goal}}",
+    "deleteExample": "Delete example: {{goal}}",
+    "noResults": "No examples match your search"
+  },
+  "langSwitcher": {
+    "title": "Language",
+    "en": "English",
+    "zh": "中文"
+  },
+  "auditReport": {
+    "title": "Audit Report",
+    "noData": "No audit data available",
+    "noDataHint": "Audit results will appear after the verification chain completes",
+    "duration": "{{ms}}ms",
+    "completedAt": "Completed at {{time}}",
+    "findingsLabel": "Findings ({{count}})",
+    "recommendationsLabel": "Recommendations ({{count}})",
+    "role": {
+      "test-planner": "Test Planner",
+      "execution-analyst": "Execution Analyst",
+      "security-reviewer": "Security Reviewer",
+      "report-synthesizer": "Report Synthesizer"
+    },
+    "verdict": {
+      "pass": "Pass",
+      "info": "Info",
+      "warn": "Warning",
+      "fail": "Fail"
+    }
   }
 }

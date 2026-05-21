@@ -18,6 +18,7 @@ function makeState(overrides: Record<string, unknown> = {}) {
     stuckCounter: 0,
     status: 'running' as const,
     lastObservationHash: '',
+    auditChainResult: null,
     ...overrides,
   };
 }

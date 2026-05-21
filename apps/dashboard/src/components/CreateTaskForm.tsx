@@ -2,13 +2,19 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Select from '@radix-ui/react-select';
-import { Check, ChevronDown, X, Plus, Star } from 'lucide-react';
+import { Check, ChevronDown, X, Plus, Star, Flag } from 'lucide-react';
 import { CreateTaskRequestSchema } from '@eata/shared-types';
-import type { CreateTaskRequest } from '@eata/shared-types';
+import type { CreateTaskRequest, TaskPriority } from '@eata/shared-types';
 import { useTaskStore } from '../stores/taskStore';
 import { api, type ProvidersConfig } from '../lib/api.js';
 
 const LLM_MODELS = ['gpt-4o', 'gpt-4o-mini', 'claude-3.5-sonnet'] as const;
+
+const PRIORITY_OPTIONS: { value: TaskPriority; colorClass: string }[] = [
+  { value: 'high', colorClass: 'text-red-400' },
+  { value: 'medium', colorClass: 'text-yellow-400' },
+  { value: 'low', colorClass: 'text-blue-400' },
+];
 
 interface CreateTaskFormProps {
   open: boolean;
@@ -22,6 +28,7 @@ export default function CreateTaskForm({ open, onOpenChange, onSuccess }: Create
   const [goal, setGoal] = useState('');
   const [targetAppPath, setTargetAppPath] = useState('');
   const [llmModel, setLlmModel] = useState<string>('gpt-4o');
+  const [priority, setPriority] = useState<TaskPriority>('medium');
   const [providerId, setProviderId] = useState<string>('');
   const [providersConfig, setProvidersConfig] = useState<ProvidersConfig | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -31,6 +38,7 @@ export default function CreateTaskForm({ open, onOpenChange, onSuccess }: Create
     setGoal('');
     setTargetAppPath('');
     setLlmModel('gpt-4o');
+    setPriority('medium');
     setProviderId('');
     setErrors({});
   };
@@ -58,6 +66,7 @@ export default function CreateTaskForm({ open, onOpenChange, onSuccess }: Create
       goal,
       targetAppPath,
       llmModel,
+      priority,
       providerId: providerId || undefined,
     });
 
@@ -190,6 +199,47 @@ export default function CreateTaskForm({ open, onOpenChange, onSuccess }: Create
                 </Select.Portal>
               </Select.Root>
               {errors.llmModel && <p className="text-xs text-red-400">{errors.llmModel}</p>}
+            </div>
+
+            {/* Priority */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-zinc-300">{t('createTask.priorityLabel')}</label>
+              <Select.Root value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
+                <Select.Trigger
+                  className={`inline-flex items-center justify-between rounded-lg border bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none transition-colors focus:ring-1 focus:ring-indigo-500 ${
+                    errors.priority ? 'border-red-500' : 'border-zinc-700'
+                  }`}
+                >
+                  <Select.Value />
+                  <Select.Icon>
+                    <ChevronDown className="size-4 text-zinc-500" />
+                  </Select.Icon>
+                </Select.Trigger>
+                <Select.Portal>
+                  <Select.Content className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl">
+                    <Select.Viewport className="p-1">
+                      {PRIORITY_OPTIONS.map((opt) => (
+                        <Select.Item
+                          key={opt.value}
+                          value={opt.value}
+                          className="relative flex cursor-pointer items-center rounded-md px-8 py-2 text-sm text-zinc-200 outline-none select-none hover:bg-zinc-800 data-[highlighted]:bg-zinc-800"
+                        >
+                          <Select.ItemText>
+                            <span className={`inline-flex items-center gap-2 ${opt.colorClass}`}>
+                              <Flag className="size-3" />
+                              {t(`priority.${opt.value}`)}
+                            </span>
+                          </Select.ItemText>
+                          <Select.ItemIndicator className="absolute left-2">
+                            <Check className="size-3.5 text-indigo-400" />
+                          </Select.ItemIndicator>
+                        </Select.Item>
+                      ))}
+                    </Select.Viewport>
+                  </Select.Content>
+                </Select.Portal>
+              </Select.Root>
+              {errors.priority && <p className="text-xs text-red-400">{errors.priority}</p>}
             </div>
 
             {/* LLM Provider Selection */}

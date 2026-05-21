@@ -1,11 +1,13 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LayoutDashboard, ListTodo, Activity, MessageSquare, Settings } from 'lucide-react';
+import { LayoutDashboard, ListTodo, Activity, MessageSquare, BookOpen, Settings } from 'lucide-react';
+import LanguageSwitcher from './LanguageSwitcher';
 
 const navItems = [
   { to: '/', labelKey: 'nav.tasks', icon: ListTodo },
   { to: '/monitor', labelKey: 'nav.monitor', icon: Activity },
   { to: '/feedback', labelKey: 'nav.feedback', icon: MessageSquare },
+  { to: '/few-shot', labelKey: 'nav.fewShot', icon: BookOpen },
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },
 ];
 
@@ -43,8 +45,13 @@ export default function Layout() {
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-zinc-800 px-5 py-4 text-xs text-zinc-500">
-          {t('layout.footer')}
+        <div className="mt-auto border-t border-zinc-800">
+          <div className="pt-3">
+            <LanguageSwitcher />
+          </div>
+          <div className="px-5 pb-4 text-xs text-zinc-500">
+            {t('layout.footer')}
+          </div>
         </div>
       </aside>
 

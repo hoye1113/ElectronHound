@@ -1,4 +1,4 @@
-import type { Task, TaskStatus } from '@eata/shared-types';
+import type { Task, TaskStatus, TaskPriority } from '@eata/shared-types';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Clock, Trash2, XCircle, Loader2 } from 'lucide-react';
@@ -13,6 +13,12 @@ const statusConfig: Record<TaskStatus, { labelKey: string; classes: string }> = 
   aborted: { labelKey: 'taskCard.status_aborted', classes: 'bg-zinc-600 text-zinc-400' },
 };
 
+const priorityConfig: Record<TaskPriority, { labelKey: string; classes: string }> = {
+  high: { labelKey: 'priority.high', classes: 'bg-red-500/20 text-red-300' },
+  medium: { labelKey: 'priority.medium', classes: 'bg-yellow-500/20 text-yellow-300' },
+  low: { labelKey: 'priority.low', classes: 'bg-blue-500/20 text-blue-300' },
+};
+
 interface TaskCardProps {
   task: Task;
 }
@@ -23,6 +29,7 @@ export default function TaskCard({ task }: TaskCardProps) {
   const cancelTask = useTaskStore((s) => s.cancelTask);
   const deleteTask = useTaskStore((s) => s.deleteTask);
   const config = statusConfig[task.status];
+  const priority = priorityConfig[task.priority ?? 'medium'];
 
   const isCancelable = task.status === 'queued' || task.status === 'running';
   const isDeletable =
@@ -65,12 +72,18 @@ export default function TaskCard({ task }: TaskCardProps) {
       }}
       className="group flex cursor-pointer flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
     >
-      {/* Header: status + actions */}
+      {/* Header: status + priority + actions */}
       <div className="flex items-center justify-between">
-        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${config.classes}`}>
-          {task.status === 'running' && <Loader2 className="mr-1 size-3 animate-spin" />}
-          {t(config.labelKey)}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${config.classes}`}>
+            {task.status === 'running' && <Loader2 className="mr-1 size-3 animate-spin" />}
+            {t(config.labelKey)}
+          </span>
+
+          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${priority.classes}`}>
+            {t(priority.labelKey)}
+          </span>
+        </div>
 
         <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
           {isCancelable && (

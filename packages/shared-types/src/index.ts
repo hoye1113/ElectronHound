@@ -1,5 +1,5 @@
-export type { CreateTaskRequest, TaskStatus, Task } from './task.js';
-export { TaskSchema, CreateTaskRequestSchema, TaskStatusEnum } from './task.js';
+export type { CreateTaskRequest, TaskStatus, TaskPriority, Task } from './task.js';
+export { TaskSchema, CreateTaskRequestSchema, TaskStatusEnum, TaskPriorityEnum } from './task.js';
 
 export type { StepPhase, StepStatus, StepRecord } from './step.js';
 export { StepRecordSchema, StepPhaseEnum, StepStatusEnum } from './step.js';
