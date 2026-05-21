@@ -122,12 +122,34 @@ export function isValidCutPoint(message: CompactionMessage): boolean {
     return false;
   }
 
-  // User, assistant, and custom messages are valid
+  // User and assistant messages are always valid
   if (message.role === 'user' || message.role === 'assistant') {
     return true;
   }
 
+  // Custom messages (BashExecution, branch_summary, etc.) are valid
+  // Identified by having a messageType field set
+  if (message.messageType) {
+    return true;
+  }
+
   return false;
+}
+
+/**
+ * Check if a message is a Tool Result.
+ * Tool results must stay with their tool call — never cut at a tool result.
+ */
+export function isToolResult(message: CompactionMessage): boolean {
+  return message.role === 'toolResult';
+}
+
+/**
+ * Check if a message is a Tool Call.
+ * Tool calls must stay with their results — never cut at a tool call.
+ */
+export function isToolCall(message: CompactionMessage): boolean {
+  return message.role === 'tool';
 }
 
 /**

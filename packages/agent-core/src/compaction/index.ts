@@ -22,6 +22,8 @@ export type {
 export {
   findCutPoint,
   isValidCutPoint,
+  isToolResult,
+  isToolCall,
   isTurnBoundary,
   getTurnMessages,
   groupByTurns,
@@ -63,3 +65,10 @@ export {
   generateBranchSummary,
   injectBranchSummary,
 } from './branch-summary.js';
+
+// Split turn detection
+export {
+  isSplitTurn,
+  splitTurnAtMessage,
+  mergeSummaries,
+} from './splitTurn.js';
