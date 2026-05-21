@@ -485,3 +485,431 @@ export function mergeFileTracking(
     modifiedFiles: [...modifiedSet].sort(),
   };
 }
+
+// ============================================================================
+// Pi Summary Generation - Extraction Functions
+// ============================================================================
+
+/**
+ * Patterns for extracting structured information from messages.
+ */
+const GOAL_PATTERNS = [
+  /\bgoal[:\s]+(.+)/i,
+  /\bobjective[:\s]+(.+)/i,
+  /\btask[:\s]+(.+)/i,
+  /\bimplement\s+(.+)/i,
+  /\bcreate\s+(.+)/i,
+  /\bbuild\s+(.+)/i,
+  /\badd\s+(.+)/i,
+  /\bfix\s+(.+)/i,
+];
+
+const COMPLETED_PATTERNS = [
+  /\b(done|completed|finished|created|added|fixed|resolved|merged|implemented|set up)\b/i,
+  /\b[x]\s+(.+)/i,
+];
+
+const IN_PROGRESS_PATTERNS = [
+  /\b(working on|in progress|currently|ongoing|processing)\b/i,
+  /\b[ ]\s+(.+)/i,
+];
+
+const BLOCKED_PATTERNS = [
+  /\b(blocked|blocker|issue|stuck|waiting for|error:|failed to)\b/i,
+];
+
+const DECISION_KEYWORDS = [
+  'decided',
+  'decision',
+  'chose',
+  'chosen',
+  'going with',
+  'using ... because',
+  'we will use',
+  'switched to',
+  'picking',
+];
+
+const NEXT_STEP_PATTERNS = [
+  /\bnext[:\s]+(.+)/i,
+  /\bthen[:\s]+(.+)/i,
+  /\bTODO[:\s]+(.+)/i,
+  /\bremaining[:\s]+(.+)/i,
+  /\bneeds?\s+to\s+be\s+(.+)/i,
+];
+
+const CRITICAL_CONTEXT_PATTERNS = [
+  /\bimportant[:\s]+(.+)/i,
+  /\bcritical[:\s]+(.+)/i,
+  /\bnote[:\s]+(.+)/i,
+  /\bremember[:\s]+(.+)/i,
+  /\bwarning[:\s]+(.+)/i,
+  /\bdon'?t\s+forget\s+(.+)/i,
+];
+
+/**
+ * Collect all text content from messages, joined by newlines.
+ */
+function collectAllText(messages: CompactionMessage[]): string[] {
+  const lines: string[] = [];
+
+  for (const msg of messages) {
+    if (typeof msg.content === 'string') {
+      lines.push(msg.content);
+    } else if (Array.isArray(msg.content)) {
+      for (const block of msg.content) {
+        if (typeof block === 'object' && block !== null && 'type' in block) {
+          if (block.type === 'text' && 'text' in block) {
+            lines.push((block as { text: string }).text);
+          }
+          if (block.type === 'thinking' && 'thinking' in block) {
+            lines.push((block as { thinking: string }).thinking);
+          }
+        }
+      }
+    }
+  }
+
+  return lines;
+}
+
+/**
+ * Extract the user's goal from conversation messages.
+ * Prioritizes the first user message and explicit goal/objective/task patterns.
+ */
+export function extractGoal(messages: CompactionMessage[]): string {
+  // First, check user messages for explicit goal patterns
+  const userMessages = messages.filter((m) => m.role === 'user');
+
+  for (const msg of userMessages) {
+    const text = extractTextContent(msg.content);
+    for (const pattern of GOAL_PATTERNS) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    }
+  }
+
+  // Fallback: use the first user message content
+  if (userMessages.length > 0) {
+    const text = extractTextContent(userMessages[0].content);
+    if (text) {
+      // Truncate if too long
+      return text.length > 200 ? text.slice(0, 200).trim() + '...' : text.trim();
+    }
+  }
+
+  return 'No goal identified';
+}
+
+/**
+ * Extract progress from messages: Done, In Progress, and Blocked items.
+ */
+export function extractProgress(messages: CompactionMessage[]): {
+  done: string[];
+  inProgress: string[];
+  blocked: string[];
+} {
+  const done: string[] = [];
+  const inProgress: string[] = [];
+  const blocked: string[] = [];
+  const allTexts = collectAllText(messages);
+
+  for (const text of allTexts) {
+    const lines = text.split('\n');
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (line.length === 0) continue;
+
+      let isBlocked = false;
+      let isInProgress = false;
+      let isDone = false;
+
+      for (const pattern of BLOCKED_PATTERNS) {
+        if (pattern.test(line)) {
+          blocked.push(line);
+          isBlocked = true;
+          break;
+        }
+      }
+
+      if (isBlocked) continue;
+
+      for (const pattern of IN_PROGRESS_PATTERNS) {
+        if (pattern.test(line)) {
+          inProgress.push(line);
+          isInProgress = true;
+          break;
+        }
+      }
+
+      if (isInProgress) continue;
+
+      for (const pattern of COMPLETED_PATTERNS) {
+        if (pattern.test(line)) {
+          done.push(line);
+          isDone = true;
+          break;
+        }
+      }
+
+      if (isDone) continue;
+    }
+  }
+
+  return { done, inProgress, blocked };
+}
+
+/**
+ * Extract key decisions from messages.
+ * Looks for decision keywords and extracts the surrounding sentence/line.
+ */
+export function extractKeyDecisions(messages: CompactionMessage[]): string[] {
+  const decisions: string[] = [];
+  const allTexts = collectAllText(messages);
+
+  for (const text of allTexts) {
+    const lines = text.split('\n');
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (line.length === 0) continue;
+
+      const lowerLine = line.toLowerCase();
+      for (const keyword of DECISION_KEYWORDS) {
+        if (lowerLine.includes(keyword)) {
+          // Avoid duplicates
+          if (!decisions.some((d) => d === line)) {
+            decisions.push(line);
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  return decisions;
+}
+
+/**
+ * Extract next steps from messages.
+ */
+export function extractNextSteps(messages: CompactionMessage[]): string[] {
+  const steps: string[] = [];
+  const allTexts = collectAllText(messages);
+
+  for (const text of allTexts) {
+    const lines = text.split('\n');
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (line.length === 0) continue;
+
+      for (const pattern of NEXT_STEP_PATTERNS) {
+        if (pattern.test(line)) {
+          const match = line.match(pattern);
+          const step = match && match[1] ? match[1].trim() : line;
+          if (!steps.some((s) => s === step)) {
+            steps.push(step);
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  return steps;
+}
+
+/**
+ * Extract critical context from messages.
+ */
+export function extractCriticalContext(messages: CompactionMessage[]): string {
+  const contextItems: string[] = [];
+  const allTexts = collectAllText(messages);
+
+  for (const text of allTexts) {
+    const lines = text.split('\n');
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (line.length === 0) continue;
+
+      for (const pattern of CRITICAL_CONTEXT_PATTERNS) {
+        if (pattern.test(line)) {
+          if (!contextItems.some((c) => c === line)) {
+            contextItems.push(line);
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  return contextItems.length > 0
+    ? contextItems.map((c) => `- ${c}`).join('\n')
+    : '- No critical context identified';
+}
+
+/**
+ * Extract file operations (read and modified) from messages.
+ * Uses the existing fileOps infrastructure.
+ */
+export function extractFileOperations(messages: CompactionMessage[]): {
+  readFiles: string[];
+  modifiedFiles: string[];
+} {
+  const fileOps = createFileOps();
+  for (const msg of messages) {
+    extractFileOpsFromMessage(msg, fileOps);
+  }
+  return computeFileLists(fileOps);
+}
+
+/**
+ * Data structure for building the summary markdown.
+ */
+export interface SummaryData {
+  goal: string;
+  progress: {
+    done: string[];
+    inProgress: string[];
+    blocked: string[];
+  };
+  keyDecisions: string[];
+  nextSteps: string[];
+  criticalContext: string;
+  readFiles: string[];
+  modifiedFiles: string[];
+}
+
+/**
+ * Build the Pi-format summary markdown from structured data.
+ */
+export function buildSummaryMarkdown(data: SummaryData): string {
+  const parts: string[] = [];
+
+  // Goal
+  parts.push('## Goal');
+  parts.push(data.goal);
+
+  // Progress
+  parts.push('');
+  parts.push('## Progress');
+  parts.push('### Done');
+  if (data.progress.done.length > 0) {
+    for (const item of data.progress.done) {
+      parts.push(`- ${item}`);
+    }
+  } else {
+    parts.push('- No completed tasks');
+  }
+
+  if (data.progress.inProgress.length > 0) {
+    parts.push('');
+    parts.push('### In Progress');
+    for (const item of data.progress.inProgress) {
+      parts.push(`- ${item}`);
+    }
+  }
+
+  if (data.progress.blocked.length > 0) {
+    parts.push('');
+    parts.push('### Blocked');
+    for (const item of data.progress.blocked) {
+      parts.push(`- ${item}`);
+    }
+  }
+
+  // Key Decisions
+  parts.push('');
+  parts.push('## Key Decisions');
+  if (data.keyDecisions.length > 0) {
+    for (const decision of data.keyDecisions) {
+      parts.push(`- ${decision}`);
+    }
+  } else {
+    parts.push('- No key decisions recorded');
+  }
+
+  // Next Steps
+  parts.push('');
+  parts.push('## Next Steps');
+  if (data.nextSteps.length > 0) {
+    for (let i = 0; i < data.nextSteps.length; i++) {
+      parts.push(`${i + 1}. ${data.nextSteps[i]}`);
+    }
+  } else {
+    parts.push('1. Continue with current tasks');
+  }
+
+  // Critical Context
+  parts.push('');
+  parts.push('## Critical Context');
+  parts.push(data.criticalContext);
+
+  // File tracking
+  const fileSection = formatFileOperations(data.readFiles, data.modifiedFiles);
+  if (fileSection) {
+    parts.push('');
+    parts.push(fileSection.trim());
+  }
+
+  return parts.join('\n');
+}
+
+/**
+ * Generate a structured Pi-format summary from conversation messages.
+ *
+ * This function extracts Goal, Progress, Key Decisions, Next Steps, Critical Context,
+ * and file operations from messages, and assembles them into the standard Pi summary format.
+ *
+ * Supports iterative summary generation via `previousSummary` and cumulative file tracking.
+ */
+export async function generateSummary(
+  messages: CompactionMessage[],
+  options?: {
+    model?: string;
+    previousSummary?: string;
+    customInstructions?: string;
+  },
+): Promise<string> {
+  // Extract structured data from messages
+  const goal = extractGoal(messages);
+  const progress = extractProgress(messages);
+  const keyDecisions = extractKeyDecisions(messages);
+  const nextSteps = extractNextSteps(messages);
+  const criticalContext = extractCriticalContext(messages);
+  const fileOps = extractFileOperations(messages);
+
+  // Handle cumulative file tracking with previous summary
+  let finalReadFiles = fileOps.readFiles;
+  let finalModifiedFiles = fileOps.modifiedFiles;
+
+  if (options?.previousSummary) {
+    const previousFileOps = parseFileOperations(options.previousSummary);
+    const merged = mergeFileTracking(
+      previousFileOps,
+      { readFiles: fileOps.readFiles, modifiedFiles: fileOps.modifiedFiles },
+    );
+    finalReadFiles = merged.readFiles;
+    finalModifiedFiles = merged.modifiedFiles;
+  }
+
+  const summaryData: SummaryData = {
+    goal,
+    progress,
+    keyDecisions,
+    nextSteps,
+    criticalContext,
+    readFiles: finalReadFiles,
+    modifiedFiles: finalModifiedFiles,
+  };
+
+  // Optionally prepend custom instructions as a header
+  let result = buildSummaryMarkdown(summaryData);
+
+  if (options?.customInstructions) {
+    result = `> **Note:** ${options.customInstructions}\n\n${result}`;
+  }
+
+  return result;
+}

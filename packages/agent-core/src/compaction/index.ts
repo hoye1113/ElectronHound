@@ -50,6 +50,15 @@ export {
   createFileOps,
   mergeFileTracking,
   SUMMARIZATION_SYSTEM_PROMPT,
+  // Pi summary generation
+  generateSummary,
+  extractGoal,
+  extractProgress,
+  extractKeyDecisions,
+  extractNextSteps,
+  extractCriticalContext,
+  extractFileOperations,
+  buildSummaryMarkdown,
 } from './summary.js';
 
 export type {
@@ -57,6 +66,7 @@ export type {
   SummaryOptions,
   SummaryResult,
   FileOperations,
+  SummaryData,
 } from './summary.js';
 
 // Branch summarization
