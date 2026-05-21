@@ -79,10 +79,27 @@ export {
 // Branch summarization (class-based, with cumulative tracking)
 export { BranchSummarization } from './branchSummarization.js';
 
+// File tracking
+export { FileTracker } from './fileTracker.js';
+
+// Token counting
+export { TokenCounter, TOKEN_COUNTER_DEFAULTS } from './tokenCounter.js';
+
+export type { TokenCounterConfig } from './tokenCounter.js';
+
+// Tool result truncation
+export { ToolResultTruncator, TRUNCATOR_DEFAULTS } from './toolResultTruncator.js';
+
+export type { ToolResultTruncatorConfig } from './toolResultTruncator.js';
+
 // Types
 export type {
   BranchSummaryResult,
   BranchSummaryEntry,
+  CompactionEntryDetails,
+  TokenCount,
+  TokenCountBreakdown,
+  ToolResult,
 } from './types.js';
 
 // Split turn detection
