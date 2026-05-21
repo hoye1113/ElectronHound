@@ -6,6 +6,8 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadExamples } from '../prompts/few-shot/index.js';
+import { runAuditChain } from '../sub-agents/index.js';
+import type { AuditChainResult } from '../sub-agents/types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const verifyPrompt = readFileSync(join(__dirname, '..', 'prompts', 'verify.txt'), 'utf-8');
@@ -60,8 +62,32 @@ export function createVerifyNode(
       }
     }
 
+    // Run sub-agent audit chain after execution completes
+    let auditChainResult: AuditChainResult | null = null;
+    try {
+      auditChainResult = await runAuditChain({
+        goal: state.goal,
+        targetAppPath: state.targetAppPath,
+        context: state,
+      });
+
+      // Audit chain result can inform the verdict
+      // If audit chain reports critical issues, consider adjusting verdict
+      const auditSeverity = auditChainResult.executionAnalyst.auditReport.severity;
+      if (auditSeverity === 'fail' && verdictResult.verdict === 'pass') {
+        verdictResult = {
+          verdict: 'fail',
+          reasoning: `Audit chain reported critical issues: ${auditChainResult.executionAnalyst.auditReport.summary}`,
+        };
+      }
+    } catch (error) {
+      // Audit chain failure should not block the graph
+      console.error('[verify] audit chain failed:', error);
+    }
+
     return {
       currentVerdict: verdictResult,
+      auditChainResult,
     };
   };
 }

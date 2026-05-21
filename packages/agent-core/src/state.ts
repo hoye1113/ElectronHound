@@ -1,5 +1,6 @@
 import { Annotation } from '@langchain/langgraph';
 import type { ObservationResult, PlanResult, ExecResult, VerdictResult, StepRecord } from '@eata/shared-types';
+import type { AuditChainResult } from './sub-agents/types.js';
 
 export const TestState = Annotation.Root({
   goal: Annotation<string>({
@@ -60,5 +61,9 @@ export const TestState = Annotation.Root({
   lastObservationHash: Annotation<string>({
     reducer: (_left: string, right: string) => right,
     default: () => '',
+  }),
+  auditChainResult: Annotation<AuditChainResult | null>({
+    reducer: (_left: AuditChainResult | null, right: AuditChainResult | null) => right,
+    default: () => null,
   }),
 });
