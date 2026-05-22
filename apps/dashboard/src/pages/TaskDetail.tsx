@@ -74,7 +74,7 @@ export default function TaskDetail() {
         }
       } catch {
         // Fetch task failure - gracefully skip
-        setError('Failed to load task details');
+        setError(t('taskDetail.loadError'));
       } finally {
         setIsLoading(false);
       }
@@ -160,7 +160,7 @@ export default function TaskDetail() {
               </span>
               <span className="flex items-center gap-1.5 text-xs text-zinc-500">
                 <ListChecks className="size-3.5" />
-                {task.stepCount} steps
+                {task.stepCount} {t('common.steps')}
               </span>
               <span className="flex items-center gap-1.5 text-xs text-zinc-500">
                 <Clock className="size-3.5" />

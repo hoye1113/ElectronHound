@@ -54,10 +54,6 @@
     "empty": "暂无日志",
     "emptyHint": "任务运行时日志将显示在此处"
   },
-  "a11yTree": {
-    "empty": "暂无无障碍快照",
-    "emptyHint": "步骤捕获无障碍数据后快照将显示在此处"
-  },
   "patternList": {
     "empty": "未找到模式",
     "fixLabel": "修复：",
@@ -67,7 +63,8 @@
     "empty": "暂无截图",
     "previewTitle": "截图预览",
     "closeViewer": "关闭截图查看器",
-    "viewScreenshot": "查看第 {{step}} 步截图（{{phase}} 阶段）"
+    "viewScreenshot": "查看第 {{step}} 步截图（{{phase}} 阶段）",
+    "fullSizeScreenshot": "全尺寸截图 - 第 {{step}} 步"
   },
   "a11yTree": {
     "empty": "暂无无障碍快照",
@@ -115,7 +112,7 @@
     "goalPlaceholder": "AI 代理需要完成什么任务？",
     "targetAppLabel": "目标应用路径",
     "targetAppPlaceholder": "/path/to/electron/app",
-    "modelLabel": "LLM 模型",
+    "modelLabel": "LLM 模型：",
     "providerLabel": "LLM 提供商",
     "providerPlaceholder": "选择提供商（默认：活跃）",
     "submitError": "创建任务失败，请重试。",
@@ -148,7 +145,8 @@
     "stepsSection": "步骤",
     "screenshotsSection": "截图 ({{count}})",
     "downloadJson": "JSON",
-    "downloadHtml": "HTML 报告"
+    "downloadHtml": "HTML 报告",
+    "loadError": "加载任务详情失败"
   },
   "liveMonitor": {
     "noTaskId": "未提供任务 ID",
@@ -170,11 +168,11 @@
     "templatePlaceholder": "选择模板（可选）",
     "nameLabel": "名称",
     "nameRequired": "名称为必填项",
-    "baseUrlLabel": "基础 URL",
+    "baseUrlLabel": "基础 URL：",
     "baseUrlRequired": "基础 URL 为必填项",
-    "modelLabel": "模型",
+    "modelLabel": "模型：",
     "modelRequired": "模型为必填项",
-    "apiKeyLabel": "API 密钥",
+    "apiKeyLabel": "API 密钥：",
     "apiKeyRequired": "API 密钥为必填项",
     "hideApiKey": "隐藏 API 密钥",
     "showApiKey": "显示 API 密钥",

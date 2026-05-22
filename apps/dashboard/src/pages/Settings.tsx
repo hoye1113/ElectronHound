@@ -476,14 +476,14 @@ function ProviderCard({
       {/* Details */}
       <div className="mt-3 space-y-1.5 pl-6.5">
         <p className="text-xs text-zinc-500">
-          <span className="text-zinc-400">Model:</span> {provider.model}
+          <span className="text-zinc-400">{t('settings.modelLabel')}</span> {provider.model}
         </p>
         <p className="text-xs text-zinc-500 truncate">
-          <span className="text-zinc-400">Base URL:</span> {provider.baseURL}
+          <span className="text-zinc-400">{t('settings.baseUrlLabel')}</span> {provider.baseURL}
         </p>
         <div className="flex items-center gap-2">
           <p className="text-xs text-zinc-500">
-            <span className="text-zinc-400">API Key:</span>{' '}
+            <span className="text-zinc-400">{t('settings.apiKeyLabel')}</span>{' '}
             <span className="font-mono">{showKey ? provider.apiKey : maskApiKey(provider.apiKey)}</span>
           </p>
           <button

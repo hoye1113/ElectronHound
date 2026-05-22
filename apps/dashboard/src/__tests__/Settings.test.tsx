@@ -102,9 +102,9 @@ describe('SettingsPage', () => {
 
     expect(screen.getByRole('heading', { name: 'Add Provider' })).toBeInTheDocument();
     expect(screen.getByLabelText('Name')).toBeInTheDocument();
-    expect(screen.getByLabelText('Base URL')).toBeInTheDocument();
-    expect(screen.getByLabelText('Model')).toBeInTheDocument();
-    expect(screen.getByLabelText('API Key')).toBeInTheDocument();
+    expect(screen.getByLabelText('Base URL:')).toBeInTheDocument();
+    expect(screen.getByLabelText('Model:')).toBeInTheDocument();
+    expect(screen.getByLabelText('API Key:')).toBeInTheDocument();
   });
 
   it('validates required fields in add dialog', async () => {
@@ -125,9 +125,9 @@ describe('SettingsPage', () => {
     fireEvent.click(screen.getByText(/Add New Provider/i));
 
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'My Provider' } });
-    fireEvent.change(screen.getByLabelText('Base URL'), { target: { value: 'https://api.example.com' } });
-    fireEvent.change(screen.getByLabelText('Model'), { target: { value: 'custom-model' } });
-    fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'sk-123' } });
+    fireEvent.change(screen.getByLabelText('Base URL:'), { target: { value: 'https://api.example.com' } });
+    fireEvent.change(screen.getByLabelText('Model:'), { target: { value: 'custom-model' } });
+    fireEvent.change(screen.getByLabelText('API Key:'), { target: { value: 'sk-123' } });
     fireEvent.click(screen.getByRole('button', { name: /Add Provider/i }));
 
     await waitFor(() => {

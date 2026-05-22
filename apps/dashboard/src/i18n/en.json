@@ -69,7 +69,8 @@
     "empty": "No screenshots available",
     "previewTitle": "Screenshot Preview",
     "closeViewer": "Close screenshot viewer",
-    "viewScreenshot": "View screenshot from step {{step}} ({{phase}} phase)"
+    "viewScreenshot": "View screenshot from step {{step}} ({{phase}} phase)",
+    "fullSizeScreenshot": "Full size screenshot - Step {{step}}"
   },
   "stepTimeline": {
     "phase_observe": "Observe",
@@ -111,7 +112,7 @@
     "goalPlaceholder": "What should the AI agent accomplish?",
     "targetAppLabel": "Target App Path",
     "targetAppPlaceholder": "/path/to/electron/app",
-    "modelLabel": "LLM Model",
+    "modelLabel": "LLM Model:",
     "providerLabel": "LLM Provider",
     "providerPlaceholder": "Select provider (default: active)",
     "priorityLabel": "Priority",
@@ -144,7 +145,8 @@
     "stepsSection": "Steps",
     "screenshotsSection": "Screenshots ({{count}})",
     "downloadJson": "JSON",
-    "downloadHtml": "HTML Report"
+    "downloadHtml": "HTML Report",
+    "loadError": "Failed to load task details"
   },
   "liveMonitor": {
     "noTaskId": "No task ID provided",
@@ -166,11 +168,11 @@
     "templatePlaceholder": "Choose a template (optional)",
     "nameLabel": "Name",
     "nameRequired": "Name is required",
-    "baseUrlLabel": "Base URL",
+    "baseUrlLabel": "Base URL:",
     "baseUrlRequired": "Base URL is required",
-    "modelLabel": "Model",
+    "modelLabel": "Model:",
     "modelRequired": "Model is required",
-    "apiKeyLabel": "API Key",
+    "apiKeyLabel": "API Key:",
     "apiKeyRequired": "API Key is required",
     "hideApiKey": "Hide API key",
     "showApiKey": "Show API key",

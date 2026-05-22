@@ -113,7 +113,7 @@ export default function TaskCard({ task }: TaskCardProps) {
       {/* Meta */}
       <div className="flex items-center gap-3 text-xs text-zinc-500">
         <span className="font-mono text-zinc-400">{task.llmModel}</span>
-        <span>{task.stepCount} steps</span>
+        <span>{task.stepCount} {t('common.steps')}</span>
         <span className="flex items-center gap-1">
           <Clock className="size-3" />
           {timeAgo}
