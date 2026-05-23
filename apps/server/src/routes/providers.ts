@@ -7,6 +7,7 @@ import {
   deleteProvider,
   setActiveProvider,
   createProviderInstance,
+  testProviderConnection,
 } from '@eata/agent-core';
 
 const CreateProviderSchema = z.object({
@@ -71,14 +72,11 @@ export async function providersRoutes(server: FastifyInstance) {
     if (!provider) return reply.status(404).send({ error: 'Provider not found' });
 
     try {
-      const model = createProviderInstance(provider);
-      const { generateText } = await import('ai');
-      await generateText({
-        model,
-        prompt: 'Say "OK" to confirm connection',
-        maxOutputTokens: 10,
-      });
-      return { success: true, message: 'Connection successful' };
+      const result = await testProviderConnection(provider);
+      return {
+        success: result.success,
+        message: result.message,
+      };
     } catch (error) {
       return {
         success: false,

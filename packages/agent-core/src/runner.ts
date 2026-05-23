@@ -1,9 +1,10 @@
-import { createTestGraph } from './graph.js';
-import { createCheckpointer } from './checkpoint.js';
 import { getMCPClient } from './mcp/client.js';
 import { getGenerateObject, getGenerateObjectForProvider } from './llm.js';
 import { loadProvidersConfig } from './config-manager.js';
-import type { TestState } from './state.js';
+import { AgentLoop } from './runtime/agentLoop.js';
+import { SessionManager } from './session/sessionManager.js';
+import { createLLMProviderAdapter } from './llm/adapter.js';
+import type { RunTestResult } from './runner-types.js';
 
 export interface RunTestOptions {
   goal: string;
@@ -18,7 +19,7 @@ export interface RunTestOptions {
 
 export async function runTest(
   options: RunTestOptions,
-): Promise<typeof TestState.State> {
+): Promise<RunTestResult> {
   let generateObject;
 
   if (options.providerId) {
@@ -34,14 +35,26 @@ export async function runTest(
     generateObject = getGenerateObject({ model: options.llmModel });
   }
 
-  const graphOptions = generateObject
-    ? { plan: { generateObject }, verify: { generateObject } }
-    : undefined;
-  const graph = createTestGraph(graphOptions);
-  const checkpointer = createCheckpointer(
-    options.checkpointPath ?? './data/agent-checkpoints.sqlite3',
-  );
-  const compiled = graph.compile({ checkpointer });
+  if (!generateObject) {
+    throw new Error('No LLM provider available');
+  }
+
+  // Create LLM provider adapter
+  const llmProvider = createLLMProviderAdapter({ model: options.llmModel });
+  
+  if (!llmProvider) {
+    throw new Error('Failed to create LLM provider adapter');
+  }
+
+  // Create session manager
+  const sessionManager = new SessionManager();
+
+  // Create AgentLoop
+  const agentLoop = new AgentLoop({
+    llmProvider,
+    sessionManager,
+    maxSteps: options.maxSteps ?? 50,
+  });
 
   const taskId = options.taskId ?? crypto.randomUUID();
 
@@ -50,18 +63,27 @@ export async function runTest(
     await mcp.connect({ playwrightCdpUrl: options.cdpUrl });
   }
 
-  const initialState = {
+  // Run the agent loop
+  const result = await agentLoop.run(options.goal);
+
+  // Convert AgentLoop result to RunTestResult
+  const runTestResult: RunTestResult = {
     goal: options.goal,
     targetAppPath: options.targetAppPath,
     llmModel: options.llmModel ?? 'gpt-4o',
     maxSteps: options.maxSteps ?? 50,
     taskId,
+    history: [],
+    currentObservation: null,
+    currentPlan: null,
+    currentExecResult: null,
+    currentVerdict: null,
+    stepCount: result.report?.stepCount ?? 0,
+    stuckCounter: 0,
+    status: result.verdict === 'pass' ? 'completed' : result.verdict === 'fail' ? 'failed' : result.verdict === 'stuck' ? 'failed' : 'aborted',
+    lastObservationHash: '',
+    auditChainResult: null,
   };
 
-  const result = await compiled.invoke(initialState, {
-    configurable: { thread_id: taskId },
-    recursionLimit: 100,
-  });
-
-  return result;
+  return runTestResult;
 }

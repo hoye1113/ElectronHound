@@ -4,7 +4,7 @@ import { PerformanceReportSchema } from '@eata/shared-types';
 
 export interface PerformanceNodeOptions {
   generateObject?: (params: {
-    model: ReturnType<typeof import('@ai-sdk/openai').openai>;
+    model: unknown;
     schema: typeof PerformanceReportSchema;
     prompt: string;
     system: string;
@@ -48,7 +48,7 @@ export function createPerformanceNode(
 
     if (options.generateObject) {
       const result = await options.generateObject({
-        model: {} as ReturnType<typeof import('@ai-sdk/openai').openai>,
+        model: {},
         schema: PerformanceReportSchema,
         prompt,
         system: 'Analyze the test execution for performance issues. Identify slow steps, bottlenecks, and patterns of retries. Provide a structured performance report with avgStepDuration, slowSteps, retryCount, and stuckDetected.',

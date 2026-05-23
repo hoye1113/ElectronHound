@@ -54,7 +54,7 @@ export {
 } from './config-manager.js';
 
 // Provider factory (v0.3)
-export { createProviderInstance } from './provider-factory.js';
+export { createProviderInstance, testProviderConnection } from './provider-factory.js';
 export { getGenerateObjectForProvider } from './llm.js';
 
 // Provider types
@@ -109,3 +109,26 @@ export type {
   CDPToolResult,
   CDPContext,
 } from './tools/types.js';
+
+// Session management
+export { SessionManager } from './session/index.js';
+export type {
+  SessionEntry,
+  CompactionEntry,
+  BranchSummaryEntry,
+  SessionWithEntries,
+} from './session/index.js';
+
+// Agent loop runtime
+export { AgentLoop } from './runtime/index.js';
+export type {
+  AgentLoopConfig,
+  AgentLoopState,
+  Observation,
+  Plan,
+  ExecutionResult,
+  Verdict,
+  VerdictValue,
+  Report,
+  AgentRunResult,
+} from './runtime/index.js';

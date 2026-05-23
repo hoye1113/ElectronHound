@@ -4,7 +4,7 @@ import { FeedbackPatternSchema } from '@eata/shared-types';
 
 export interface PatternNodeOptions {
   generateObject?: (params: {
-    model: ReturnType<typeof import('@ai-sdk/openai').openai>;
+    model: unknown;
     schema: typeof FeedbackPatternSchema;
     prompt: string;
     system: string;
@@ -48,7 +48,7 @@ export function createPatternNode(
 
     if (options.generateObject) {
       const result = await options.generateObject({
-        model: {} as ReturnType<typeof import('@ai-sdk/openai').openai>,
+        model: {},
         schema: FeedbackPatternSchema,
         prompt,
         system: `You are analyzing test execution failures to extract reusable patterns.

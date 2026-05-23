@@ -1,42 +1,111 @@
-import type { SessionEntry } from './types.js';
+/**
+ * SessionManager — SQLite-backed session lifecycle manager.
+ *
+ * Usage:
+ *   const sm = new SessionManager();                          // defaults to ~/.eata/sessions.db
+ *   const sm = new SessionManager('/custom/path/sessions.db'); // custom path
+ *   const sm = new SessionManager(':memory:');                 // in-memory (testing)
+ *
+ *   const sessionId = sm.createSession('agent-1', 'Test login flow');
+ *   const entryId  = sm.addEntry(sessionId, { role: 'user', content: 'Hello', type: 'user' });
+ *   const session  = sm.getSession(sessionId);
+ *   sm.compactSession(sessionId, 'Summary text', [{ branchName: 'a', summary: 'b' }]);
+ */
+
+import Database from 'better-sqlite3';
+import type {
+  SessionEntry,
+  CompactionEntry,
+  BranchSummaryEntry,
+  SessionWithEntries,
+} from './types.js';
+import {
+  initSessionDb,
+  createSessionQueries,
+  createSession,
+  getSession,
+  addEntry,
+  compactSession,
+  deleteSession,
+  generateId,
+  nowISO,
+  DEFAULT_SESSIONS_DB_PATH,
+} from './persistence.js';
+
+import type { SessionQueries } from './persistence.js';
 
 export class SessionManager {
-  private entries: SessionEntry[] = [];
+  private db: Database.Database;
+  private q: SessionQueries;
 
-  addEntry(entry: SessionEntry): void {
-    this.entries.push(entry);
+  /**
+   * @param dbPath  Path to the SQLite database file.
+   *                Defaults to `~/.eata/sessions.db`.
+   *                Pass `':memory:'` for an in-memory database (testing).
+   */
+  constructor(dbPath?: string) {
+    this.db = initSessionDb(dbPath ?? DEFAULT_SESSIONS_DB_PATH);
+    this.q = createSessionQueries(this.db);
   }
 
-  getEntries(): SessionEntry[] {
-    return [...this.entries];
+  // ── Core CRUD ────────────────────────────────────────────────────────────
+
+  /**
+   * Create a new session.
+   * @returns The new session ID (UUID v4).
+   */
+  createSession(agentId: string, taskPrompt: string): string {
+    return createSession(this.q, agentId, taskPrompt);
   }
 
-  serializeConversation(): string {
-    return this.entries
-      .map((e) => {
-        if (e.type === 'compaction' || e.type === 'branch_summary') {
-          return `[${e.type}] ${e.summary}`;
-        }
-        return `[${e.type}] ${e.content}`;
-      })
-      .join('\n');
+  /**
+   * Retrieve a session with all its entries and optional compaction.
+   * @returns The full session aggregate, or null if not found.
+   */
+  getSession(sessionId: string): SessionWithEntries | null {
+    return getSession(this.q, sessionId);
   }
 
-  extractFileOperations(): { read: string[]; modified: string[] } {
-    const read = new Set<string>();
-    const modified = new Set<string>();
-
-    for (const entry of this.entries) {
-      if (entry.type === 'compaction' || entry.type === 'branch_summary') {
-        entry.readFiles?.forEach((f) => read.add(f));
-        entry.modifiedFiles?.forEach((f) => modified.add(f));
-      }
-    }
-
-    return { read: Array.from(read), modified: Array.from(modified) };
+  /**
+   * Append an entry to an existing session.
+   * @returns The new entry ID (UUID v4).
+   */
+  addEntry(
+    sessionId: string,
+    entry: {
+      role: SessionEntry['role'];
+      content: string;
+      type: SessionEntry['type'];
+      id?: string;
+      timestamp?: string;
+    },
+  ): string {
+    return addEntry(this.q, sessionId, entry);
   }
 
-  clear(): void {
-    this.entries = [];
+  /**
+   * Compact (summarize) a session.
+   * Replaces any previous compaction for the same session.
+   */
+  compactSession(
+    sessionId: string,
+    summary: string,
+    branchSummaries: BranchSummaryEntry[],
+  ): void {
+    compactSession(this.q, sessionId, summary, branchSummaries);
+  }
+
+  /**
+   * Delete a session and all associated entries / compactions.
+   */
+  deleteSession(sessionId: string): void {
+    deleteSession(this.q, sessionId);
+  }
+
+  // ── Utility ──────────────────────────────────────────────────────────────
+
+  /** Close the underlying database connection. */
+  close(): void {
+    this.db.close();
   }
 }

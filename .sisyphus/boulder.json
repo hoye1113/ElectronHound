@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "active_work_id": "eata-eaf64e55",
+  "active_work_id": "pi-migration-wave1-2-detailed-7628a601",
   "works": {
     "eata-eaf64e55": {
       "work_id": "eata-eaf64e55",
@@ -8,12 +8,38 @@
       "plan_name": "eata",
       "status": "completed",
       "started_at": "2026-05-18T13:38:52.956Z",
-      "updated_at": "2026-05-19T09:59:26.257Z",
+      "updated_at": "2026-05-21T16:45:18.361Z",
       "session_ids": [
-        "ses_1c54479b5ffebiz1WoOZ7mI0E6"
+        "ses_1c54479b5ffebiz1WoOZ7mI0E6",
+        "ses_1ba4b46cdffe8lazZiD1kY8xUS",
+        "ses_1ba4b18ffffeGKHdsOBD4skYHK",
+        "ses_1ba4aeef7ffey2dwXP8t89jK7G",
+        "ses_1b8703f43ffecvkjstlyOOL0PL",
+        "ses_1b86ffa51ffeHvBMS05DQnENCc",
+        "ses_1b79a3a94ffeFojMtP1gNyVL6H",
+        "ses_1b799f3b0ffeKPg264HoJGsI6U",
+        "ses_1b799aa79ffexOc3YCP3Vd3eZL",
+        "ses_1b79961d4ffeEVmwih4xb2ru7w",
+        "ses_1b7934ccaffeR4YTL8qolrt1z2",
+        "ses_1b5ba8de6ffeitJnslJg2jT1Y2",
+        "ses_1b492bebeffeq6h8yEq1befn9x",
+        "ses_1b492b083ffejjTIL6PSxPO9ig"
       ],
       "session_origins": {
-        "ses_1c54479b5ffebiz1WoOZ7mI0E6": "direct"
+        "ses_1c54479b5ffebiz1WoOZ7mI0E6": "direct",
+        "ses_1ba4b46cdffe8lazZiD1kY8xUS": "appended",
+        "ses_1ba4b18ffffeGKHdsOBD4skYHK": "appended",
+        "ses_1ba4aeef7ffey2dwXP8t89jK7G": "appended",
+        "ses_1b8703f43ffecvkjstlyOOL0PL": "appended",
+        "ses_1b86ffa51ffeHvBMS05DQnENCc": "appended",
+        "ses_1b79a3a94ffeFojMtP1gNyVL6H": "appended",
+        "ses_1b799f3b0ffeKPg264HoJGsI6U": "appended",
+        "ses_1b799aa79ffexOc3YCP3Vd3eZL": "appended",
+        "ses_1b79961d4ffeEVmwih4xb2ru7w": "appended",
+        "ses_1b7934ccaffeR4YTL8qolrt1z2": "appended",
+        "ses_1b5ba8de6ffeitJnslJg2jT1Y2": "appended",
+        "ses_1b492bebeffeq6h8yEq1befn9x": "appended",
+        "ses_1b492b083ffejjTIL6PSxPO9ig": "appended"
       },
       "agent": "atlas",
       "task_sessions": {
@@ -98,100 +124,197 @@
       },
       "ended_at": "2026-05-19T09:59:26.239Z",
       "elapsed_ms": 73233283
+    },
+    "pi-migration-wave1-2-detailed-7628a601": {
+      "work_id": "pi-migration-wave1-2-detailed-7628a601",
+      "active_plan": "D:\\workSpace\\electron_playwright_test\\.sisyphus\\plans\\pi-migration-wave1-2-detailed.md",
+      "plan_name": "pi-migration-wave1-2-detailed",
+      "status": "completed",
+      "started_at": "2026-05-22T10:13:09.406Z",
+      "updated_at": "2026-05-22T11:36:20.980Z",
+      "session_ids": [
+        "ses_1b0e59e25ffegrpjVNziKfAcIh"
+      ],
+      "session_origins": {
+        "ses_1b0e59e25ffegrpjVNziKfAcIh": "direct"
+      },
+      "agent": "atlas",
+      "task_sessions": {
+        "todo:1": {
+          "task_key": "todo:1",
+          "task_label": "1",
+          "task_title": "移除 Vercel AI SDK 依赖",
+          "session_id": "ses_1b0c594dbffeM3wUuEGiMYCT5T",
+          "agent": "Sisyphus-Junior",
+          "category": "quick",
+          "updated_at": "2026-05-22T10:31:13.257Z",
+          "started_at": "2026-05-22T10:28:48.638Z",
+          "status": "completed",
+          "ended_at": "2026-05-22T10:31:13.257Z",
+          "elapsed_ms": 144619
+        },
+        "todo:2": {
+          "task_key": "todo:2",
+          "task_label": "2",
+          "task_title": "创建自研 LLM 接口",
+          "session_id": "ses_1b0bfefc7ffeiJue306elTX7PD",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-05-22T10:51:39.933Z",
+          "started_at": "2026-05-22T10:44:57.784Z",
+          "status": "completed",
+          "ended_at": "2026-05-22T10:51:39.933Z",
+          "elapsed_ms": 402149
+        },
+        "todo:3": {
+          "task_key": "todo:3",
+          "task_label": "3",
+          "task_title": "迁移 providers.ts 到自研 LLM",
+          "session_id": "ses_1b0adcd36ffeuNKKeYa8fi3TxQ",
+          "agent": "Sisyphus-Junior",
+          "category": "quick",
+          "updated_at": "2026-05-22T10:59:31.476Z",
+          "started_at": "2026-05-22T10:55:32.819Z",
+          "status": "completed",
+          "ended_at": "2026-05-22T10:59:31.476Z",
+          "elapsed_ms": 238657
+        },
+        "todo:4": {
+          "task_key": "todo:4",
+          "task_label": "4",
+          "task_title": "实现 Session 管理",
+          "session_id": "ses_1b0a777b3ffehiHJX4LGfbXK04",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-05-22T11:11:27.518Z",
+          "started_at": "2026-05-22T11:07:28.634Z",
+          "status": "completed",
+          "ended_at": "2026-05-22T11:11:27.518Z",
+          "elapsed_ms": 238884
+        },
+        "todo:5": {
+          "task_key": "todo:5",
+          "task_label": "5",
+          "task_title": "实现 Agent Loop Runtime",
+          "session_id": "ses_1b09c8b56ffemUmfk63TRF0a7K",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-05-22T11:22:01.868Z",
+          "started_at": "2026-05-22T11:19:39.255Z",
+          "status": "completed",
+          "ended_at": "2026-05-22T11:22:01.868Z",
+          "elapsed_ms": 142613
+        },
+        "final-wave:f1": {
+          "task_key": "final-wave:f1",
+          "task_label": "F1",
+          "task_title": "**Plan Compliance Audit** — `oracle`",
+          "session_id": "ses_1b08bbb9fffea5dg8YcyQ8fD2q",
+          "agent": "Sisyphus-Junior",
+          "category": "unspecified-high",
+          "started_at": "2026-05-22T11:28:08.894Z",
+          "status": "completed",
+          "updated_at": "2026-05-22T11:34:48.169Z",
+          "ended_at": "2026-05-22T11:34:48.169Z",
+          "elapsed_ms": 399275
+        }
+      },
+      "ended_at": "2026-05-22T11:36:20.980Z",
+      "elapsed_ms": 4991574
     }
   },
-  "active_plan": "D:\\workSpace\\electron_playwright_test\\.sisyphus\\plans\\eata.md",
-  "started_at": "2026-05-18T13:38:52.956Z",
+  "active_plan": "D:\\workSpace\\electron_playwright_test\\.sisyphus\\plans\\pi-migration-wave1-2-detailed.md",
+  "started_at": "2026-05-22T10:13:09.406Z",
   "status": "completed",
-  "updated_at": "2026-05-19T09:59:26.257Z",
+  "updated_at": "2026-05-22T11:36:20.980Z",
   "session_ids": [
-    "ses_1c54479b5ffebiz1WoOZ7mI0E6"
+    "ses_1b0e59e25ffegrpjVNziKfAcIh"
   ],
   "session_origins": {
-    "ses_1c54479b5ffebiz1WoOZ7mI0E6": "direct"
+    "ses_1b0e59e25ffegrpjVNziKfAcIh": "direct"
   },
-  "plan_name": "eata",
+  "plan_name": "pi-migration-wave1-2-detailed",
   "task_sessions": {
     "todo:1": {
       "task_key": "todo:1",
       "task_label": "1",
-      "task_title": "Monorepo Scaffolding + pnpm Workspaces",
-      "session_id": "ses_1c4aa830cffeigtd92Fpzpw0w1",
+      "task_title": "移除 Vercel AI SDK 依赖",
+      "session_id": "ses_1b0c594dbffeM3wUuEGiMYCT5T",
       "agent": "Sisyphus-Junior",
       "category": "quick",
-      "updated_at": "2026-05-18T13:52:50.367Z",
-      "started_at": "2026-05-18T13:51:40.966Z",
+      "updated_at": "2026-05-22T10:31:13.257Z",
+      "started_at": "2026-05-22T10:28:48.638Z",
       "status": "completed",
-      "ended_at": "2026-05-18T13:52:50.367Z",
-      "elapsed_ms": 69401
+      "ended_at": "2026-05-22T10:31:13.257Z",
+      "elapsed_ms": 144619
     },
     "todo:2": {
       "task_key": "todo:2",
       "task_label": "2",
-      "task_title": "Shared Zod Schemas + TypeScript Types",
-      "session_id": "ses_1c4a2583affewjw2frTG1PoNhV",
+      "task_title": "创建自研 LLM 接口",
+      "session_id": "ses_1b0bfefc7ffeiJue306elTX7PD",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-05-22T10:51:39.933Z",
+      "started_at": "2026-05-22T10:44:57.784Z",
+      "status": "completed",
+      "ended_at": "2026-05-22T10:51:39.933Z",
+      "elapsed_ms": 402149
+    },
+    "todo:3": {
+      "task_key": "todo:3",
+      "task_label": "3",
+      "task_title": "迁移 providers.ts 到自研 LLM",
+      "session_id": "ses_1b0adcd36ffeuNKKeYa8fi3TxQ",
       "agent": "Sisyphus-Junior",
       "category": "quick",
-      "updated_at": "2026-05-18T14:06:35.810Z",
-      "started_at": "2026-05-18T14:03:41.121Z",
+      "updated_at": "2026-05-22T10:59:31.476Z",
+      "started_at": "2026-05-22T10:55:32.819Z",
       "status": "completed",
-      "ended_at": "2026-05-18T14:06:35.810Z",
-      "elapsed_ms": 174689
+      "ended_at": "2026-05-22T10:59:31.476Z",
+      "elapsed_ms": 238657
     },
-    "todo:8": {
-      "task_key": "todo:8",
-      "task_label": "8",
-      "task_title": "electron-bridge-mcp Server",
-      "session_id": "ses_1c494afddffelr3HuS6NsLh3Oa",
+    "todo:4": {
+      "task_key": "todo:4",
+      "task_label": "4",
+      "task_title": "实现 Session 管理",
+      "session_id": "ses_1b0a777b3ffehiHJX4LGfbXK04",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-05-22T11:11:27.518Z",
+      "started_at": "2026-05-22T11:07:28.634Z",
+      "status": "completed",
+      "ended_at": "2026-05-22T11:11:27.518Z",
+      "elapsed_ms": 238884
+    },
+    "todo:5": {
+      "task_key": "todo:5",
+      "task_label": "5",
+      "task_title": "实现 Agent Loop Runtime",
+      "session_id": "ses_1b09c8b56ffemUmfk63TRF0a7K",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-05-22T11:22:01.868Z",
+      "started_at": "2026-05-22T11:19:39.255Z",
+      "status": "completed",
+      "ended_at": "2026-05-22T11:22:01.868Z",
+      "elapsed_ms": 142613
+    },
+    "final-wave:f1": {
+      "task_key": "final-wave:f1",
+      "task_label": "F1",
+      "task_title": "**Plan Compliance Audit** — `oracle`",
+      "session_id": "ses_1b08bbb9fffea5dg8YcyQ8fD2q",
       "agent": "Sisyphus-Junior",
       "category": "unspecified-high",
-      "updated_at": "2026-05-18T14:41:26.259Z",
-      "started_at": "2026-05-18T14:26:23.266Z",
+      "started_at": "2026-05-22T11:28:08.894Z",
       "status": "completed",
-      "ended_at": "2026-05-18T14:41:26.259Z",
-      "elapsed_ms": 902993
-    },
-    "todo:15": {
-      "task_key": "todo:15",
-      "task_label": "15",
-      "task_title": "Feedback Aggregator — LangGraph 报告层 Sub Graph（4 路并行）",
-      "session_id": "ses_1c475a1a9ffexlaRANuWM20TwF",
-      "agent": "Sisyphus-Junior",
-      "category": "unspecified-high",
-      "updated_at": "2026-05-18T14:55:03.036Z",
-      "started_at": "2026-05-18T14:55:03.036Z",
-      "status": "completed",
-      "ended_at": "2026-05-18T14:55:03.036Z",
-      "elapsed_ms": null
-    },
-    "todo:v02_1-to-14": {
-      "task_key": "todo:v02_1-to-14",
-      "task_label": "v0.2",
-      "task_title": "v0.2: Real LLM + MCP + UX (14 tasks: Schema, Deps, Graph DI, LLM, MCP, Worker, Wire LLM, Screenshot, E2E, Settings, Screenshot View, HTML Report, Cancel, Routes)",
-      "session_id": "ses_1c54479b5ffebiz1WoOZ7mI0E6",
-      "agent": "atlas",
-      "category": "multiple",
-      "updated_at": "2026-05-19T09:00:00.000Z",
-      "started_at": "2026-05-19T06:18:54.886Z",
-      "status": "completed",
-      "ended_at": "2026-05-19T09:00:00.000Z",
-      "elapsed_ms": null
-    },
-    "final-wave:f1-f4": {
-      "task_key": "final-wave:f1-f4",
-      "task_label": "F1-F4",
-      "task_title": "Final Verification Wave (4 reviews × 2 versions = 8 reviews, all APPROVED)",
-      "session_id": "ses_1c54479b5ffebiz1WoOZ7mI0E6",
-      "agent": "oracle+unspecified-high+deep",
-      "category": "review",
-      "updated_at": "2026-05-19T09:00:00.000Z",
-      "started_at": "2026-05-18T13:38:52.956Z",
-      "status": "completed",
-      "ended_at": "2026-05-19T09:00:00.000Z",
-      "elapsed_ms": null
+      "updated_at": "2026-05-22T11:34:48.169Z",
+      "ended_at": "2026-05-22T11:34:48.169Z",
+      "elapsed_ms": 399275
     }
   },
   "agent": "atlas",
-  "ended_at": "2026-05-19T09:59:26.239Z",
-  "elapsed_ms": 73233283
+  "ended_at": "2026-05-22T11:36:20.980Z",
+  "elapsed_ms": 4991574
 }

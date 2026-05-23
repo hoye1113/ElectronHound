@@ -278,3 +278,130 @@ px tsx packages/agent-core/src/runner.ts with --thread-id {taskId} for LangGraph
 - `tsc --noEmit` passes with zero errors
 - `vite build` succeeds: 1793 modules, 379KB JS bundle
 - All 35 tests pass: 16 stores + 11 TaskCard + 8 CreateTaskForm
+
+### i18n Audit — Dashboard App (2026-05-20)
+
+#### Overview
+- Translation files: `en.json` + `zh.json` (2 languages only)
+- i18n config: `src/i18n/config.ts` — localStorage for language, fallback to 'en'
+- Test setup: `src/__tests__/setup.ts` imports `'../i18n/config'` ✅
+- Dedicated i18n test file: **None** ❌
+- `t()` call count: ~377 across 22 files
+- Completion estimate: **~91%** (37 hardcoded strings remaining)
+
+#### Hardcoded Strings by Category
+| Category | Count | Files affected |
+|----------|-------|----------------|
+| Hardcoded aria-labels | 17 | TaskCard, TaskDetail, Settings, AccessibilityTreeView, LogPanel, StepTimeline, ScreenshotGallery, FeedbackLoop |
+| Pluralized inline JS text | 2 | TaskList, FeedbackLoop |
+| "Step N" display text | 4 | StepTimeline, ScreenshotGallery |
+| "steps" word (count label) | 3 | TaskCard, TaskDetail, LiveMonitor |
+| Settings display labels | 3 | Settings (Model:, Base URL:, API Key:) |
+| Hardcoded alt attrs | 2 | ScreenshotGallery |
+| Error messages | 1 | TaskDetail |
+| Fallback loading text | 1 | LiveMonitor |
+| Sample placeholders | 4 | Settings (sample data like "gpt-4o", "sk-...") |
+| **Total** | **~37** | |
+
+#### Key Issues
+1. No i18next pluralization — TaskList and FeedbackLoop use inline JS `{x !== 1 ? 's' : ''}`
+2. 17 aria-labels not translated (accessibility text)
+3. Settings ProviderCard display labels (Model:, Base URL:, API Key:) are hardcoded
+4. TaskDetail `setError('Failed to load task details')` is hardcoded
+5. 4 sample placeholder values in Settings form (debatable — they're universal examples)
+
+#### Files Needing Changes
+- `pages/Settings.tsx` (11 strings) — display labels + aria-labels + placeholders
+- `pages/TaskDetail.tsx` (5 strings) — error message + aria-labels + "steps"
+- `components/TaskCard.tsx` (4 strings) — aria-labels + "steps"
+- `components/StepTimeline.tsx` (2 strings) — aria-label + "Step N"
+- `components/ScreenshotGallery.tsx` (5 strings) — aria-labels + alt + "Step N"
+- `components/AccessibilityTreeView.tsx` (1 string) — aria-label
+- `components/LogPanel.tsx` (1 string) — aria-label
+- `pages/LiveMonitor.tsx` (2 strings) — fallback text + "steps"
+- `pages/FeedbackLoop.tsx` (2 strings) — plural text + aria-label
+- `pages/TaskList.tsx` (1 string) — plural text
+
+#### Recommended en.json Additions
+Keys to add: `common.step`, `common.stepsCount`, `common.editAction`, `common.deleteAction`,
+`common.testConnection`, `common.setAsDefaultAria`, `common.backToTaskList`,
+`common.downloadJsonReport`, `common.downloadHtmlReport`, `common.cancelTask`,
+`common.deleteTask`, `common.taskAria`, `common.searchFeedbackAria`,
+`common.loadingTask`, `common.failedToLoadTask`,
+`settings.modelDetailLabel`, `settings.baseUrlDetailLabel`, `settings.apiKeyDetailLabel`,
+plus plural keys for `taskList.taskCount` and `feedbackLoop.patternsDetected`
+
+#### Notes
+- Placeholders like "gpt-4o", "sk-..." can reasonably remain as-is (they're sample data examples, not UI labels)
+- The `{count} + 'steps'` pattern should use i18next pluralization rules
+- All 14 .tsx files in pages/ and components/ have `useTranslation` imported and `t()` available
+
+### Compaction Cut Point + Split Turn (2026-05-21)
+
+#### Cut Point Rules (`cut-point.ts`)
+- Valid cut points: user, assistant, custom messages (identified by `messageType` field), BashExecution
+- Invalid cut points: toolResult (must stay with tool call), tool (tool call), system messages
+- `isToolResult()` / `isToolCall()` are standalone helpers checking `role === 'toolResult'` / `role === 'tool'`
+- Custom messages use `messageType` field (e.g., `'bash_execution'`, `'branch_summary'`) — any message with `messageType` set is a valid cut point (role still checked for tool/toolResult/system rejection first)
+- `findCutPoint()` prefers turn boundaries (user messages) when selecting cut index
+- `MessageRole` union: `'user' | 'assistant' | 'toolResult' | 'tool' | 'system'`
+
+#### Split Turn Detection (`splitTurn.ts`)
+- A turn = from user message to next user message (or end of conversation)
+- `isSplitTurn()` checks if last turn's total tokens > `keepRecentTokens` (default 20000)
+- `splitTurnAtMessage(messages, index)` splits into `[history, turnPrefix, turnSuffix]`
+  - Special case: when `index` points to a user message, it IS the turn boundary (split exactly there)
+  - Otherwise: walk backwards from index-1 to find turn start
+- `mergeSummaries()` format: `## History Summary\n...\n\n## Current Turn Summary\n...`
+  - Empty summaries are handled gracefully (only non-empty sections included)
+
+#### Testing Patterns
+- Cut point tests: 15 tests covering all role types, custom messages, findCutPoint behavior
+- Split turn tests: 12 tests covering detection, splitting edge cases, summary merging
+- Both test files import from `../index.js` (not directly from source files)
+- `vitest run "cutPoint"` matches `cutPoint.test.ts` via path substring
+- Pre-existing typecheck errors from missing `ai`/`@ai-sdk/openai` packages are NOT related to compaction changes
+
+## Wave 2 Task 7: Summary Generation (Pi Format) - 2026-05-20
+
+### Patterns
+- xtractProgress works on per-line basis; multi-line content needs actual \n line breaks, not inline sentences
+- Existing fileOps infrastructure (createFileOps, xtractFileOpsFromMessage, computeFileLists) is reusable; xtractFileOperations is a thin wrapper
+- mergeFileTracking already handles dedup + promotion of read→modified correctly
+- Pattern-based extraction (regex) works for heuristic summary; no LLM call needed
+- collectAllText helper abstracts content block vs string handling
+
+### Gotchas
+- TypeScript 	sc --noEmit without project config complains about Set iteration (es2015+ target needed) - pre-existing issue
+- Test data must use explicit \n for multi-line content; single-line sentences won't split across pattern categories
+- uildSummaryMarkdown uses \n join; no trailing newline (consistent with formatFileOperations)
+
+### Decisions
+- generateSummary is async for future LLM integration (spec requires Promise return)
+- Extraction functions are synchronous heuristics - can be replaced with LLM calls later
+- customInstructions prepended as > **Note:**... block before summary
+- Fallback text for empty sections: "No goal identified", "No completed tasks", "No key decisions recorded", "Continue with current tasks"
+
+
+## Wave 3 Task 9: Agent Loop Runtime - 2026-05-21
+
+### Patterns
+- AgentLoop uses generateText (not generateObject) for all LLM calls - simpler, more testable
+- safeJsonParse handles LLM formatting quirks (code fences, embedded JSON)
+- Step recording pushed from inside observe/plan/execute/verify methods
+- execute() catches errors internally and returns {success:false}, does NOT throw
+- Stuck detection: track last 3 observation fingerprints, compare all equal
+- Compaction check runs BEFORE each iteration
+
+### Gotchas
+- ToolRegistry.execute is a method (name, args) => result, NOT individual named tool functions
+- Mock llm.generateText must return valid JSON for observe/plan/verify (not arbitrary strings)
+- StepRecord.phase has only 4 valid values (observe|plan|execute|verify) - report is not a phase
+
+### Decisions
+- observe falls back to raw text as ariaTree when LLM returns non-JSON (graceful degradation)
+- plan/verify throw on invalid JSON (LLM MUST return valid plan or loop escalates)
+- execute catches errors and records step with status:failed
+- Report is generated but NOT pushed as a step record
+- maxSteps exceeded returns fail verdict
+

@@ -4,7 +4,7 @@ import { SafetyReportSchema } from '@eata/shared-types';
 
 export interface SafetyNodeOptions {
   generateObject?: (params: {
-    model: ReturnType<typeof import('@ai-sdk/openai').openai>;
+    model: unknown;
     schema: typeof SafetyReportSchema;
     prompt: string;
     system: string;
@@ -36,7 +36,7 @@ export function createSafetyNode(
 
     if (options.generateObject) {
       const result = await options.generateObject({
-        model: {} as ReturnType<typeof import('@ai-sdk/openai').openai>,
+        model: {},
         schema: SafetyReportSchema,
         prompt,
         system: 'Analyze the test execution history for safety concerns. Identify potential security risks, data exposure, privilege escalation, or any dangerous operations. If nothing found, return riskLevel "none" with empty findings.',

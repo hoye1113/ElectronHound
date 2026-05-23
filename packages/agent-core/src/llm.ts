@@ -1,6 +1,5 @@
-import type { FlexibleSchema } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
-import { generateObject as aiGenerateObject } from 'ai';
+import type { LLMProvider as LLMProviderImpl } from './llm/types.js';
+import { createOpenAIProvider } from './llm/openai-provider.js';
 import type { LLMProviderConfig } from './llm-types.js';
 import { createProviderInstance } from './provider-factory.js';
 
@@ -11,13 +10,13 @@ export interface LLMConfig {
 }
 
 export interface LLMProvider {
-  openai: ReturnType<typeof createOpenAI>;
+  provider: LLMProviderImpl;
   model: string;
 }
 
 export interface GenerateObjectOptions {
   model: unknown;
-  schema: FlexibleSchema<unknown>;
+  schema: { parse: (value: unknown) => unknown };
   prompt: string;
   system: string;
 }
@@ -35,8 +34,15 @@ export function createLLMProvider(config?: LLMConfig): LLMProvider | null {
 
   if (!apiKey) return null;
 
-  const openai = createOpenAI({ apiKey, baseURL: baseURL || undefined });
-  return { openai, model };
+  const provider = createOpenAIProvider({
+    id: 'env',
+    name: 'Environment Provider',
+    type: 'openai-compatible',
+    apiKey,
+    baseURL: baseURL ?? 'https://api.openai.com/v1',
+    model,
+  });
+  return { provider, model };
 }
 
 /**
@@ -51,9 +57,9 @@ export function createLLMProvider(config?: LLMConfig): LLMProvider | null {
  * Note: the `model` param passed by nodes is a dummy placeholder and is ignored.
  */
 export function getGenerateObject(config?: LLMConfig) {
-  const provider = createLLMProvider(config);
+  const llmProvider = createLLMProvider(config);
 
-  if (!provider) {
+  if (!llmProvider) {
     // No LLM configured — nodes will use their own deterministic fallbacks
     return null;
   }
@@ -61,12 +67,7 @@ export function getGenerateObject(config?: LLMConfig) {
   // Real generateObject bound to the configured provider
   return async (opts: GenerateObjectOptions): Promise<{ object: unknown }> => {
     const { schema, prompt, system } = opts;
-    return aiGenerateObject({
-      model: provider.openai(provider.model),
-      schema,
-      prompt,
-      system,
-    });
+    return llmProvider.provider.generateObject({ schema, prompt, system });
   };
 }
 
@@ -75,15 +76,10 @@ export function getGenerateObject(config?: LLMConfig) {
  * 用于 Dashboard 中选择供应商后创建测试任务
  */
 export function getGenerateObjectForProvider(config: LLMProviderConfig) {
-  const model = createProviderInstance(config);
+  const provider = createProviderInstance(config);
 
   return async (opts: GenerateObjectOptions): Promise<{ object: unknown }> => {
     const { schema, prompt, system } = opts;
-    return aiGenerateObject({
-      model,
-      schema,
-      prompt,
-      system,
-    });
+    return provider.generateObject({ schema, prompt, system });
   };
 }
