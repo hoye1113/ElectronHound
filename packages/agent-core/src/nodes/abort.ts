@@ -1,8 +1,8 @@
-import type { TestState } from '../state.js';
+import type { TestState } from '../test-state-types.js';
 
 export const abortNode = async (
-  state: typeof TestState.State,
-): Promise<Partial<typeof TestState.State>> => {
+  state: TestState,
+): Promise<Partial<TestState>> => {
   const reason = state.stuckCounter >= 3
     ? `Stuck detection: ${state.stuckCounter} identical observations`
     : state.stepCount >= state.maxSteps

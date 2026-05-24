@@ -1,10 +1,10 @@
-import type { TestState } from '../state.js';
+import type { TestState } from '../test-state-types.js';
 import type { ObservationResult } from '@eata/shared-types';
 import { getMCPClient } from '../mcp/client.js';
 
 export const observeNode = async (
-  state: typeof TestState.State,
-): Promise<Partial<typeof TestState.State>> => {
+  state: TestState,
+): Promise<Partial<TestState>> => {
   const mcp = getMCPClient();
 
   const snapshotResult = await mcp.callTool('playwright', 'browser_snapshot', {});

@@ -1,4 +1,4 @@
-import type { TestState } from '../state.js';
+import type { TestState } from '../test-state-types.js';
 import type { VerdictResult } from '@eata/shared-types';
 import { VerdictResultSchema } from '@eata/shared-types';
 import { guardVerdict } from '../guards.js';
@@ -23,8 +23,8 @@ export interface VerifyNodeOptions {
 
 export function createVerifyNode(
   options: VerifyNodeOptions,
-): (state: typeof TestState.State) => Promise<Partial<typeof TestState.State>> {
-  return async (state: typeof TestState.State): Promise<Partial<typeof TestState.State>> => {
+): (state: TestState) => Promise<Partial<TestState>> {
+  return async (state: TestState): Promise<Partial<TestState>> => {
     const fewShotExamples = await loadExamples({ goal: state.goal, maxExamples: 3 });
     const fewShotContext = fewShotExamples.length > 0
       ? `\n### Few-shot Examples:\n${fewShotExamples
@@ -68,7 +68,7 @@ export function createVerifyNode(
       auditChainResult = await runAuditChain({
         goal: state.goal,
         targetAppPath: state.targetAppPath,
-        context: state,
+        context: { ...state },
       });
 
       // Audit chain result can inform the verdict

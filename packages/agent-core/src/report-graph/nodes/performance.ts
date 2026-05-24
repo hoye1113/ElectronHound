@@ -1,4 +1,4 @@
-import type { ReportState } from '../state.js';
+import type { ReportState } from '../report-state-types.js';
 import type { PerformanceReport } from '@eata/shared-types';
 import { PerformanceReportSchema } from '@eata/shared-types';
 
@@ -13,8 +13,8 @@ export interface PerformanceNodeOptions {
 
 export function createPerformanceNode(
   options: PerformanceNodeOptions,
-): (state: typeof ReportState.State) => Promise<Partial<typeof ReportState.State>> {
-  return async (state: typeof ReportState.State): Promise<Partial<typeof ReportState.State>> => {
+): (state: ReportState) => Promise<Partial<ReportState>> {
+  return async (state: ReportState): Promise<Partial<ReportState>> => {
     const steps = state.history;
     const durations = steps.map((s) => s.duration).filter((d) => d > 0);
     const avgDuration = durations.length > 0

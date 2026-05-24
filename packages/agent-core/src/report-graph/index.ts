@@ -1,6 +1,18 @@
-export { createReportGraph } from './graph.js';
-export type { ReportGraphOptions } from './graph.js';
-export { ReportState } from './state.js';
+import type { SafetyNodeOptions } from './nodes/safety.js';
+import type { PerformanceNodeOptions } from './nodes/performance.js';
+import type { AccessibilityNodeOptions } from './nodes/accessibility.js';
+import type { PatternNodeOptions } from './nodes/pattern.js';
+import type { SummarizeNodeOptions } from './nodes/summarize.js';
+
+export interface ReportGraphOptions {
+  safety?: SafetyNodeOptions;
+  performance?: PerformanceNodeOptions;
+  accessibility?: AccessibilityNodeOptions;
+  pattern?: PatternNodeOptions;
+  summarize?: SummarizeNodeOptions;
+}
+
+export type { ReportState } from './report-state-types.js';
 export { createSafetyNode, safetyNode } from './nodes/safety.js';
 export type { SafetyNodeOptions } from './nodes/safety.js';
 export { createPerformanceNode, performanceNode } from './nodes/performance.js';

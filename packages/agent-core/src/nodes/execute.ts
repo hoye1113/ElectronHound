@@ -1,4 +1,4 @@
-import type { TestState } from '../state.js';
+import type { TestState } from '../test-state-types.js';
 import type { ExecResult } from '@eata/shared-types';
 import { getMCPClient } from '../mcp/client.js';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -66,8 +66,8 @@ async function captureScreenshot(
 }
 
 export const executeNode = async (
-  state: typeof TestState.State,
-): Promise<Partial<typeof TestState.State>> => {
+  state: TestState,
+): Promise<Partial<TestState>> => {
   const plan = state.currentPlan;
   if (!plan?.toolCall) {
     const errorResult: ExecResult = { success: false, result: 'No plan or toolCall available' };

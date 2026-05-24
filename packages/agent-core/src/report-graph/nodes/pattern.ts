@@ -1,4 +1,4 @@
-import type { ReportState } from '../state.js';
+import type { ReportState } from '../report-state-types.js';
 import type { FeedbackPattern } from '@eata/shared-types';
 import { FeedbackPatternSchema } from '@eata/shared-types';
 
@@ -11,7 +11,7 @@ export interface PatternNodeOptions {
   }) => Promise<{ object: Partial<FeedbackPattern> }>;
 }
 
-function extractErrorContext(state: typeof ReportState.State): string {
+function extractErrorContext(state: ReportState): string {
   const failedSteps = state.history.filter((h) => h.status === 'failed');
   if (failedSteps.length === 0) return '';
 
@@ -30,8 +30,8 @@ function extractErrorContext(state: typeof ReportState.State): string {
 
 export function createPatternNode(
   options: PatternNodeOptions,
-): (state: typeof ReportState.State) => Promise<Partial<typeof ReportState.State>> {
-  return async (state: typeof ReportState.State): Promise<Partial<typeof ReportState.State>> => {
+): (state: ReportState) => Promise<Partial<ReportState>> {
+  return async (state: ReportState): Promise<Partial<ReportState>> => {
     const failedSteps = state.history.filter((h) => h.status === 'failed');
     if (failedSteps.length === 0) {
       return { newPatterns: [] };

@@ -1,4 +1,4 @@
-import type { ReportState } from '../state.js';
+import type { ReportState } from '../report-state-types.js';
 import type { SafetyReport } from '@eata/shared-types';
 import { SafetyReportSchema } from '@eata/shared-types';
 
@@ -13,8 +13,8 @@ export interface SafetyNodeOptions {
 
 export function createSafetyNode(
   options: SafetyNodeOptions,
-): (state: typeof ReportState.State) => Promise<Partial<typeof ReportState.State>> {
-  return async (state: typeof ReportState.State): Promise<Partial<typeof ReportState.State>> => {
+): (state: ReportState) => Promise<Partial<ReportState>> {
+  return async (state: ReportState): Promise<Partial<ReportState>> => {
     const historyContext = state.history
       .slice(-10)
       .map((h) => `Step ${h.stepIndex} [${h.phase}/${h.status}]: ${h.observation ?? 'N/A'}`)

@@ -1,24 +1,52 @@
-import type { TestState } from '../state.js';
-import { createReportGraph } from '../report-graph/index.js';
+import type { TestState } from '../test-state-types.js';
+import type { ReportState } from '../report-graph/report-state-types.js';
+import { safetyNode } from '../report-graph/nodes/safety.js';
+import { performanceNode } from '../report-graph/nodes/performance.js';
+import { accessibilityNode } from '../report-graph/nodes/accessibility.js';
+import { patternNode } from '../report-graph/nodes/pattern.js';
+import { summarizeNode } from '../report-graph/nodes/summarize.js';
 
 export const reportNode = async (
-  state: typeof TestState.State,
-): Promise<Partial<typeof TestState.State>> => {
+  state: TestState,
+): Promise<Partial<TestState>> => {
   const verdict = state.currentVerdict?.verdict;
 
-  // Invoke the Report sub-graph to produce safety, performance, accessibility
-  // and pattern analysis. This integrates the fan-out/fan-in Report Graph
-  // (safety + perf + a11y + pattern → summarize) into the main test pipeline.
+  // Fan-out/fan-in: run safety, performance, accessibility, and pattern
+  // analysis in parallel via Promise.all, then summarize the results.
   try {
-    const reportGraph = createReportGraph();
-    const compiledReportGraph = reportGraph.compile();
-    const reportOutput = await compiledReportGraph.invoke({
+    const baseState: ReportState = {
       goal: state.goal,
       history: state.history,
+      safetyReport: null,
+      performanceReport: null,
+      accessibilityReport: null,
+      newPatterns: null,
+      summaryText: '',
+    };
+
+    // Fan-out: call all 4 analysis nodes in parallel
+    const [safetyResult, performanceResult, accessibilityResult, patternResult] =
+      await Promise.all([
+        safetyNode(baseState),
+        performanceNode(baseState),
+        accessibilityNode(baseState),
+        patternNode(baseState),
+      ]);
+
+    // Fan-in: summarize all results
+    const summaryResult = await summarizeNode({
+      goal: state.goal,
+      history: state.history,
+      safetyReport: safetyResult.safetyReport ?? null,
+      performanceReport: performanceResult.performanceReport ?? null,
+      accessibilityReport: accessibilityResult.accessibilityReport ?? null,
+      newPatterns: patternResult.newPatterns ?? null,
+      summaryText: '',
     });
+
     console.log(
-      `[reportNode] Report graph completed: safety=${reportOutput.safetyReport?.riskLevel ?? 'n/a'}, ` +
-      `summaryLength=${reportOutput.summaryText?.length ?? 0}`,
+      `[reportNode] Report analysis completed: safety=${safetyResult.safetyReport?.riskLevel ?? 'n/a'}, ` +
+      `summaryLength=${summaryResult.summaryText?.length ?? 0}`,
     );
   } catch (err) {
     console.warn('[reportNode] Report sub-graph invocation failed, skipping analysis:', err);

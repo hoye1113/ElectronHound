@@ -1,4 +1,4 @@
-import type { ReportState } from '../state.js';
+import type { ReportState } from '../report-state-types.js';
 import type { AccessibilityReport } from '@eata/shared-types';
 import { AccessibilityReportSchema } from '@eata/shared-types';
 
@@ -13,8 +13,8 @@ export interface AccessibilityNodeOptions {
 
 export function createAccessibilityNode(
   options: AccessibilityNodeOptions,
-): (state: typeof ReportState.State) => Promise<Partial<typeof ReportState.State>> {
-  return async (state: typeof ReportState.State): Promise<Partial<typeof ReportState.State>> => {
+): (state: ReportState) => Promise<Partial<ReportState>> {
+  return async (state: ReportState): Promise<Partial<ReportState>> => {
     const a11ySnapshots = state.history
       .filter((h) => h.accessibilitySnapshotPath)
       .map((h) => `Step ${h.stepIndex}: snapshot at ${h.accessibilitySnapshotPath}`);

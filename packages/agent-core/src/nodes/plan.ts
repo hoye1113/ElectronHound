@@ -1,4 +1,4 @@
-import type { TestState } from '../state.js';
+import type { TestState } from '../test-state-types.js';
 import type { PlanResult, FeedbackPattern } from '@eata/shared-types';
 import { PlanResultSchema } from '@eata/shared-types';
 import { guardPlan } from '../guards.js';
@@ -22,8 +22,8 @@ export interface PlanNodeOptions {
 
 export function createPlanNode(
   options: PlanNodeOptions,
-): (state: typeof TestState.State) => Promise<Partial<typeof TestState.State>> {
-  return async (state: typeof TestState.State): Promise<Partial<typeof TestState.State>> => {
+): (state: TestState) => Promise<Partial<TestState>> {
+  return async (state: TestState): Promise<Partial<TestState>> => {
     const patterns: FeedbackPattern[] = options.getRelevantPatterns
       ? options.getRelevantPatterns(state.goal)
       : [];
