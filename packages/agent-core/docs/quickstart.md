@@ -139,7 +139,7 @@ eata/
 │   ├── dashboard/    React UI (Vite + Tailwind + Zustand)
 │   └── server/       Fastify HTTP server + SQLite
 ├── packages/
-│   ├── agent-core/   LangGraph test graph, LLM integration
+│   ├── agent-core/   Agent loop runtime, LLM providers, test execution nodes
 │   ├── electron-bridge-mcp/  MCP server for Playwright + Electron
 │   ├── electron-helper/      Electron process helpers
 │   ├── launcher/             Electron launch + CDP discovery

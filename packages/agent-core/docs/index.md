@@ -4,7 +4,7 @@ Welcome to the EATA (Electron App Testing Agent) core documentation. This index 
 
 ## Overview
 
-EATA is an autonomous AI agent for testing Electron applications. Built on LangGraph, Playwright CDP, and the Vercel AI SDK, it observes, plans, executes, and verifies test actions through natural language goals.
+EATA is an autonomous AI agent for testing Electron applications. Built with a self-built Agent Loop runtime, Playwright CDP, and the Vercel AI SDK, it observes, plans, executes, and verifies test actions through natural language goals.
 
 ## Quick Start
 
@@ -13,7 +13,7 @@ EATA is an autonomous AI agent for testing Electron applications. Built on LangG
 
 ## Core Modules
 
-- **[Agent Loop](architecture.md#agent-loop)** — LangGraph-based test graph
+- **[Agent Loop](architecture.md#agent-loop)** — Self-built Agent Loop runtime
 - **[Tool Interface](tools.md)** — Tool system and registry
 - **[LLM Interface](llm.md)** — Multi-provider LLM abstraction
 - **[Providers](providers.md)** — OpenAI-compatible provider configuration
@@ -60,7 +60,7 @@ The compaction system manages long conversations by summarizing context. Based o
 ## Key Concepts
 
 ### Agent Loop
-The agent loop follows an **observe → plan → execute → verify** cycle using LangGraph state graphs. The graph supports conditional routing for retry, escalation, and abort scenarios.
+The agent loop follows an **observe → plan → execute → verify** cycle using a self-built Agent Loop runtime. The state graph supports conditional routing for retry, escalation, and abort scenarios.
 
 ### CDP Architecture
 EATA uses Chrome DevTools Protocol (CDP) instead of MCP for direct browser/Electron integration. 12 CDP tools cover:

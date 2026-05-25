@@ -1,6 +1,6 @@
 # EATA — Electron App Testing Agent
 
-EATA (Electron App Testing Agent) is an open-source, autonomous AI agent that tests Electron applications through natural language goals. Built with LangGraph, Playwright, and the Vercel AI SDK, EATA observes, plans, executes, and verifies — producing detailed test reports with screenshots, accessibility analysis, and structured feedback.
+EATA (Electron App Testing Agent) is an open-source, autonomous AI agent that tests Electron applications through natural language goals. Built with Playwright, custom LLM providers, and a self-built Agent Loop runtime, EATA observes, plans, executes, and verifies — producing detailed test reports with screenshots, accessibility analysis, and structured feedback.
 
 ## Quick Start
 
@@ -75,7 +75,7 @@ eata/
 │   ├── dashboard/    React UI (Vite + Tailwind + Zustand)
 │   └── server/       Fastify HTTP server + SQLite
 ├── packages/
-│   ├── agent-core/   LangGraph test graph, LLM integration
+│   ├── agent-core/   Agent loop runtime, LLM providers, test execution nodes
 │   ├── electron-bridge-mcp/  MCP server for Playwright + Electron
 │   ├── electron-helper/      Electron process helpers
 │   ├── launcher/             Electron launch + CDP discovery

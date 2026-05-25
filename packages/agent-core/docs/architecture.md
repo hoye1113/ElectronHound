@@ -13,7 +13,7 @@ EATA (Electron App Testing Agent) is built as a modular, layered system for auto
 │           (Fastify HTTP + SQLite)                     │
 ├──────────────────────────────────────────────────────┤
 │               Agent Core Layer                        │
-│   LangGraph Test Graph  │  Compaction  │  Sub-agents │
+│   Agent Loop Runtime  │  Compaction  │  Sub-agents │
 ├──────────────────────────────────────────────────────┤
 │                Tool / Integration Layer               │
 │   CDP Tools (12)  │  Tool Registry  │  File Tracker  │
@@ -28,7 +28,7 @@ EATA (Electron App Testing Agent) is built as a modular, layered system for auto
 
 ## Agent Loop
 
-The core agent loop uses LangGraph `StateGraph` to model the test execution as a state machine.
+The core agent loop is built on a self-built Agent Loop runtime that models the test execution as a state machine.
 
 ### State Definition
 
@@ -130,7 +130,7 @@ provider-factory.ts → llm-types.ts
 ### Test Execution Flow
 ```
 1. User provides goal + targetAppPath
-2. LangGraph initializes TestState
+2. The Agent Loop initializes TestState
 3. observe node: CDP snapshot of current state
 4. plan node: LLM generates action plan
 5. execute node: Tool invocation (CDP commands)
@@ -156,7 +156,7 @@ provider-factory.ts → llm-types.ts
 packages/
 ├── agent-core/         # This package
 │   ├── src/
-│   │   ├── graph.ts          # LangGraph test graph
+│   │   ├── graph.ts          # Agent loop test graph
 │   │   ├── state.ts          # TestState annotation
 │   │   ├── nodes/            # Graph nodes (observe, plan, execute, verify, abort, report)
 │   │   ├── tools/            # Tool system (cdp.ts, registry.ts, types.ts)
@@ -208,5 +208,5 @@ Stored at `~/.eata/providers.json`:
 
 1. **Custom Tools**: Implement the `Tool` interface and register with `ToolRegistry`
 2. **Custom Providers**: Add to `llm/provider.ts` and register in `llm/index.ts` factory
-3. **Custom Nodes**: Create LangGraph nodes that operate on `TestState`
+3. **Custom Nodes**: Create loop nodes that operate on `TestState`
 4. **Custom Compaction**: Override `CompactionTriggerConfig` or `CutPointConfig`

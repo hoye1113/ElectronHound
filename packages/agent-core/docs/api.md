@@ -6,7 +6,7 @@ Complete reference for all public APIs exported from `@eata/agent-core`.
 
 ### `createTestGraph(options?)`
 
-Create a LangGraph `StateGraph` for test execution.
+Create a self-built Agent Loop for test execution.
 
 ```typescript
 import { createTestGraph } from '@eata/agent-core';
@@ -21,7 +21,7 @@ const graph = createTestGraph({
 - `options.plan` — PlanNode options
 - `options.verify` — VerifyNode options
 
-**Returns:** `StateGraph<TestState>` — A LangGraph state graph.
+**Returns:** `AgentLoop<TestState>` — A self-built Agent Loop runtime.
 
 ---
 
@@ -65,7 +65,7 @@ const result = await runTest({
 
 ### `TestState`
 
-LangGraph annotation for the test state object.
+State interface for the test execution context.
 
 ```typescript
 import { TestState } from '@eata/agent-core';

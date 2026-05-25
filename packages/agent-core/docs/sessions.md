@@ -1,24 +1,24 @@
 # Session Management
 
-EATA uses LangGraph's built-in checkpointer for session persistence. Sessions allow you to pause, resume, and replay test executions.
+EATA uses a SessionManager with SQLite persistence for session lifecycle management. Sessions allow you to pause, resume, and replay test executions.
 
 ## Overview
 
-A session represents a single test execution with its own state history. LangGraph's `MemorySaver` (default) or custom checkpointers persist the `TestState` between steps, enabling:
+A session represents a single test execution with its own state history. The SessionManager persists the `TestState` between steps using SQLite, enabling:
 
 - **Resume**: Continue a paused test from the last checkpoint
 - **Replay**: Reproduce test behavior from a previous session
 - **Inspect**: Examine state at any point in the execution history
 
-## Checkpointing
+## Session Persistence
 
-EATA provides a factory function for creating checkpointers:
+EATA provides a SessionManager for session persistence:
 
 ```typescript
-import { createCheckpointer } from '@eata/agent-core';
+import { createSessionManager } from '@eata/agent-core';
 
-// Create a checkpointer (MemorySaver by default)
-const checkpointer = createCheckpointer();
+// Create a session manager
+const sessionManager = createSessionManager();
 ```
 
 ## Session Lifecycle
@@ -75,7 +75,7 @@ This prevents unbounded growth while preserving the most recent execution contex
 
 ## Running a Test
 
-The `runTest` function wraps the LangGraph execution with session management:
+The `runTest` function wraps the Agent Loop execution with session management:
 
 ```typescript
 import { runTest } from '@eata/agent-core';
@@ -103,20 +103,7 @@ const result = await runTest({
 | `maxSteps` | `number` | No | Max steps (default: 50) |
 | `taskId` | `string` | No | Task identifier |
 
-## Session Persistence
 
-### MemorySaver (default)
-
-The default checkpointer stores state in memory:
-
-```typescript
-const checkpointer = createCheckpointer();
-// State persists only for the lifetime of the process
-```
-
-### Custom Checkpointers
-
-For production use, implement a persistent checkpointer (SQLite, Redis, etc.) that stores `TestState` snapshots between steps. LangGraph checkpointers implement the `BaseCheckpointSaver` interface.
 
 ## Stuck Detection
 
