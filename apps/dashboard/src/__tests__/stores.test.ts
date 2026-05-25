@@ -23,6 +23,7 @@ const mockTask: Task = {
   targetAppPath: '/test/path',
   llmModel: 'gpt-4o',
   status: 'queued',
+  priority: 'medium',
   maxSteps: 50,
   stepCount: 0,
   createdAt: '2026-01-01T00:00:00Z',
@@ -86,6 +87,7 @@ describe('api', () => {
         goal: 'Test goal',
         targetAppPath: '/test',
         llmModel: 'gpt-4o',
+        priority: 'medium',
       });
 
       expect(result).toEqual(mockTask);
@@ -171,6 +173,7 @@ describe('taskStore', () => {
       goal: 'Test goal',
       targetAppPath: '/test',
       llmModel: 'gpt-4o',
+      priority: 'medium',
     });
 
     const state = useTaskStore.getState();

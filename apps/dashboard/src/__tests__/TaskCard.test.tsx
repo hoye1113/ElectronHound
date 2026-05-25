@@ -30,6 +30,7 @@ const mockTask: Task = {
   targetAppPath: '/test/app',
   llmModel: 'gpt-4o',
   status: 'running',
+  priority: 'medium',
   maxSteps: 50,
   stepCount: 12,
   createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
