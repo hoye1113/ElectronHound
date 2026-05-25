@@ -199,7 +199,7 @@ export class WorkerManager {
       '--goal', options.goal,
       '--target-app', options.targetAppPath,
       '--llm-model', options.llmModel,
-      '--thread-id', options.taskId, // for LangGraph checkpoint recovery
+      '--thread-id', options.taskId, // for session recovery
     ];
 
     if (options.maxSteps !== undefined) {

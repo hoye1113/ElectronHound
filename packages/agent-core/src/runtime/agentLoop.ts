@@ -1,7 +1,7 @@
 /**
  * Agent Loop Runtime
  *
- * Self-built agent loop replacing LangGraph:
+ * Self-built Agent Loop Runtime:
  * observe → plan → execute → verify → report cycle.
  *
  * Features:
