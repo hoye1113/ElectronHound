@@ -37,7 +37,7 @@ export default function AccessibilityTreeView({ snapshot }: AccessibilityTreeVie
 
   return (
     <div className="overflow-auto" role="tree" aria-label={t('common.a11yTree')}>
-      <TreeNode node={snapshot} depth={0} />
+      <TreeNode node={snapshot} depth={0} t={t} />
     </div>
   );
 }
@@ -45,9 +45,11 @@ export default function AccessibilityTreeView({ snapshot }: AccessibilityTreeVie
 interface TreeNodeProps {
   node: AccessibilityTreeNode;
   depth: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  t: any;
 }
 
-function TreeNode({ node, depth }: TreeNodeProps) {
+function TreeNode({ node, depth, t }: TreeNodeProps) {
   const [expanded, setExpanded] = useState(depth < 2);
   const hasChildren = node.children && node.children.length > 0;
 
@@ -86,7 +88,7 @@ function TreeNode({ node, depth }: TreeNodeProps) {
       {expanded && hasChildren && (
         <div>
           {node.children!.map((child, index) => (
-            <TreeNode key={`${child.role}-${child.name}-${index}`} node={child} depth={depth + 1} />
+            <TreeNode key={`${child.role}-${child.name}-${index}`} node={child} depth={depth + 1} t={t} />
           ))}
         </div>
       )}
