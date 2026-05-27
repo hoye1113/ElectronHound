@@ -34,9 +34,10 @@ export async function healthRoutes(server: FastifyInstance) {
     }
 
     const hasError = Object.values(checks).some((c) => c.status === 'error');
+    const allOk = Object.values(checks).every((c) => c.status === 'ok');
 
     return {
-      status: hasError ? 'error' : 'ok',
+      status: allOk ? 'ok' : hasError ? 'error' : 'degraded',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       checks,

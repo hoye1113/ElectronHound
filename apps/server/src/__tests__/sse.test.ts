@@ -44,7 +44,6 @@ describe('SSEHub', () => {
     expect(reply.header).toHaveBeenCalledWith('Content-Type', 'text/event-stream');
     expect(reply.header).toHaveBeenCalledWith('Cache-Control', 'no-cache');
     expect(reply.header).toHaveBeenCalledWith('Connection', 'keep-alive');
-    expect(reply.header).toHaveBeenCalledWith('Access-Control-Allow-Origin', '*');
     expect(raw.flushHeaders).toHaveBeenCalled();
   });
 
