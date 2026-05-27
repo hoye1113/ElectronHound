@@ -84,6 +84,9 @@ CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_report_templates_is_default ON report_templates(is_default);
 CREATE INDEX IF NOT EXISTS idx_templates_category ON templates(category);
 CREATE INDEX IF NOT EXISTS idx_templates_built_in ON templates(built_in);
+CREATE INDEX IF NOT EXISTS idx_tasks_batch_id ON tasks(batch_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at);
+CREATE INDEX IF NOT EXISTS idx_steps_task_step ON steps(task_id, step_index);
 `;
 
 /**

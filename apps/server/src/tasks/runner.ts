@@ -2,8 +2,20 @@ import { WorkerPoolManager } from '../services/workerPool/manager.js';
 import type { PoolTask, TaskExecutor } from '../services/workerPool/types.js';
 import { WorkerManager } from '../services/workerManager.js';
 import { sseHub } from '../streams/sseHub.js';
-import { createBatchService, type BatchService } from '../services/batchService.js';
+import { getBatchService, type BatchService } from '../services/batchService.js';
 import type Database from 'better-sqlite3';
+
+// ── Hoisted prepared statements ────────────────────────────────────────
+
+let updateRunningStmt: Database.Statement;
+let updateCompletedStmt: Database.Statement;
+let updateFailedStmt: Database.Statement;
+
+function initStatements(db: Database.Database): void {
+  updateRunningStmt = db.prepare("UPDATE tasks SET status = 'running', updated_at = datetime('now') WHERE id = ?");
+  updateCompletedStmt = db.prepare("UPDATE tasks SET status = 'completed', updated_at = datetime('now') WHERE id = ?");
+  updateFailedStmt = db.prepare("UPDATE tasks SET status = 'failed', updated_at = datetime('now') WHERE id = ?");
+}
 
 // ── TaskExecutor adapter ──────────────────────────────────────────────
 
@@ -60,16 +72,20 @@ class ProcessTaskExecutor implements TaskExecutor {
 
 let pool: WorkerPoolManager | null = null;
 let executor: ProcessTaskExecutor | null = null;
+let currentConcurrency: number = 0;
 
-export function getWorkerPool(): WorkerPoolManager {
+export function getWorkerPool(options?: { maxConcurrency?: number }): WorkerPoolManager {
   if (!pool) {
+    const concurrency = options?.maxConcurrency ?? 3;
     const workerManager = new WorkerManager();
     executor = new ProcessTaskExecutor(workerManager);
     pool = new WorkerPoolManager(
-      // Max 3 concurrent workers
-      { maxConcurrency: 3 },
+      { maxConcurrency: concurrency },
       executor,
     );
+    currentConcurrency = concurrency;
+  } else if (options?.maxConcurrency !== undefined && options.maxConcurrency !== currentConcurrency) {
+    console.warn(`WorkerPool already initialized with concurrency ${currentConcurrency}`);
   }
   return pool;
 }
@@ -95,14 +111,13 @@ export async function closeWorkerPool(): Promise<void> {
  * Call once at server startup after getWorkerPool().
  */
 export function attachPoolEventListeners(db: Database.Database): void {
+  initStatements(db);
   const p = getWorkerPool();
 
   p.onEvent((event) => {
     switch (event.type) {
       case 'started':
-        db.prepare(
-          "UPDATE tasks SET status = 'running', updated_at = datetime('now') WHERE id = ?"
-        ).run(event.taskId);
+        updateRunningStmt.run(event.taskId);
         sseHub.broadcast(event.taskId, {
           event: 'status',
           data: { taskId: event.taskId, status: 'running' },
@@ -110,9 +125,7 @@ export function attachPoolEventListeners(db: Database.Database): void {
         break;
 
       case 'completed':
-        db.prepare(
-          "UPDATE tasks SET status = 'completed', updated_at = datetime('now') WHERE id = ?"
-        ).run(event.taskId);
+        updateCompletedStmt.run(event.taskId);
         sseHub.broadcast(event.taskId, {
           event: 'status',
           data: { taskId: event.taskId, status: 'completed' },
@@ -122,9 +135,7 @@ export function attachPoolEventListeners(db: Database.Database): void {
         break;
 
       case 'failed':
-        db.prepare(
-          "UPDATE tasks SET status = 'failed', updated_at = datetime('now') WHERE id = ?"
-        ).run(event.taskId);
+        updateFailedStmt.run(event.taskId);
         sseHub.broadcast(event.taskId, {
           event: 'status',
           data: { taskId: event.taskId, status: 'failed', error: event.error },
@@ -142,7 +153,7 @@ export function attachPoolEventListeners(db: Database.Database): void {
 function updateTaskBatchProgress(db: Database.Database, taskId: string): void {
   const taskRow = db.prepare('SELECT batch_id FROM tasks WHERE id = ?').get(taskId) as { batch_id: string | null } | undefined;
   if (taskRow?.batch_id) {
-    const batchService = createBatchService(db);
+    const batchService = getBatchService(db);
     batchService.updateBatchProgress(taskRow.batch_id);
   }
 }

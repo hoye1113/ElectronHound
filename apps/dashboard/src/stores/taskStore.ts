@@ -3,6 +3,8 @@ import type { Task, CreateTaskRequest } from '@eata/shared-types';
 import { api } from '../lib/api.js';
 import { connectSSE } from '../lib/sse.js';
 
+const MAX_STEPS = 1000;
+
 /**
  * Extract a human-readable message from an unknown thrown value.
  * Handles `Error` instances, string throws, and plain objects with
@@ -92,7 +94,13 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   subscribeToTask: (id) => {
     const es = connectSSE(id, {
       onStep: (data) => {
-        set((state) => ({ currentTaskSteps: [...state.currentTaskSteps, data] }));
+        set((state) => {
+          const steps = [...state.currentTaskSteps, data];
+          if (steps.length > MAX_STEPS) {
+            return { currentTaskSteps: steps.slice(-MAX_STEPS) };
+          }
+          return { currentTaskSteps: steps };
+        });
       },
       onComplete: () => {
         es.close();

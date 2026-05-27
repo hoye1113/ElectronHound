@@ -471,7 +471,7 @@ describe('Route: GET /api/tasks/:id/report', () => {
     const res = await server.inject({ method: 'GET', url: '/api/tasks/550e8400-e29b-41d4-a716-446655440099/report' });
     expect(res.statusCode).toBe(404);
     const body = JSON.parse(res.body);
-    expect(body.error).toBe('Report not found');
+    expect(body.error).toBe('Report or manifest not found');
   });
 
   it('returns manifest when report exists', async () => {

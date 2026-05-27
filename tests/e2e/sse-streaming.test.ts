@@ -360,12 +360,12 @@ describe('SSE Streaming E2E: Client Lifecycle', () => {
     expect(client2.raw.write).toHaveBeenCalled();
   });
 
-  it('removes dead clients when write returns false', () => {
+  it('does not remove clients when write returns false (backpressure)', () => {
     const hub = new SSEHub();
     const goodClient = createMockSSEClient();
     const badClient = createMockSSEClient();
 
-    // Make the bad client's write fail
+    // Make the bad client's write fail (simulates backpressure)
     badClient.raw.write.mockReturnValue(false);
 
     hub.addClient('task-1', goodClient.reply);
@@ -377,8 +377,8 @@ describe('SSE Streaming E2E: Client Lifecycle', () => {
       data: { error: 'test' },
     });
 
-    // Bad client should be removed, good client stays
-    expect(hub.getClientCount('task-1')).toBe(1);
+    // Client should NOT be removed on backpressure (write returns false)
+    expect(hub.getClientCount('task-1')).toBe(2);
   });
 
   it('broadcast to non-existent task is a no-op', () => {

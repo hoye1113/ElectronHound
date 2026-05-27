@@ -241,7 +241,7 @@ describe('Dashboard E2E: Report Viewing', () => {
     });
     expect(res.statusCode).toBe(404);
     const body = JSON.parse(res.body);
-    expect(body.error).toBe('Report not found');
+    expect(body.error).toBe('Report or manifest not found');
   });
 
   it('returns report manifest when report directory exists', async () => {

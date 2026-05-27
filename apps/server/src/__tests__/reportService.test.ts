@@ -61,39 +61,39 @@ describe('ReportService', () => {
   });
 
   describe('createReportDir', () => {
-    it('creates correct directory structure', () => {
-      const dir = service.createReportDir('task-001');
+    it('creates correct directory structure', async () => {
+      const dir = await service.createReportDir('task-001');
 
       expect(existsSync(dir)).toBe(true);
       expect(existsSync(join(dir, 'screenshots'))).toBe(true);
       expect(existsSync(join(dir, 'accessibility'))).toBe(true);
     });
 
-    it('returns the report directory path', () => {
-      const dir = service.createReportDir('task-002');
+    it('returns the report directory path', async () => {
+      const dir = await service.createReportDir('task-002');
       expect(dir).toContain('task-002');
       expect(dir).toContain('reports');
     });
 
-    it('creates nested subdirectories with recursive', () => {
+    it('creates nested subdirectories with recursive', async () => {
       // Should work even for deeply nested task IDs
-      const dir = service.createReportDir('parent/child/task-003');
+      const dir = await service.createReportDir('parent/child/task-003');
       expect(existsSync(dir)).toBe(true);
       expect(existsSync(join(dir, 'screenshots'))).toBe(true);
     });
 
-    it('throws PathTraversalError for malicious task ID', () => {
-      expect(() => service.createReportDir('../../../escape')).toThrow();
-      expect(() => service.createReportDir('..')).toThrow();
+    it('throws PathTraversalError for malicious task ID', async () => {
+      await expect(service.createReportDir('../../../escape')).rejects.toThrow();
+      await expect(service.createReportDir('..')).rejects.toThrow();
     });
   });
 
   describe('writeManifest', () => {
-    it('creates valid JSON file', () => {
-      service.createReportDir('task-010');
+    it('creates valid JSON file', async () => {
+      await service.createReportDir('task-010');
       const manifest = makeManifest({ goal: 'Test manifest write' });
 
-      service.writeManifest('task-010', manifest);
+      await service.writeManifest('task-010', manifest);
 
       const filePath = join(
         tempDir,
@@ -111,10 +111,10 @@ describe('ReportService', () => {
       expect(parsed.totalSteps).toBe(5);
     });
 
-    it('overwrites existing manifest', () => {
-      service.createReportDir('task-011');
-      service.writeManifest('task-011', makeManifest({ goal: 'First' }));
-      service.writeManifest('task-011', makeManifest({ goal: 'Second' }));
+    it('overwrites existing manifest', async () => {
+      await service.createReportDir('task-011');
+      await service.writeManifest('task-011', makeManifest({ goal: 'First' }));
+      await service.writeManifest('task-011', makeManifest({ goal: 'Second' }));
 
       const filePath = join(
         tempDir,
@@ -129,18 +129,18 @@ describe('ReportService', () => {
   });
 
   describe('appendTimeline', () => {
-    it('creates valid JSONL file with 3 entries', () => {
-      service.createReportDir('task-020');
+    it('creates valid JSONL file with 3 entries', async () => {
+      await service.createReportDir('task-020');
 
-      service.appendTimeline(
+      await service.appendTimeline(
         'task-020',
         makeTimelineEntry({ stepIndex: 0, phase: 'observe' }),
       );
-      service.appendTimeline(
+      await service.appendTimeline(
         'task-020',
         makeTimelineEntry({ stepIndex: 0, phase: 'plan' }),
       );
-      service.appendTimeline(
+      await service.appendTimeline(
         'task-020',
         makeTimelineEntry({ stepIndex: 0, phase: 'execute' }),
       );
@@ -166,10 +166,10 @@ describe('ReportService', () => {
       }
     });
 
-    it('each line is newline-terminated JSON object', () => {
-      service.createReportDir('task-021');
+    it('each line is newline-terminated JSON object', async () => {
+      await service.createReportDir('task-021');
 
-      service.appendTimeline('task-021', makeTimelineEntry({ stepIndex: 1 }));
+      await service.appendTimeline('task-021', makeTimelineEntry({ stepIndex: 1 }));
 
       const filePath = join(
         tempDir,
@@ -185,11 +185,11 @@ describe('ReportService', () => {
   });
 
   describe('saveScreenshot', () => {
-    it('writes binary file and returns path', () => {
-      service.createReportDir('task-030');
+    it('writes binary file and returns path', async () => {
+      await service.createReportDir('task-030');
       const buffer = Buffer.from([0x89, 0x50, 0x4e, 0x47]); // PNG header
 
-      const filepath = service.saveScreenshot('task-030', 0, 'observe', buffer);
+      const filepath = await service.saveScreenshot('task-030', 0, 'observe', buffer);
 
       expect(existsSync(filepath)).toBe(true);
       expect(filepath).toContain('step-0-observe.png');
@@ -199,28 +199,28 @@ describe('ReportService', () => {
       expect(written).toEqual(buffer);
     });
 
-    it('writes different step indices correctly', () => {
-      service.createReportDir('task-031');
+    it('writes different step indices correctly', async () => {
+      await service.createReportDir('task-031');
       const buffer = Buffer.from('screenshot-data');
 
-      const path1 = service.saveScreenshot('task-031', 3, 'execute', buffer);
+      const path1 = await service.saveScreenshot('task-031', 3, 'execute', buffer);
       expect(path1).toContain('step-3-execute.png');
 
-      const path2 = service.saveScreenshot('task-031', 7, 'verify', buffer);
+      const path2 = await service.saveScreenshot('task-031', 7, 'verify', buffer);
       expect(path2).toContain('step-7-verify.png');
     });
   });
 
   describe('saveAccessibilitySnapshot', () => {
-    it('writes JSON file and returns path', () => {
-      service.createReportDir('task-040');
+    it('writes JSON file and returns path', async () => {
+      await service.createReportDir('task-040');
       const snapshot = {
         role: 'window',
         name: 'Main',
         children: [{ role: 'button', name: 'Submit' }],
       };
 
-      const filepath = service.saveAccessibilitySnapshot(
+      const filepath = await service.saveAccessibilitySnapshot(
         'task-040',
         1,
         'observe',
@@ -240,21 +240,21 @@ describe('ReportService', () => {
   });
 
   describe('readReport', () => {
-    it('returns manifest and parsed timeline', () => {
-      service.createReportDir('task-050');
+    it('returns manifest and parsed timeline', async () => {
+      await service.createReportDir('task-050');
 
       const manifest = makeManifest({
         taskId: '550e8400-e29b-41d4-a716-446655440001',
         goal: 'Read report test',
       });
-      service.writeManifest('task-050', manifest);
+      await service.writeManifest('task-050', manifest);
 
       const entry1 = makeTimelineEntry({ stepIndex: 0, phase: 'observe' });
       const entry2 = makeTimelineEntry({ stepIndex: 0, phase: 'plan' });
-      service.appendTimeline('task-050', entry1);
-      service.appendTimeline('task-050', entry2);
+      await service.appendTimeline('task-050', entry1);
+      await service.appendTimeline('task-050', entry2);
 
-      const report = service.readReport('task-050');
+      const report = await service.readReport('task-050');
 
       expect(report.manifest.goal).toBe('Read report test');
       expect(report.manifest.taskId).toBe(
@@ -265,68 +265,68 @@ describe('ReportService', () => {
       expect(report.timeline[1].phase).toBe('plan');
     });
 
-    it('throws when report does not exist', () => {
-      expect(() => service.readReport('nonexistent-task')).toThrow(
+    it('throws when report does not exist', async () => {
+      await expect(service.readReport('nonexistent-task')).rejects.toThrow(
         'Report not found',
       );
     });
 
-    it('timeline entries are parsed in order', () => {
-      service.createReportDir('task-051');
+    it('timeline entries are parsed in order', async () => {
+      await service.createReportDir('task-051');
 
       const manifest = makeManifest();
-      service.writeManifest('task-051', manifest);
+      await service.writeManifest('task-051', manifest);
 
-      service.appendTimeline(
+      await service.appendTimeline(
         'task-051',
         makeTimelineEntry({ stepIndex: 0, phase: 'observe' }),
       );
-      service.appendTimeline(
+      await service.appendTimeline(
         'task-051',
         makeTimelineEntry({ stepIndex: 1, phase: 'observe' }),
       );
-      service.appendTimeline(
+      await service.appendTimeline(
         'task-051',
         makeTimelineEntry({ stepIndex: 2, phase: 'observe' }),
       );
 
-      const report = service.readReport('task-051');
+      const report = await service.readReport('task-051');
       expect(report.timeline).toHaveLength(3);
       expect(report.timeline[0].stepIndex).toBe(0);
       expect(report.timeline[1].stepIndex).toBe(1);
       expect(report.timeline[2].stepIndex).toBe(2);
     });
 
-    it('handles timeline with single entry', () => {
-      service.createReportDir('task-052');
-      service.writeManifest('task-052', makeManifest());
-      service.appendTimeline('task-052', makeTimelineEntry({ stepIndex: 0 }));
+    it('handles timeline with single entry', async () => {
+      await service.createReportDir('task-052');
+      await service.writeManifest('task-052', makeManifest());
+      await service.appendTimeline('task-052', makeTimelineEntry({ stepIndex: 0 }));
 
-      const report = service.readReport('task-052');
+      const report = await service.readReport('task-052');
       expect(report.timeline).toHaveLength(1);
     });
   });
 
   describe('security integration', () => {
-    it('rejects path traversal in saveScreenshot', () => {
-      expect(() =>
+    it('rejects path traversal in saveScreenshot', async () => {
+      await expect(
         service.saveScreenshot(
           '../../../escape',
           0,
           'observe',
           Buffer.from('data'),
         ),
-      ).toThrow();
+      ).rejects.toThrow();
     });
 
-    it('rejects path traversal in saveAccessibilitySnapshot', () => {
-      expect(() =>
+    it('rejects path traversal in saveAccessibilitySnapshot', async () => {
+      await expect(
         service.saveAccessibilitySnapshot('../../../escape', 0, 'observe', {}),
-      ).toThrow();
+      ).rejects.toThrow();
     });
 
-    it('rejects path traversal in readReport', () => {
-      expect(() => service.readReport('../../../escape')).toThrow();
+    it('rejects path traversal in readReport', async () => {
+      await expect(service.readReport('../../../escape')).rejects.toThrow();
     });
   });
 });

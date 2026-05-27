@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { generateHTMLReport } from '../services/htmlReport.js';
@@ -31,19 +31,17 @@ export async function reportRoutes(server: FastifyInstance) {
       return { error: 'Invalid report path' };
     }
 
-    if (!existsSync(reportDir)) {
-      reply.code(404);
-      return { error: 'Report not found' };
-    }
-
     const manifestPath = join(reportDir, 'manifest.json');
-    if (!existsSync(manifestPath)) {
-      reply.code(404);
-      return { error: 'Manifest not found' };
+    try {
+      const content = await readFile(manifestPath, 'utf-8');
+      return JSON.parse(content);
+    } catch (err: any) {
+      if (err.code === 'ENOENT') {
+        reply.code(404);
+        return { error: 'Report or manifest not found' };
+      }
+      throw err;
     }
-
-    const content = readFileSync(manifestPath, 'utf-8');
-    return JSON.parse(content);
   });
 
   // GET /tasks/:id/report/html — generate and return HTML report
@@ -100,19 +98,18 @@ export async function reportRoutes(server: FastifyInstance) {
     // Resolve screenshot file path (relative to data/screenshots)
     const screenshotPath = validatePath(join('data', 'screenshots'), stepRow.screenshot_path);
 
-    if (!existsSync(screenshotPath)) {
-      reply.code(404);
-      return { error: 'Screenshot file not found' };
-    }
-
     try {
-      const fileBuffer = readFileSync(screenshotPath);
+      const fileBuffer = await readFile(screenshotPath);
       reply
         .code(200)
         .header('Content-Type', 'image/png')
         .header('Cache-Control', 'public, max-age=31536000')
         .send(fileBuffer);
-    } catch {
+    } catch (err: any) {
+      if (err.code === 'ENOENT') {
+        reply.code(404);
+        return { error: 'Screenshot file not found' };
+      }
       reply.code(500);
       return { error: 'Failed to read screenshot' };
     }

@@ -134,7 +134,7 @@ describe('SSEHub', () => {
     expect(raw2.write).toHaveBeenCalled();
   });
 
-  it('removes dead clients when write fails', () => {
+  it('does not remove clients when write returns false (backpressure)', () => {
     const { reply: goodReply, raw: goodRaw } = createMockReply();
     const { reply: badReply, raw: badRaw } = createMockReply();
 
@@ -149,7 +149,8 @@ describe('SSEHub', () => {
 
     expect(goodRaw.write).toHaveBeenCalled();
     expect(badRaw.write).toHaveBeenCalled();
-    expect(hub.getClientCount('task-1')).toBe(1);
+    // Client should NOT be removed on backpressure (write returns false)
+    expect(hub.getClientCount('task-1')).toBe(2);
   });
 
   it('broadcast to non-existent task is a no-op', () => {

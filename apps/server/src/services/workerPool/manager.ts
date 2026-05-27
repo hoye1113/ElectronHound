@@ -1,6 +1,9 @@
 import type { PoolTask, PoolTaskHandle, PoolConfig, TaskExecutor, PoolEvent, PoolTaskStatus } from './types.js';
 import { TaskQueue } from './queue.js';
 
+const MAX_HANDLES = 1000;
+const HANDLE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 export class WorkerPoolManager {
   private queue: TaskQueue;
   private config: PoolConfig;
@@ -87,6 +90,7 @@ export class WorkerPoolManager {
     this.executor.execute(task, (taskId, result, error) => {
       this.updateStatus(taskId, result, error);
       this.running.delete(taskId);
+      this.evictStaleHandles();
       this.emit({
         taskId,
         type: result,
@@ -108,6 +112,26 @@ export class WorkerPoolManager {
       handle.completedAt = new Date();
     }
     if (error) handle.error = error;
+  }
+
+  private evictStaleHandles(): void {
+    const now = Date.now();
+    for (const [id, handle] of this.handles) {
+      if (handle.status === 'completed' || handle.status === 'failed') {
+        if (handle.completedAt && now - handle.completedAt.getTime() > HANDLE_TTL_MS) {
+          this.handles.delete(id);
+        }
+      }
+    }
+    // If still over limit, evict oldest
+    while (this.handles.size > MAX_HANDLES) {
+      const oldest = this.handles.keys().next().value;
+      if (oldest !== undefined) {
+        this.handles.delete(oldest);
+      } else {
+        break;
+      }
+    }
   }
 
   private emit(event: PoolEvent): void {

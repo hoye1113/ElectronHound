@@ -7,14 +7,29 @@ export class TaskQueue {
     low: [],
   };
 
+  private indices: Record<TaskPriority, number> = {
+    high: 0,
+    medium: 0,
+    low: 0,
+  };
+
   enqueue(task: PoolTask): void {
     this.buckets[task.priority].push(task);
   }
 
   dequeue(): PoolTask | undefined {
-    if (this.buckets.high.length > 0) return this.buckets.high.shift();
-    if (this.buckets.medium.length > 0) return this.buckets.medium.shift();
-    if (this.buckets.low.length > 0) return this.buckets.low.shift();
+    for (const priority of ['high', 'medium', 'low'] as TaskPriority[]) {
+      if (this.indices[priority] < this.buckets[priority].length) {
+        const task = this.buckets[priority][this.indices[priority]];
+        this.indices[priority]++;
+        // Reset bucket when fully consumed to free memory
+        if (this.indices[priority] >= this.buckets[priority].length) {
+          this.buckets[priority] = [];
+          this.indices[priority] = 0;
+        }
+        return task;
+      }
+    }
     return undefined;
   }
 
@@ -24,6 +39,9 @@ export class TaskQueue {
       const idx = bucket.findIndex(t => t.id === taskId);
       if (idx >= 0) {
         bucket.splice(idx, 1);
+        if (idx < this.indices[priority]) {
+          this.indices[priority]--;
+        }
         return true;
       }
     }
@@ -31,14 +49,20 @@ export class TaskQueue {
   }
 
   peek(): PoolTask | undefined {
-    if (this.buckets.high.length > 0) return this.buckets.high[0];
-    if (this.buckets.medium.length > 0) return this.buckets.medium[0];
-    if (this.buckets.low.length > 0) return this.buckets.low[0];
+    for (const priority of ['high', 'medium', 'low'] as TaskPriority[]) {
+      if (this.indices[priority] < this.buckets[priority].length) {
+        return this.buckets[priority][this.indices[priority]];
+      }
+    }
     return undefined;
   }
 
   size(): number {
-    return Object.values(this.buckets).reduce((acc, b) => acc + b.length, 0);
+    return (
+      (this.buckets.high.length - this.indices.high) +
+      (this.buckets.medium.length - this.indices.medium) +
+      (this.buckets.low.length - this.indices.low)
+    );
   }
 
   isEmpty(): boolean {

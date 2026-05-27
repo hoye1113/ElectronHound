@@ -6,7 +6,10 @@ export async function streamRoutes(server: FastifyInstance) {
     const { id } = request.params as { id: string };
 
     // Register client with SSE hub (sets headers internally)
-    sseHub.addClient(id, reply);
+    const added = sseHub.addClient(id, reply);
+    if (!added) {
+      return reply.code(429).send({ error: 'Too many SSE connections' });
+    }
 
     // Send initial connection event
     sseHub.broadcast(id, {

@@ -251,11 +251,30 @@ export class BatchService {
   }
 }
 
-// ── Factory function ─────────────────────────────────────────────────
+// ── Singleton getter ─────────────────────────────────────────────────
+
+let instance: BatchService | null = null;
+let currentDb: Database.Database | null = null;
+
+/**
+ * Get or create the singleton BatchService instance.
+ * Reuses the existing instance when the same database is passed,
+ * creating a new one only when the database reference changes.
+ */
+export function getBatchService(db: Database.Database): BatchService {
+  if (!instance || currentDb !== db) {
+    instance = new BatchService(db);
+    currentDb = db;
+  }
+  return instance;
+}
+
+// ── Factory function (kept for backward compatibility) ───────────────
 
 /**
  * Create a new BatchService instance.
  * Always creates a fresh instance to avoid stale database references.
+ * @deprecated Use getBatchService() for singleton access.
  */
 export function createBatchService(db: Database.Database): BatchService {
   return new BatchService(db);

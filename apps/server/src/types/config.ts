@@ -20,6 +20,7 @@ export const configSchema = z.object({
       timeWindow: z.string().default('1 minute'),
     })
     .default({}),
+  maxConcurrency: z.number().min(1).default(3),
 });
 
 export type ServerConfig = z.infer<typeof configSchema>;

@@ -25,6 +25,15 @@ const TaskListQuery = z.object({
 });
 
 export async function taskRoutes(server: FastifyInstance) {
+  // Hoisted prepared statements
+  const getTaskByIdStmt = server.db.prepare('SELECT * FROM tasks WHERE id = ?');
+  const getStepsByTaskIdStmt = server.db.prepare('SELECT * FROM steps WHERE task_id = ? ORDER BY step_index');
+  const updateStatusStmt = server.db.prepare("UPDATE tasks SET status = ?, updated_at = datetime('now') WHERE id = ?");
+  const insertTaskStmt = server.db.prepare(
+    `INSERT INTO tasks (id, goal, target_app_path, llm_model, status, max_steps, context_injection, step_count, created_at, updated_at, provider_id)
+     VALUES (?, ?, ?, ?, 'queued', ?, ?, 0, ?, ?, ?)`
+  );
+
   // GET /tasks — list with optional status filter + pagination
   server.get('/tasks', async (request) => {
     const parsed = TaskListQuery.safeParse(request.query);
@@ -65,18 +74,14 @@ export async function taskRoutes(server: FastifyInstance) {
     }
     const { id } = parsed.data;
 
-    const taskRow = server.db
-      .prepare('SELECT * FROM tasks WHERE id = ?')
-      .get(id) as Record<string, unknown> | undefined;
+    const taskRow = getTaskByIdStmt.get(id) as Record<string, unknown> | undefined;
 
     if (!taskRow) {
       reply.code(404);
       return { error: 'Task not found' };
     }
 
-    const stepRows = server.db
-      .prepare('SELECT * FROM steps WHERE task_id = ? ORDER BY step_index')
-      .all(id) as Array<Record<string, unknown>>;
+    const stepRows = getStepsByTaskIdStmt.all(id) as Array<Record<string, unknown>>;
 
     return {
       task: dbRowToTask(taskRow),
@@ -100,16 +105,9 @@ export async function taskRoutes(server: FastifyInstance) {
     const id = randomUUID();
     const now = new Date().toISOString();
 
-    server.db
-      .prepare(
-        `INSERT INTO tasks (id, goal, target_app_path, llm_model, status, max_steps, context_injection, step_count, created_at, updated_at, provider_id)
-         VALUES (?, ?, ?, ?, 'queued', ?, ?, 0, ?, ?, ?)`
-      )
-      .run(id, goal, targetAppPath, llmModel, maxSteps ?? 50, contextInjection ?? null, now, now, providerId ?? null);
+    insertTaskStmt.run(id, goal, targetAppPath, llmModel, maxSteps ?? 50, contextInjection ?? null, now, now, providerId ?? null);
 
-    const createdRow = server.db
-      .prepare('SELECT * FROM tasks WHERE id = ?')
-      .get(id) as Record<string, unknown>;
+    const createdRow = getTaskByIdStmt.get(id) as Record<string, unknown>;
 
     // Submit to the worker pool (max 3 concurrent executions)
     const pool = getWorkerPool();
@@ -136,9 +134,7 @@ export async function taskRoutes(server: FastifyInstance) {
     }
     const { id } = parsed.data;
 
-    const taskRow = server.db
-      .prepare('SELECT * FROM tasks WHERE id = ?')
-      .get(id) as Record<string, unknown> | undefined;
+    const taskRow = getTaskByIdStmt.get(id) as Record<string, unknown> | undefined;
 
     if (!taskRow) {
       reply.code(404);
@@ -152,9 +148,7 @@ export async function taskRoutes(server: FastifyInstance) {
       return { error: 'Task is not in a cancellable state' };
     }
 
-    server.db
-      .prepare("UPDATE tasks SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?")
-      .run(id);
+    updateStatusStmt.run('cancelled', id);
 
     // Cancel in the worker pool (no-op if task wasn't in the pool)
     const pool = getWorkerPool();
@@ -166,9 +160,7 @@ export async function taskRoutes(server: FastifyInstance) {
       data: { taskId: id, status: 'cancelled' },
     });
 
-    const updatedRow = server.db
-      .prepare('SELECT * FROM tasks WHERE id = ?')
-      .get(id) as Record<string, unknown>;
+    const updatedRow = getTaskByIdStmt.get(id) as Record<string, unknown>;
 
     return dbRowToTask(updatedRow);
   });
@@ -181,9 +173,7 @@ export async function taskRoutes(server: FastifyInstance) {
     }
     const { id } = parsed.data;
 
-    const taskRow = server.db
-      .prepare('SELECT * FROM tasks WHERE id = ?')
-      .get(id) as Record<string, unknown> | undefined;
+    const taskRow = getTaskByIdStmt.get(id) as Record<string, unknown> | undefined;
 
     if (!taskRow) {
       reply.code(404);
@@ -193,9 +183,7 @@ export async function taskRoutes(server: FastifyInstance) {
     const status = taskRow.status as string;
 
     if (status === 'running') {
-      server.db
-        .prepare("UPDATE tasks SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?")
-        .run(id);
+      updateStatusStmt.run('cancelled', id);
       // Cancel in the worker pool
       const pool = getWorkerPool();
       pool.cancel(id);

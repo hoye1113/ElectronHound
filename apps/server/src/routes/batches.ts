@@ -5,7 +5,7 @@
  */
 import type { FastifyInstance } from 'fastify';
 import { CreateBatchSchema, BatchIdSchema } from '../schemas/batch.js';
-import { createBatchService } from '../services/batchService.js';
+import { getBatchService } from '../services/batchService.js';
 
 // ── Default configuration ────────────────────────────────────────────
 // These defaults are used when batch tasks don't specify their own config
@@ -30,7 +30,7 @@ export async function batchRoutes(server: FastifyInstance) {
     const { name, tasks, priority } = parseResult.data;
 
     try {
-      const batchService = createBatchService(server.db);
+      const batchService = getBatchService(server.db);
       const result = batchService.createBatch(
         { name, tasks, priority },
         DEFAULT_TARGET_APP_PATH
@@ -64,7 +64,7 @@ export async function batchRoutes(server: FastifyInstance) {
     const { batchId } = parseResult.data;
 
     try {
-      const batchService = createBatchService(server.db);
+      const batchService = getBatchService(server.db);
       const batch = batchService.getBatchStatus(batchId);
 
       if (!batch) {
@@ -95,7 +95,7 @@ export async function batchRoutes(server: FastifyInstance) {
     const { batchId } = parseResult.data;
 
     try {
-      const batchService = createBatchService(server.db);
+      const batchService = getBatchService(server.db);
       const success = batchService.cancelBatch(batchId);
 
       if (!success) {

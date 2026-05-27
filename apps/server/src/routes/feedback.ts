@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { FeedbackPatternSchema, type FeedbackPattern } from '@eata/shared-types';
 
@@ -7,11 +7,13 @@ const PATTERNS_FILE = join('data', 'feedback', 'patterns.jsonl');
 
 export async function feedbackRoutes(server: FastifyInstance) {
   server.get('/feedback/patterns', async () => {
-    if (!existsSync(PATTERNS_FILE)) {
-      return { patterns: [] };
+    let content: string;
+    try {
+      content = await readFile(PATTERNS_FILE, 'utf-8');
+    } catch (err: any) {
+      if (err.code === 'ENOENT') return { patterns: [] };
+      throw err;
     }
-
-    const content = readFileSync(PATTERNS_FILE, 'utf-8');
     const patterns: FeedbackPattern[] = [];
 
     for (const line of content.split('\n')) {

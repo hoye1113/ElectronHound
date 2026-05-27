@@ -21,6 +21,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - B3: Infrastructure tests (migrations, seeds, bridge-client, IPC channel)
 - B4: E2E tests (dashboard UI, SSE streaming, batch workflow)
 
+### Changed
+
+- C1: Async file I/O (readFile/writeFile) replacing synchronous calls
+- C2: Database indexes for tasks(batch_id), tasks(created_at), steps(task_id, step_index)
+- C3: Hoisted prepared statements in hot paths (runner, tasks routes)
+- C4: Bounded WorkerPoolManager handles (max 1000, 5min TTL)
+- C5: Configurable worker concurrency via ServerConfig
+- C6: SSE client limits (10 per task, 100 total)
+- C7: Normalized Prometheus route labels (strip UUIDs)
+- C8: Dashboard React.lazy code splitting for all pages
+- C9: Parallel server startup (routes + streams)
+- C10: Singleton BatchService pattern
+- C11: Vite vendor chunk splitting
+- C12: Queue index tracking replacing Array.shift()
+
 ## [0.4.0] - 2026-05-28
 
 ### Added

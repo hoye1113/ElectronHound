@@ -7,14 +7,34 @@ export interface SSEEvent {
   data: Record<string, unknown>;
 }
 
+export interface SSEHubConfig {
+  maxClientsPerTask?: number;
+  maxTotalClients?: number;
+}
+
 export class SSEHub {
   private clients: Map<string, Set<FastifyReply>>;
+  private maxClientsPerTask: number;
+  private maxTotalClients: number;
 
-  constructor() {
+  constructor(config?: SSEHubConfig) {
     this.clients = new Map();
+    this.maxClientsPerTask = config?.maxClientsPerTask ?? 10;
+    this.maxTotalClients = config?.maxTotalClients ?? 100;
   }
 
-  addClient(taskId: string, reply: FastifyReply): void {
+  addClient(taskId: string, reply: FastifyReply): boolean {
+    // Check total client limit
+    if (this.getTotalClientCount() >= this.maxTotalClients) {
+      return false;
+    }
+
+    // Check per-task client limit
+    const taskClients = this.clients.get(taskId);
+    if (taskClients && taskClients.size >= this.maxClientsPerTask) {
+      return false;
+    }
+
     // Set SSE headers
     reply.header('Content-Type', 'text/event-stream');
     reply.header('Cache-Control', 'no-cache');
@@ -32,6 +52,8 @@ export class SSEHub {
     reply.raw.on('close', () => {
       this.removeClient(taskId, reply);
     });
+
+    return true;
   }
 
   removeClient(taskId: string, reply: FastifyReply): void {
@@ -49,36 +71,19 @@ export class SSEHub {
     if (!taskClients) return;
 
     const message = this.formatSSE(event);
-    const deadClients: FastifyReply[] = [];
 
     for (const reply of taskClients) {
-      const written = reply.raw.write(message);
-      if (!written) {
-        deadClients.push(reply);
-      }
-    }
-
-    // Clean up dead connections
-    for (const reply of deadClients) {
-      this.removeClient(taskId, reply);
+      reply.raw.write(message);
     }
   }
 
   broadcastAll(event: SSEEvent): void {
     const message = this.formatSSE(event);
-    const deadClients: Array<{ taskId: string; reply: FastifyReply }> = [];
 
-    for (const [taskId, taskClients] of this.clients) {
+    for (const [, taskClients] of this.clients) {
       for (const reply of taskClients) {
-        const written = reply.raw.write(message);
-        if (!written) {
-          deadClients.push({ taskId, reply });
-        }
+        reply.raw.write(message);
       }
-    }
-
-    for (const { taskId, reply } of deadClients) {
-      this.removeClient(taskId, reply);
     }
   }
 

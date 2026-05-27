@@ -23,6 +23,17 @@ export interface ServerBundle {
   db: Database.Database;
 }
 
+/**
+ * Normalize route labels for Prometheus metrics by replacing UUIDs with :id.
+ * Prevents high-cardinality label explosion from unique task/batch IDs.
+ */
+function normalizeRouteLabel(url: string): string {
+  return url.replace(
+    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+    ':id',
+  );
+}
+
 export async function buildServer(config?: Partial<ServerConfig>): Promise<ServerBundle> {
   const logger = getLogger({ source: 'server' });
   const validatedConfig = configSchema.parse(config ?? {});
@@ -89,7 +100,7 @@ export async function buildServer(config?: Partial<ServerConfig>): Promise<Serve
 
   // HTTP request metrics hook
   server.addHook('onResponse', async (request, reply) => {
-    const route = request.routeOptions?.url ?? request.url;
+    const route = normalizeRouteLabel(request.routeOptions?.url ?? request.url);
     httpRequestsTotal.inc({
       method: request.method,
       route,
@@ -118,17 +129,17 @@ export async function buildServer(config?: Partial<ServerConfig>): Promise<Serve
   reportTemplateService.seedDefaultTemplate();
   server.log.info('Default report template seeded');
 
-  // Register application routes
-  await registerRoutes(server);
-
-  // Register SSE stream routes (not under /api prefix)
-  await streamRoutes(server);
+  // Register application routes and SSE stream routes in parallel
+  await Promise.all([
+    registerRoutes(server),
+    streamRoutes(server),
+  ]);
 
   // Decorate sseHub
   server.decorate('sseHub', sseHub);
 
   // Initialize worker pool and decorate server
-  const workerPool = getWorkerPool();
+  const workerPool = getWorkerPool({ maxConcurrency: validatedConfig.maxConcurrency });
   server.decorate('workerPool', workerPool);
   attachPoolEventListeners(db);
 
