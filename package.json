@@ -1,8 +1,33 @@
 {
-  "name": "eata",
+  "_comment": "Sub-packages use @eata scope (legacy abbreviation for Electron AI Testing Agent)",
+  "name": "electronhound",
   "version": "0.3.0",
   "private": true,
+  "description": "AI-powered testing agent for Electron applications",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hoye1113/ElectronHound.git"
+  },
+  "homepage": "https://github.com/hoye1113/ElectronHound",
+  "bugs": {
+    "url": "https://github.com/hoye1113/ElectronHound/issues"
+  },
+  "keywords": [
+    "electron",
+    "testing",
+    "ai",
+    "automation",
+    "langgraph",
+    "mcp",
+    "e2e",
+    "ui-testing"
+  ],
+  "author": {
+    "name": "hoye1113",
+    "url": "https://github.com/hoye1113"
+  },
+  "license": "MIT",
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=9.0.0"

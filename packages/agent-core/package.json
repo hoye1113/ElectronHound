@@ -1,8 +1,17 @@
 {
   "name": "@eata/agent-core",
   "version": "0.1.0",
+  "description": "ElectronHound agent core - LangGraph AI agent implementation",
   "type": "module",
   "main": "src/index.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hoye1113/ElectronHound.git",
+    "directory": "packages/agent-core"
+  },
+  "keywords": ["electron", "testing", "ai", "langgraph", "agent"],
+  "author": { "name": "hoye1113" },
+  "license": "MIT",
   "types": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",

@@ -1,8 +1,17 @@
 {
   "name": "@eata/electron-bridge-mcp",
   "version": "0.1.0",
+  "description": "ElectronHound MCP bridge - Model Context Protocol server",
   "type": "module",
   "main": "src/index.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hoye1113/ElectronHound.git",
+    "directory": "packages/electron-bridge-mcp"
+  },
+  "keywords": ["electron", "testing", "mcp", "bridge"],
+  "author": { "name": "hoye1113" },
+  "license": "MIT",
   "types": "src/index.ts",
   "bin": {
     "eata-mcp": "src/server.ts"

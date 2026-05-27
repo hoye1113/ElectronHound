@@ -1,0 +1,21 @@
+# Default owner / 默认所有者
+* @hoye1113
+
+# Server / 服务器
+/apps/server/ @hoye1113
+
+# Dashboard / 仪表板
+/apps/dashboard/ @hoye1113
+
+# Packages / 包
+/packages/agent-core/ @hoye1113
+/packages/shared-types/ @hoye1113
+/packages/electron-helper/ @hoye1113
+/packages/electron-bridge-mcp/ @hoye1113
+/packages/launcher/ @hoye1113
+
+# Documentation / 文档
+/docs/ @hoye1113
+
+# CI/CD
+/.github/ @hoye1113

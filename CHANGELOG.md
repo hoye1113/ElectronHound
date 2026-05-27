@@ -36,6 +36,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - C11: Vite vendor chunk splitting
 - C12: Queue index tracking replacing Array.shift()
 
+### Added (Open Source)
+
+- D1: MIT LICENSE file
+- D2: CONTRIBUTING.md with development guidelines
+- D3: SECURITY.md with vulnerability reporting policy
+- D4: CODE_OF_CONDUCT.md (Contributor Covenant 2.1)
+- D5: GitHub issue templates (bug report, feature request)
+- D6: GitHub PR template
+- D7: CODEOWNERS file
+- D8: Enriched package.json metadata for all packages
+- D9: Fixed CI branch target (main → master)
+- D10: Fixed changeset access (restricted → public)
+
 ## [0.4.0] - 2026-05-28
 
 ### Added

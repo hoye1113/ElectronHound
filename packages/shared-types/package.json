@@ -1,8 +1,17 @@
 {
   "name": "@eata/shared-types",
   "version": "0.1.0",
+  "description": "ElectronHound shared types - Zod schemas and TypeScript types",
   "type": "module",
   "main": "src/index.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hoye1113/ElectronHound.git",
+    "directory": "packages/shared-types"
+  },
+  "keywords": ["electron", "testing", "types", "zod"],
+  "author": { "name": "hoye1113" },
+  "license": "MIT",
   "types": "src/index.ts",
   "scripts": {
     "test": "vitest run",

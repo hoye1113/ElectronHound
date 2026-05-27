@@ -2,7 +2,16 @@
   "name": "@eata/dashboard",
   "private": true,
   "version": "0.1.0",
+  "description": "ElectronHound dashboard - React UI for task management",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hoye1113/ElectronHound.git",
+    "directory": "apps/dashboard"
+  },
+  "keywords": ["electron", "testing", "dashboard", "react"],
+  "author": { "name": "hoye1113" },
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

@@ -1,8 +1,17 @@
 {
   "name": "@eata/server",
   "version": "0.1.0",
+  "description": "ElectronHound server - Fastify API with SQLite",
   "type": "module",
   "main": "src/server.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hoye1113/ElectronHound.git",
+    "directory": "apps/server"
+  },
+  "keywords": ["electron", "testing", "server", "api"],
+  "author": { "name": "hoye1113" },
+  "license": "MIT",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
