@@ -1,6 +1,6 @@
 import { WorkerPoolManager } from '../services/workerPool/manager.js';
 import type { PoolTask, TaskExecutor } from '../services/workerPool/types.js';
-import { WorkerManager } from '../services/workerManager.js';
+import { WorkerManager, type Logger } from '../services/workerManager.js';
 import { sseHub } from '../streams/sseHub.js';
 import { getBatchService, type BatchService } from '../services/batchService.js';
 import type Database from 'better-sqlite3';
@@ -74,10 +74,10 @@ let pool: WorkerPoolManager | null = null;
 let executor: ProcessTaskExecutor | null = null;
 let currentConcurrency: number = 0;
 
-export function getWorkerPool(options?: { maxConcurrency?: number }): WorkerPoolManager {
+export function getWorkerPool(options?: { maxConcurrency?: number; logger?: Logger }): WorkerPoolManager {
   if (!pool) {
     const concurrency = options?.maxConcurrency ?? 3;
-    const workerManager = new WorkerManager();
+    const workerManager = new WorkerManager(options?.logger);
     executor = new ProcessTaskExecutor(workerManager);
     pool = new WorkerPoolManager(
       { maxConcurrency: concurrency },

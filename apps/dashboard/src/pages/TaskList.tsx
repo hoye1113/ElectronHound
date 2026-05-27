@@ -21,6 +21,7 @@ export default function TaskList() {
   const { t } = useTranslation();
   const tasks = useTaskStore((s) => s.tasks);
   const isLoading = useTaskStore((s) => s.isLoading);
+  const error = useTaskStore((s) => s.error);
   const fetchTasks = useTaskStore((s) => s.fetchTasks);
 
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
@@ -85,6 +86,16 @@ export default function TaskList() {
             <div className="size-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
             <p className="text-sm text-zinc-500">{t('taskList.loading')}</p>
           </div>
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <p className="text-sm text-red-400">{t('taskList.error', 'Failed to load tasks')}</p>
+          <button
+            onClick={() => fetchTasks()}
+            className="mt-3 text-sm font-medium text-indigo-400 hover:text-indigo-300"
+          >
+            {t('common.retry', 'Retry')}
+          </button>
         </div>
       ) : paginated.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-800 py-20">

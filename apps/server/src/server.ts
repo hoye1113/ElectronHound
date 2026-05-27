@@ -139,7 +139,7 @@ export async function buildServer(config?: Partial<ServerConfig>): Promise<Serve
   server.decorate('sseHub', sseHub);
 
   // Initialize worker pool and decorate server
-  const workerPool = getWorkerPool({ maxConcurrency: validatedConfig.maxConcurrency });
+  const workerPool = getWorkerPool({ maxConcurrency: validatedConfig.maxConcurrency, logger: server.log });
   server.decorate('workerPool', workerPool);
   attachPoolEventListeners(db);
 

@@ -2,11 +2,55 @@
 
 > **EATA** — Electron App Testing Agent
 
-[![CI](https://github.com/hoye-git/ElectronHound/actions/workflows/ci.yml/badge.svg)](https://github.com/hoye-git/ElectronHound/actions/workflows/ci.yml)
+[![CI](https://github.com/hoye1113/ElectronHound/actions/workflows/ci.yml/badge.svg)](https://github.com/hoye1113/ElectronHound/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178c6?logo=typescript&logoColor=fff)](https://www.typescriptlang.org/)
 [![pnpm](https://img.shields.io/badge/pnpm-9-f69220?logo=pnpm&logoColor=fff)](https://pnpm.io/)
 [![Playwright](https://img.shields.io/badge/Playwright-MCP-2ead33?logo=playwright&logoColor=fff)](https://playwright.dev/)
+
+[English](#english) | [中文](#核心特性)
+
+---
+
+## English
+
+### Overview
+
+ElectronHound is an open-source autonomous AI testing agent that automates testing for Electron applications using natural language goals. Describe what you want to test (e.g., "verify the login form shows an error when password is empty"), and the agent autonomously completes the full **Observe → Plan → Execute → Verify** loop, producing detailed test reports with screenshots, accessibility analysis, and structured feedback.
+
+### Features
+
+- **Natural language driven** — describe test goals in Chinese or English, no scripting required
+- **Autonomous closed-loop** — LangGraph-based Observe-Plan-Execute-Verify state graph
+- **Accessibility tree aware** — precise UI element targeting via Playwright MCP
+- **Screenshot per step** — complete visual test trail
+- **Multi-provider LLM** — OpenAI, DeepSeek, Qwen, Groq support
+- **Real-time monitoring** — SSE streaming with live step timeline and logs
+- **Batch testing** — submit multiple tasks with coordinated execution
+- **Export reports** — JSON, CSV, and HTML formats
+- **Report customization** — template-based reports with themes and section toggling
+
+### Quick Start
+
+```bash
+git clone https://github.com/hoye1113/ElectronHound.git
+cd ElectronHound
+pnpm install
+pnpm dev
+```
+
+- **Dashboard**: <http://localhost:5173>
+- **Server API**: <http://localhost:3000>
+
+### CLI Mode
+
+```bash
+pnpm agent:run --goal "Test the login form" --app /path/to/electron/app --model gpt-4o
+```
+
+---
+
+## 中文
 
 **一款开源的自主 AI 测试代理，通过自然语言目标自动测试 Electron 应用。**
 
@@ -165,7 +209,7 @@ graph LR
 
 ```bash
 # 克隆仓库
-git clone https://github.com/hoye-git/ElectronHound.git
+git clone https://github.com/hoye1113/ElectronHound.git
 cd ElectronHound
 
 # 安装依赖

@@ -7,12 +7,14 @@ import TaskList from '../pages/TaskList';
 const mockFetchTasks = vi.fn().mockResolvedValue(undefined);
 let mockTasks: Task[] = [];
 let mockIsLoading = false;
+let mockError: string | null = null;
 
 vi.mock('../stores/taskStore', () => ({
   useTaskStore: (selector: (s: Record<string, unknown>) => unknown) =>
     selector({
       tasks: mockTasks,
       isLoading: mockIsLoading,
+      error: mockError,
       fetchTasks: mockFetchTasks,
     }),
 }));
@@ -51,6 +53,7 @@ describe('TaskList', () => {
     vi.clearAllMocks();
     mockTasks = [];
     mockIsLoading = false;
+    mockError = null;
     mockFetchTasks.mockResolvedValue(undefined);
     vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
@@ -296,6 +299,15 @@ describe('TaskList', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Completed task')).toBeInTheDocument();
+    });
+  });
+
+  it('shows error state when fetch fails', async () => {
+    mockError = 'Network error';
+    render(<TaskList />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Failed to load tasks/)).toBeInTheDocument();
     });
   });
 });

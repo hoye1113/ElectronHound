@@ -41,12 +41,31 @@ const HEARTBEAT_TIMEOUT = 10_000;
 const HEARTBEAT_CHECK_INTERVAL = 2_000;
 const CANCEL_TIMEOUT = 5_000;
 
+// ── Logger Interface ─────────────────────────────────────────────────
+
+export interface Logger {
+  info: (obj: Record<string, unknown>, msg?: string) => void;
+  warn: (obj: Record<string, unknown>, msg?: string) => void;
+  error: (obj: Record<string, unknown>, msg?: string) => void;
+}
+
+const fallbackLogger: Logger = {
+  info: (obj, msg) => process.stderr.write(JSON.stringify({ level: 'info', ...obj, msg }) + '\n'),
+  warn: (obj, msg) => process.stderr.write(JSON.stringify({ level: 'warn', ...obj, msg }) + '\n'),
+  error: (obj, msg) => process.stderr.write(JSON.stringify({ level: 'error', ...obj, msg }) + '\n'),
+};
+
 // ── WorkerManager ───────────────────────────────────────────────────
 
 export class WorkerManager {
   private workers: Map<string, WorkerHandle> = new Map();
   private heartbeatInterval: NodeJS.Timeout | null = null;
   private eventListeners: Array<(event: WorkerEvent) => void> = [];
+  private log: Logger;
+
+  constructor(logger?: Logger) {
+    this.log = logger ?? fallbackLogger;
+  }
 
   // ── Public API ──────────────────────────────────────────────────
 
@@ -91,7 +110,7 @@ export class WorkerManager {
     child.stderr?.on('data', (chunk: Buffer) => {
       const msg = chunk.toString().trim();
       if (msg) {
-        process.stderr.write(JSON.stringify({ level: 'error', workerId: options.taskId, msg }) + '\n');
+        this.log.error({ workerId: options.taskId }, msg);
       }
     });
 
@@ -102,7 +121,7 @@ export class WorkerManager {
 
     // Process error (spawn failure)
     child.on('error', (err) => {
-      process.stderr.write(JSON.stringify({ level: 'error', workerId: options.taskId, msg: `spawn error: ${err.message}` }) + '\n');
+      this.log.error({ workerId: options.taskId }, `spawn error: ${err.message}`);
       const handle = this.workers.get(options.taskId);
       if (handle) {
         handle.status = 'failed';
@@ -236,7 +255,7 @@ export class WorkerManager {
         this.dispatchNotification(taskId, msg);
       } catch {
         // Non-JSON output — log as raw text
-        process.stderr.write(JSON.stringify({ level: 'warn', workerId: taskId, msg: `non-JSON stdout: ${line}` }) + '\n');
+        this.log.warn({ workerId: taskId }, `non-JSON stdout: ${line}`);
       }
     }
   }
