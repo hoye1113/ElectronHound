@@ -12,13 +12,20 @@ export async function feedbackRoutes(server: FastifyInstance) {
     }
 
     const content = readFileSync(PATTERNS_FILE, 'utf-8');
-    const patterns: FeedbackPattern[] = content
-      .split('\n')
-      .filter((line) => line.trim().length > 0)
-      .map((line) => {
+    const patterns: FeedbackPattern[] = [];
+
+    for (const line of content.split('\n')) {
+      if (line.trim().length === 0) continue;
+      try {
         const raw = JSON.parse(line);
-        return FeedbackPatternSchema.parse(raw);
-      });
+        patterns.push(FeedbackPatternSchema.parse(raw));
+      } catch (err) {
+        server.log.warn(
+          { err, line: line.slice(0, 120) },
+          'Skipping invalid feedback pattern line',
+        );
+      }
+    }
 
     return { patterns };
   });

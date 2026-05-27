@@ -1,62 +1,27 @@
 import type { FastifyInstance } from 'fastify';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { TaskStatusEnum, type Task, type StepRecord } from '@eata/shared-types';
+import { z } from 'zod';
 import { generateHTMLReport } from '../services/htmlReport.js';
-import { validatePath, PathTraversalError } from '../services/fileSecurity.js';
-
-function safeJsonParse(value: unknown): unknown {
-  if (!value) return undefined;
-  try {
-    return JSON.parse(value as string);
-  } catch {
-    return undefined;
-  }
-}
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function dbRowToTask(row: Record<string, unknown>): Task {
-  const status = TaskStatusEnum.parse(row.status);
-  return {
-    id: row.id as string,
-    goal: row.goal as string,
-    targetAppPath: row.target_app_path as string,
-    llmModel: row.llm_model as Task['llmModel'],
-    status,
-    maxSteps: row.max_steps as number,
-    contextInjection: (row.context_injection as string) ?? undefined,
-    stepCount: row.step_count as number,
-    resultSummary: safeJsonParse(row.result_summary) as Task['resultSummary'],
-    createdAt: row.created_at as string,
-    updatedAt: row.updated_at as string,
-  };
-}
-
-function dbRowToStep(row: Record<string, unknown>): StepRecord {
-  return {
-    id: row.id as string,
-    taskId: row.task_id as string,
-    stepIndex: row.step_index as number,
-    phase: row.phase as StepRecord['phase'],
-    status: row.status as StepRecord['status'],
-    observation: (row.observation as string) ?? undefined,
-    action: safeJsonParse(row.action) as StepRecord['action'],
-    result: safeJsonParse(row.result),
-    reasoning: (row.reasoning as string) ?? undefined,
-    screenshotPath: (row.screenshot_path as string) ?? undefined,
-    accessibilitySnapshotPath: (row.accessibility_snapshot_path as string) ?? undefined,
-    timestamp: row.timestamp as string,
-    duration: row.duration as number,
-  };
-}
+import { validatePath } from '../services/fileSecurity.js';
+import { dbRowToTask, dbRowToStep } from '../utils/dbMappers.js';
+import { UuidParam } from '../utils/validation.js';
+const StepParam = z.object({
+  id: z.string().uuid(),
+  stepIndex: z.string().regex(/^\d+$/).refine((val) => {
+    const num = parseInt(val, 10);
+    return num >= 0 && num <= 1000;
+  }, 'Step index must be between 0 and 1000'),
+});
 
 export async function reportRoutes(server: FastifyInstance) {
+  // GET /tasks/:id/report — fetch report manifest
   server.get('/tasks/:id/report', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    if (!UUID_REGEX.test(id)) {
-      return reply.status(400).send({ error: 'Invalid task ID format' });
+    const parsed = UuidParam.safeParse(request.params);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Invalid task ID format', details: parsed.error.issues });
     }
+    const { id } = parsed.data;
 
     let reportDir: string;
     try {
@@ -83,10 +48,11 @@ export async function reportRoutes(server: FastifyInstance) {
 
   // GET /tasks/:id/report/html — generate and return HTML report
   server.get('/tasks/:id/report/html', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    if (!UUID_REGEX.test(id)) {
-      return reply.status(400).send({ error: 'Invalid task ID format' });
+    const parsed = UuidParam.safeParse(request.params);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Invalid task ID format', details: parsed.error.issues });
     }
+    const { id } = parsed.data;
 
     const taskRow = server.db
       .prepare('SELECT * FROM tasks WHERE id = ?')
@@ -114,17 +80,12 @@ export async function reportRoutes(server: FastifyInstance) {
 
   // GET /tasks/:id/steps/:stepIndex/screenshot
   server.get('/tasks/:id/steps/:stepIndex/screenshot', async (request, reply) => {
-    const { id, stepIndex } = request.params as { id: string; stepIndex: string };
+    const parsed = StepParam.safeParse(request.params);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Invalid task ID format', details: parsed.error.issues });
+    }
+    const { id, stepIndex } = parsed.data;
     const stepIdx = parseInt(stepIndex, 10);
-
-    if (!UUID_REGEX.test(id)) {
-      return reply.status(400).send({ error: 'Invalid task ID format' });
-    }
-
-    if (Number.isNaN(stepIdx)) {
-      reply.code(400);
-      return { error: 'Invalid step index' };
-    }
 
     // Query database for the step's screenshot path
     const stepRow = server.db

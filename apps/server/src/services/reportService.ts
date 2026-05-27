@@ -7,7 +7,7 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { validatePath } from './fileSecurity.js';
-import type { Manifest, TimelineEntry } from '@eata/shared-types';
+import { ManifestSchema, TimelineEntrySchema, type Manifest, type TimelineEntry } from '@eata/shared-types';
 
 export class ReportService {
   constructor(private dataDir: string) {}
@@ -65,15 +65,15 @@ export class ReportService {
       throw new Error(`Report not found for task ${taskId}`);
     }
 
-    const manifest = JSON.parse(
-      readFileSync(manifestPath, 'utf-8'),
-    ) as Manifest;
+    const manifest = ManifestSchema.parse(
+      JSON.parse(readFileSync(manifestPath, 'utf-8')),
+    );
     const timelineRaw = readFileSync(timelinePath, 'utf-8');
     const timeline = timelineRaw
       .trim()
       .split('\n')
       .filter(Boolean)
-      .map((line) => JSON.parse(line) as TimelineEntry);
+      .map((line) => TimelineEntrySchema.parse(JSON.parse(line)));
     return { manifest, timeline };
   }
 

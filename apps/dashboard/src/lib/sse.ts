@@ -8,14 +8,38 @@ export interface SSECallbacks {
   onError?: (data: unknown) => void;
 }
 
+/**
+ * Safely parse a MessageEvent's data, returning `null` on failure.
+ */
+function safeParseEventData(e: MessageEvent<string>): unknown {
+  try {
+    return JSON.parse(e.data);
+  } catch {
+    console.error('[SSE] Failed to parse event data:', e.data);
+    return null;
+  }
+}
+
 export function connectSSE(taskId: string, callbacks: SSECallbacks): EventSource {
   const url = `${API_BASE}/api/stream/tasks/${taskId}`;
   const es = new EventSource(url);
 
-  es.addEventListener('step', (e) => callbacks.onStep?.(JSON.parse((e as MessageEvent).data)));
-  es.addEventListener('log', (e) => callbacks.onLog?.(JSON.parse((e as MessageEvent).data)));
-  es.addEventListener('status', (e) => callbacks.onStatus?.(JSON.parse((e as MessageEvent).data)));
-  es.addEventListener('complete', (e) => callbacks.onComplete?.(JSON.parse((e as MessageEvent).data)));
+  es.addEventListener('step', (e) => {
+    const data = safeParseEventData(e as MessageEvent<string>);
+    if (data !== null) callbacks.onStep?.(data);
+  });
+  es.addEventListener('log', (e) => {
+    const data = safeParseEventData(e as MessageEvent<string>);
+    if (data !== null) callbacks.onLog?.(data);
+  });
+  es.addEventListener('status', (e) => {
+    const data = safeParseEventData(e as MessageEvent<string>);
+    if (data !== null) callbacks.onStatus?.(data);
+  });
+  es.addEventListener('complete', (e) => {
+    const data = safeParseEventData(e as MessageEvent<string>);
+    if (data !== null) callbacks.onComplete?.(data);
+  });
   es.addEventListener('error', (e) => callbacks.onError?.(e));
 
   es.onerror = () => {

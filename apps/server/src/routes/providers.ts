@@ -8,6 +8,7 @@ import {
   setActiveProvider,
   createProviderInstance,
 } from '@eata/agent-core';
+import { ProviderIdParam } from '../utils/validation.js';
 
 const CreateProviderSchema = z.object({
   id: z.string().min(1),
@@ -42,7 +43,11 @@ export async function providersRoutes(server: FastifyInstance) {
 
   // PUT /providers/:id - 更新供应商
   server.put('/providers/:id', async (request, reply) => {
-    const { id } = request.params as { id: string };
+    const paramsResult = ProviderIdParam.safeParse(request.params);
+    if (!paramsResult.success) {
+      return reply.status(400).send({ error: 'Invalid provider ID', details: paramsResult.error.issues });
+    }
+    const { id } = paramsResult.data;
     const parseResult = UpdateProviderSchema.safeParse(request.body);
     if (!parseResult.success) {
       return reply.status(400).send({
@@ -57,7 +62,11 @@ export async function providersRoutes(server: FastifyInstance) {
 
   // DELETE /providers/:id - 删除供应商
   server.delete('/providers/:id', async (request, reply) => {
-    const { id } = request.params as { id: string };
+    const paramsResult = ProviderIdParam.safeParse(request.params);
+    if (!paramsResult.success) {
+      return reply.status(400).send({ error: 'Invalid provider ID', details: paramsResult.error.issues });
+    }
+    const { id } = paramsResult.data;
     const config = deleteProvider(id);
     if (!config) return reply.status(404).send({ error: 'Provider not found' });
     return config;
@@ -65,7 +74,11 @@ export async function providersRoutes(server: FastifyInstance) {
 
   // POST /providers/:id/test - 测试连接
   server.post('/providers/:id/test', async (request, reply) => {
-    const { id } = request.params as { id: string };
+    const paramsResult = ProviderIdParam.safeParse(request.params);
+    if (!paramsResult.success) {
+      return reply.status(400).send({ error: 'Invalid provider ID', details: paramsResult.error.issues });
+    }
+    const { id } = paramsResult.data;
     const config = loadProvidersConfig();
     const provider = config.providers.find(p => p.id === id);
     if (!provider) return reply.status(404).send({ error: 'Provider not found' });
@@ -89,7 +102,11 @@ export async function providersRoutes(server: FastifyInstance) {
 
   // POST /providers/:id/activate - 设为默认
   server.post('/providers/:id/activate', async (request, reply) => {
-    const { id } = request.params as { id: string };
+    const paramsResult = ProviderIdParam.safeParse(request.params);
+    if (!paramsResult.success) {
+      return reply.status(400).send({ error: 'Invalid provider ID', details: paramsResult.error.issues });
+    }
+    const { id } = paramsResult.data;
     const config = setActiveProvider(id);
     if (!config) return reply.status(404).send({ error: 'Provider not found' });
     return config;

@@ -1,70 +1,38 @@
 import type { FastifyInstance } from 'fastify';
 import { randomUUID } from 'node:crypto';
-import {
-  CreateTaskRequestSchema,
-  TaskStatusEnum,
-  type Task,
-  type StepRecord,
-} from '@eata/shared-types';
+import { z } from 'zod';
+import { CreateTaskRequestSchema } from '@eata/shared-types';
 import { sseHub } from '../streams/sseHub.js';
 import { getWorkerPool } from '../tasks/runner.js';
+import { dbRowToTask, dbRowToStep } from '../utils/dbMappers.js';
+import { IdParam } from '../utils/validation.js';
 
-function safeJsonParse(value: unknown): unknown {
-  if (!value) return undefined;
-  try {
-    return JSON.parse(value as string);
-  } catch {
-    return undefined;
-  }
-}
+// ── Validation schemas ──────────────────────────────────────────────
 
-function dbRowToTask(row: Record<string, unknown>): Task {
-  const status = TaskStatusEnum.parse(row.status);
-  return {
-    id: row.id as string,
-    goal: row.goal as string,
-    targetAppPath: row.target_app_path as string,
-    llmModel: row.llm_model as Task['llmModel'],
-    status,
-    maxSteps: row.max_steps as number,
-    providerId: (row.provider_id as string) ?? undefined,
-    contextInjection: (row.context_injection as string) ?? undefined,
-    stepCount: row.step_count as number,
-    resultSummary: safeJsonParse(row.result_summary) as Task['resultSummary'],
-    createdAt: row.created_at as string,
-    updatedAt: row.updated_at as string,
-  };
-}
+const TaskStatusEnum = z.enum([
+  'queued',
+  'running',
+  'completed',
+  'failed',
+  'cancelled',
+  'aborted',
+]);
 
-function dbRowToStep(row: Record<string, unknown>): StepRecord {
-  return {
-    id: row.id as string,
-    taskId: row.task_id as string,
-    stepIndex: row.step_index as number,
-    phase: row.phase as StepRecord['phase'],
-    status: row.status as StepRecord['status'],
-    observation: (row.observation as string) ?? undefined,
-    action: safeJsonParse(row.action) as StepRecord['action'],
-    result: safeJsonParse(row.result),
-    reasoning: (row.reasoning as string) ?? undefined,
-    screenshotPath: (row.screenshot_path as string) ?? undefined,
-    accessibilitySnapshotPath: (row.accessibility_snapshot_path as string) ?? undefined,
-    timestamp: row.timestamp as string,
-    duration: row.duration as number,
-  };
-}
+const TaskListQuery = z.object({
+  status: TaskStatusEnum.optional(),
+  page: z.string().regex(/^\d+$/).optional(),
+  limit: z.string().regex(/^\d+$/).optional(),
+});
 
 export async function taskRoutes(server: FastifyInstance) {
   // GET /tasks — list with optional status filter + pagination
   server.get('/tasks', async (request) => {
-    const query = request.query as {
-      status?: string;
-      page?: string;
-      limit?: string;
-    };
-    const statusFilter = query.status || null;
-    const page = Math.max(1, parseInt(query.page || '1', 10) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(query.limit || '20', 10) || 20));
+    const parsed = TaskListQuery.safeParse(request.query);
+    const statusFilter = parsed.success ? (parsed.data.status || null) : null;
+    const page = parsed.success ? Math.max(1, parseInt(parsed.data.page || '1', 10) || 1) : 1;
+    const limit = parsed.success
+      ? Math.min(100, Math.max(1, parseInt(parsed.data.limit || '20', 10) || 20))
+      : 20;
     const offset = (page - 1) * limit;
 
     const countSql =
@@ -91,7 +59,11 @@ export async function taskRoutes(server: FastifyInstance) {
 
   // GET /tasks/:id — task detail with steps
   server.get('/tasks/:id', async (request, reply) => {
-    const { id } = request.params as { id: string };
+    const parsed = IdParam.safeParse(request.params);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Invalid task ID format', details: parsed.error.issues });
+    }
+    const { id } = parsed.data;
 
     const taskRow = server.db
       .prepare('SELECT * FROM tasks WHERE id = ?')
@@ -158,7 +130,11 @@ export async function taskRoutes(server: FastifyInstance) {
 
   // POST /tasks/:id/cancel — cancel a running or queued task
   server.post('/tasks/:id/cancel', async (request, reply) => {
-    const { id } = request.params as { id: string };
+    const parsed = IdParam.safeParse(request.params);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Invalid task ID format', details: parsed.error.issues });
+    }
+    const { id } = parsed.data;
 
     const taskRow = server.db
       .prepare('SELECT * FROM tasks WHERE id = ?')
@@ -199,7 +175,11 @@ export async function taskRoutes(server: FastifyInstance) {
 
   // DELETE /tasks/:id — cancel (if running) or delete (if queued)
   server.delete('/tasks/:id', async (request, reply) => {
-    const { id } = request.params as { id: string };
+    const parsed = IdParam.safeParse(request.params);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Invalid task ID format', details: parsed.error.issues });
+    }
+    const { id } = parsed.data;
 
     const taskRow = server.db
       .prepare('SELECT * FROM tasks WHERE id = ?')
