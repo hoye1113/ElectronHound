@@ -39,7 +39,7 @@ jobs:
         run: pnpm run lint
 
       - name: Run tests with coverage
-        run: npx vitest run --coverage --coverage.reporter=text --coverage.reporter=lcov
+        run: npx vitest run --coverage --coverage.reporter=text --coverage.reporter=lcov --reporter=default --reporter=junit --outputFile.junit=./test-results/junit.xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

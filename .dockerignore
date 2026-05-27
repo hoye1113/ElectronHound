@@ -3,8 +3,8 @@
 .gitignore
 
 # Dependencies (rebuilt inside container)
-node_modules
-**/node_modules
+node_modules/
+**/node_modules/
 
 # Build outputs (rebuilt inside container)
 dist
