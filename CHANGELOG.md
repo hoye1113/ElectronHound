@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+- P3: Release management with Changesets
+- P3: Release CI workflow for automated releases
+- P3: Node.js >= 20 and pnpm >= 9 engine constraints
+
+## [0.4.0] - 2026-05-28
+
+### Added
+
+- P0: LICENSE, SECURITY.md, CODE_OF_CONDUCT.md for project governance
+- P0: Comprehensive input validation with Zod schemas across all API endpoints
+- P0: Structured error handling with error codes and solutions
+- P1: Complete documentation suite (API, Architecture, Troubleshooting, Examples)
+- P1: Developer Experience (DX) module with structured errors, logging, progress tracking
+- P1: Configuration wizard for LLM providers (OpenAI, DeepSeek, Qwen, Groq)
+- P1: CLI help system with shell completion scripts (bash, zsh, fish)
+- P1: 94 new DX tests
+
+### Changed
+
+- P0: Removed all `as any` type assertions
+- P0: Enhanced API error responses with detailed validation errors
+- P0: Improved SSE hub to use Fastify CORS instead of hardcoded headers
+- P2: Enhanced health check with 'degraded' status support
+
+### Fixed
+
+- P0: Server startup condition for tsx runtime
+- P0: WorkerPool TypeScript errors
+- P2: SSE test from P0 CORS header removal
+
 ## [0.3.0] - 2026-05-26
 
 ### Added
@@ -42,3 +79,9 @@ All notable changes to this project will be documented in this file.
 - Test fixture Electron application
 - Server skeleton with SQLite database and migrations
 - Dashboard skeleton with Vite + React + Tailwind
+
+[Unreleased]: https://github.com/hoye1113/ElectronHound/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/hoye1113/ElectronHound/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/hoye1113/ElectronHound/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/hoye1113/ElectronHound/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/hoye1113/ElectronHound/releases/tag/v0.1.0
