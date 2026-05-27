@@ -6,7 +6,7 @@ export async function healthRoutes(server: FastifyInstance) {
 
     // Database check
     try {
-      const db = (server as any).db;
+      const db = server.db;
       if (db) {
         db.prepare('SELECT 1').get();
         checks.database = { status: 'ok' };
@@ -20,10 +20,10 @@ export async function healthRoutes(server: FastifyInstance) {
 
     // Worker pool check
     try {
-      const pool = (server as any).workerPool;
+      const pool = server.workerPool;
       if (pool) {
         const workers = pool.getAllWorkers();
-        const running = workers.filter((w: any) => w.status === 'running' || w.status === 'starting').length;
+        const running = workers.filter((w) => w.status === 'running' || w.status === 'starting').length;
         checks.workerPool = {
           status: 'ok',
           running,

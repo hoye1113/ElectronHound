@@ -1,6 +1,28 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';
 import { CONFIG_DIR, PROVIDERS_FILE } from './config-paths.js';
 import type { LLMProviderConfig, ProvidersConfig } from './llm-types.js';
+
+const ENCRYPTION_ALGO = 'aes-256-cbc';
+const ENCRYPTION_KEY = scryptSync('eata-provider-key', 'eata-salt', 32);
+
+function encryptApiKey(plain: string): string {
+  if (!plain) return '';
+  const iv = randomBytes(16);
+  const cipher = createCipheriv(ENCRYPTION_ALGO, ENCRYPTION_KEY, iv);
+  const encrypted = Buffer.concat([cipher.update(plain, 'utf8'), cipher.final()]);
+  return `enc:${iv.toString('hex')}:${encrypted.toString('hex')}`;
+}
+
+function decryptApiKey(cipher: string): string {
+  if (!cipher || !cipher.startsWith('enc:')) return cipher;
+  const parts = cipher.split(':');
+  if (parts.length !== 3) return cipher;
+  const iv = Buffer.from(parts[1], 'hex');
+  const encrypted = Buffer.from(parts[2], 'hex');
+  const decipher = createDecipheriv(ENCRYPTION_ALGO, ENCRYPTION_KEY, iv);
+  return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8');
+}
 
 const DEFAULT_PROVIDERS: ProvidersConfig = {
   version: 1,
@@ -36,13 +58,34 @@ const DEFAULT_PROVIDERS: ProvidersConfig = {
   activeId: 'openai-default',
 };
 
+function decryptConfig(config: ProvidersConfig): ProvidersConfig {
+  return {
+    ...config,
+    providers: config.providers.map((p) => ({
+      ...p,
+      apiKey: decryptApiKey(p.apiKey),
+    })),
+  };
+}
+
+function encryptConfig(config: ProvidersConfig): ProvidersConfig {
+  return {
+    ...config,
+    providers: config.providers.map((p) => ({
+      ...p,
+      apiKey: p.apiKey.startsWith('enc:') ? p.apiKey : encryptApiKey(p.apiKey),
+    })),
+  };
+}
+
 export function loadProvidersConfig(): ProvidersConfig {
   if (!existsSync(PROVIDERS_FILE)) {
     return DEFAULT_PROVIDERS;
   }
   try {
     const content = readFileSync(PROVIDERS_FILE, 'utf-8');
-    return JSON.parse(content);
+    const raw = JSON.parse(content) as ProvidersConfig;
+    return decryptConfig(raw);
   } catch (err) {
     console.warn(`Failed to parse providers.json: ${err instanceof Error ? err.message : String(err)}. Using defaults.`);
     return DEFAULT_PROVIDERS;
@@ -53,7 +96,8 @@ export function saveProvidersConfig(config: ProvidersConfig): void {
   if (!existsSync(CONFIG_DIR)) {
     mkdirSync(CONFIG_DIR, { recursive: true });
   }
-  writeFileSync(PROVIDERS_FILE, JSON.stringify(config, null, 2));
+  const encrypted = encryptConfig(config);
+  writeFileSync(PROVIDERS_FILE, JSON.stringify(encrypted, null, 2));
 }
 
 export function addProvider(config: LLMProviderConfig): ProvidersConfig {
