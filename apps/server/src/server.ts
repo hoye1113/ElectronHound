@@ -5,6 +5,8 @@ import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { initDatabase } from './db/index.js';
 import { runMigrations } from './db/migrations.js';
+import { seedBuiltInTemplates } from './db/seeds/templates.js';
+import { ReportTemplateService } from './services/reportTemplateService.js';
 import { registerRoutes } from './routes/index.js';
 import { streamRoutes } from './routes/stream.js';
 import { sseHub } from './streams/sseHub.js';
@@ -106,6 +108,15 @@ export async function buildServer(config?: Partial<ServerConfig>): Promise<Serve
   if (migrated) {
     server.log.info('Database migrations applied');
   }
+
+  // Seed built-in templates
+  seedBuiltInTemplates(db);
+  server.log.info('Built-in templates seeded');
+
+  // Seed default report template
+  const reportTemplateService = new ReportTemplateService(db);
+  reportTemplateService.seedDefaultTemplate();
+  server.log.info('Default report template seeded');
 
   // Register application routes
   await registerRoutes(server);

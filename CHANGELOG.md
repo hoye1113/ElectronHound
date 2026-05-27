@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - P3: Release management with Changesets
 - P3: Release CI workflow for automated releases
 - P3: Node.js >= 20 and pnpm >= 9 engine constraints
+- A1: Batch testing with coordinated execution and progress tracking
+- A2: Test templates with 6 built-in presets and custom template support
+- A3: Result export in JSON, CSV, and HTML formats
+- A4: Report format customization with template system and styling options
 
 ## [0.4.0] - 2026-05-28
 

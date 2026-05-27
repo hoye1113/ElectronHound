@@ -172,6 +172,205 @@ function renderStep(step: StepRecord, taskId: string): string {
     </div>`;
 }
 
+/**
+ * Generate an HTML report customized by a ReportTemplate.
+ *
+ * Filters and orders sections according to the template, applies styling,
+ * and renders each section type appropriately.
+ */
+export function generateTemplatedHTMLReport(
+  task: Task,
+  steps: StepRecord[],
+  template: import('../types/report-template.js').ReportTemplate,
+): string {
+  const { sections, styling } = template;
+  const enabledSections = sections
+    .filter((s) => s.enabled)
+    .sort((a, b) => a.order - b.order);
+
+  const statusColor = STATUS_COLORS[task.status] ?? '#71717a';
+  const totalDuration = steps.reduce((sum, s) => sum + s.duration, 0);
+
+  // Build section HTML blocks
+  const sectionBlocks: string[] = [];
+
+  for (const section of enabledSections) {
+    switch (section.type) {
+      case 'summary': {
+        let summaryContent = '';
+        if (task.resultSummary) {
+          summaryContent = `
+            <p><strong>Success:</strong> ${task.resultSummary.success ? 'Yes' : 'No'}</p>
+            <p>${escapeHtml(task.resultSummary.summary)}</p>
+            ${task.resultSummary.error ? `<p class="error">${escapeHtml(task.resultSummary.error)}</p>` : ''}`;
+        } else {
+          summaryContent = `<p>No summary available.</p>`;
+        }
+        sectionBlocks.push(`
+          <div class="section">
+            <div class="section-title">${escapeHtml(section.title)}</div>
+            <div class="summary-card">${summaryContent}</div>
+          </div>`);
+        break;
+      }
+      case 'steps': {
+        const stepsHtml = steps.map((s) => renderStep(s, task.id)).join('\n');
+        sectionBlocks.push(`
+          <div class="section">
+            <div class="section-title">${escapeHtml(section.title)}</div>
+            ${stepsHtml || '<p style="color:#71717a">No steps recorded.</p>'}
+          </div>`);
+        break;
+      }
+      case 'screenshots': {
+        const screenshotSteps = steps.filter((s) => s.screenshotPath);
+        if (screenshotSteps.length > 0) {
+          const refs = screenshotSteps
+            .map((s) => `<span class="screenshot-ref">Step #${s.stepIndex}: ${escapeHtml(s.screenshotPath ?? '')}</span>`)
+            .join('<br>');
+          sectionBlocks.push(`
+            <div class="section">
+              <div class="section-title">${escapeHtml(section.title)}</div>
+              <div class="summary-card">${refs}</div>
+            </div>`);
+        } else {
+          sectionBlocks.push(`
+            <div class="section">
+              <div class="section-title">${escapeHtml(section.title)}</div>
+              <p style="color:#71717a">No screenshots captured.</p>
+            </div>`);
+        }
+        break;
+      }
+      case 'errors': {
+        const failedSteps = steps.filter((s) => s.status === 'failed');
+        if (failedSteps.length > 0) {
+          const errorsHtml = failedSteps
+            .map((s) => {
+              const result = s.result as Record<string, unknown> | undefined;
+              const errorMsg = result?.error ? escapeHtml(String(result.error)) : 'Unknown error';
+              return `<div class="step" style="border-left-color: #f87171">
+                <div class="step-title">Step #${s.stepIndex} (${escapeHtml(s.phase)})</div>
+                <div class="step-detail error">${errorMsg}</div>
+              </div>`;
+            })
+            .join('\n');
+          sectionBlocks.push(`
+            <div class="section">
+              <div class="section-title">${escapeHtml(section.title)}</div>
+              ${errorsHtml}
+            </div>`);
+        } else {
+          sectionBlocks.push(`
+            <div class="section">
+              <div class="section-title">${escapeHtml(section.title)}</div>
+              <p style="color:#71717a">No errors recorded.</p>
+            </div>`);
+        }
+        break;
+      }
+      case 'performance': {
+        const avgDuration = steps.length > 0 ? Math.round(totalDuration / steps.length) : 0;
+        sectionBlocks.push(`
+          <div class="section">
+            <div class="section-title">${escapeHtml(section.title)}</div>
+            <div class="summary-card">
+              <p><strong>Total Duration:</strong> ${formatDuration(totalDuration)}</p>
+              <p><strong>Steps:</strong> ${task.stepCount}</p>
+              <p><strong>Avg Step Duration:</strong> ${formatDuration(avgDuration)}</p>
+            </div>
+          </div>`);
+        break;
+      }
+      case 'suggestions': {
+        const suggestions: string[] = [];
+        const failedSteps = steps.filter((s) => s.status === 'failed');
+        if (failedSteps.length > 0) {
+          suggestions.push('Review failed steps for potential flakiness or environment issues.');
+        }
+        if (task.stepCount > 30) {
+          suggestions.push('Consider breaking this test into smaller, focused test cases.');
+        }
+        if (totalDuration > 120_000) {
+          suggestions.push('Test duration exceeds 2 minutes — look for optimization opportunities.');
+        }
+        if (suggestions.length === 0) {
+          suggestions.push('No specific suggestions. The test execution looks healthy.');
+        }
+        const suggestionsHtml = suggestions.map((s) => `<li>${escapeHtml(s)}</li>`).join('');
+        sectionBlocks.push(`
+          <div class="section">
+            <div class="section-title">${escapeHtml(section.title)}</div>
+            <div class="summary-card"><ul>${suggestionsHtml}</ul></div>
+          </div>`);
+        break;
+      }
+      case 'raw': {
+        const rawJson = JSON.stringify({ task, steps }, null, 2);
+        sectionBlocks.push(`
+          <div class="section">
+            <div class="section-title">${escapeHtml(section.title)}</div>
+            <pre style="background:#27272a;border:1px solid #3f3f46;border-radius:0.5rem;padding:1rem;font-size:0.75rem;overflow-x:auto;color:#a1a1aa">${escapeHtml(rawJson)}</pre>
+          </div>`);
+        break;
+      }
+    }
+  }
+
+  // Apply template styling
+  const theme = styling.theme === 'dark' || styling.theme === 'auto' ? '#18181b' : '#ffffff';
+  const textColor = styling.theme === 'dark' || styling.theme === 'auto' ? '#e4e4e7' : '#1a1a1a';
+  const mutedColor = styling.theme === 'dark' || styling.theme === 'auto' ? '#a1a1aa' : '#6b7280';
+  const borderColor = styling.theme === 'dark' || styling.theme === 'auto' ? '#3f3f46' : '#e5e7eb';
+  const cardBg = styling.theme === 'dark' || styling.theme === 'auto' ? '#27272a' : '#f9fafb';
+  const primaryColor = styling.primaryColor;
+  const logoHtml = styling.logoUrl ? `<img src="${escapeHtml(styling.logoUrl)}" alt="Logo" style="height:2rem;margin-right:0.75rem">` : '';
+  const companyHtml = styling.companyName ? `<span style="font-weight:600">${escapeHtml(styling.companyName)}</span>` : '';
+  const footerText = styling.footerText ?? 'Generated by ElectronHound';
+
+  const themedCSS = CSS
+    .replace('background: #18181b', `background: ${theme}`)
+    .replace('color: #e4e4e7', `color: ${textColor}`)
+    .replace('border: 1px solid #3f3f46', `border: 1px solid ${borderColor}`)
+    .replace('background: #27272a', `background: ${cardBg}`)
+    .replace('color: #a1a1aa', `color: ${mutedColor}`);
+
+  const primaryCSS = `:root { --primary-color: ${primaryColor}; }
+  .section-title { color: ${primaryColor}; }
+  a, .screenshot-ref { color: ${primaryColor}; }`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Report - ${escapeHtml(task.id)}</title>
+  <style>${themedCSS}${primaryCSS}</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      ${logoHtml}${companyHtml}
+      <h1>${escapeHtml(task.goal)}</h1>
+      <div class="meta">
+        <span class="badge" style="background: ${statusColor}22; color: ${statusColor}">${task.status}</span>
+        <span class="meta-item">Model: ${escapeHtml(task.llmModel)}</span>
+        <span class="meta-item">Steps: ${task.stepCount}</span>
+        <span class="meta-item">Duration: ${formatDuration(totalDuration)}</span>
+        <span class="meta-item">Created: ${formatDate(task.createdAt)}</span>
+      </div>
+    </div>
+
+    ${sectionBlocks.join('\n')}
+
+    <div class="footer">
+      ${escapeHtml(footerText)} &middot; Generated at ${formatDate(new Date().toISOString())} &middot; Task ID: ${escapeHtml(task.id)}
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 export function generateHTMLReport(task: Task, steps: StepRecord[]): string {
   const statusColor = STATUS_COLORS[task.status] ?? '#71717a';
   const totalDuration = steps.reduce((sum, s) => sum + s.duration, 0);

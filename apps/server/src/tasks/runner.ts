@@ -2,6 +2,7 @@ import { WorkerPoolManager } from '../services/workerPool/manager.js';
 import type { PoolTask, TaskExecutor } from '../services/workerPool/types.js';
 import { WorkerManager } from '../services/workerManager.js';
 import { sseHub } from '../streams/sseHub.js';
+import { createBatchService, type BatchService } from '../services/batchService.js';
 import type Database from 'better-sqlite3';
 
 // ── TaskExecutor adapter ──────────────────────────────────────────────
@@ -95,6 +96,7 @@ export async function closeWorkerPool(): Promise<void> {
  */
 export function attachPoolEventListeners(db: Database.Database): void {
   const p = getWorkerPool();
+
   p.onEvent((event) => {
     switch (event.type) {
       case 'started':
@@ -115,6 +117,8 @@ export function attachPoolEventListeners(db: Database.Database): void {
           event: 'status',
           data: { taskId: event.taskId, status: 'completed' },
         });
+        // Update batch progress if task belongs to a batch
+        updateTaskBatchProgress(db, event.taskId);
         break;
 
       case 'failed':
@@ -125,7 +129,20 @@ export function attachPoolEventListeners(db: Database.Database): void {
           event: 'status',
           data: { taskId: event.taskId, status: 'failed', error: event.error },
         });
+        // Update batch progress if task belongs to a batch
+        updateTaskBatchProgress(db, event.taskId);
         break;
     }
   });
+}
+
+/**
+ * Helper to update batch progress when a task completes or fails.
+ */
+function updateTaskBatchProgress(db: Database.Database, taskId: string): void {
+  const taskRow = db.prepare('SELECT batch_id FROM tasks WHERE id = ?').get(taskId) as { batch_id: string | null } | undefined;
+  if (taskRow?.batch_id) {
+    const batchService = createBatchService(db);
+    batchService.updateBatchProgress(taskRow.batch_id);
+  }
 }
