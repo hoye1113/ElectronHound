@@ -1,4 +1,4 @@
-import { describe, it, expect, skip, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   loadProvidersConfig,
   saveProvidersConfig,
@@ -8,35 +8,49 @@ import {
 } from '../../packages/agent-core/src/config-manager.js';
 import { createProviderInstance } from '../../packages/agent-core/src/provider-factory.js';
 import { runTest } from '../../packages/agent-core/src/runner.js';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdtempSync, rmSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import type { LLMProviderConfig } from '../../packages/agent-core/src/llm-types.js';
+import { CONFIG_DIR, PROVIDERS_FILE } from '../../packages/agent-core/src/config-paths.js';
 
 /**
  * Integration tests for multi-provider LLM configuration.
  *
- * These tests require real API keys and make actual API calls.
- * They are marked as `skip` by default and should be run manually
- * when the corresponding API keys are available in the environment.
+ * The "Provider Configuration" tests exercise CRUD operations on the
+ * providers.json config file. They back up and restore the original
+ * file so they can run without side-effects.
  *
- * To run:
- *   1. Set the required API key environment variables
- *   2. Remove the `skip` or run with --reporter=verbose
+ * The "Provider Factory with Real API" and "runTest" tests make actual
+ * LLM API calls and are skipped automatically when the required API
+ * keys are absent from the environment.
  */
 
+let savedConfig: string | null = null;
 let cleanupDir: string;
-
-// Helper to set up temp config directory
-// Note: config-manager uses ~/.eata/providers.json (hardcoded via config-paths.ts),
-// so these tests work with the actual config file. For isolated testing,
-// we rely on the config-manager.test.ts unit tests with mocked paths.
 
 beforeEach(() => {
   cleanupDir = mkdtempSync(join(tmpdir(), 'eata-integration-'));
+
+  // Back up existing providers.json so tests can run in isolation
+  if (existsSync(PROVIDERS_FILE)) {
+    savedConfig = readFileSync(PROVIDERS_FILE, 'utf-8');
+  } else {
+    savedConfig = null;
+  }
 });
 
 afterEach(() => {
+  // Restore original providers.json
+  if (savedConfig !== null) {
+    if (!existsSync(CONFIG_DIR)) {
+      mkdirSync(CONFIG_DIR, { recursive: true });
+    }
+    writeFileSync(PROVIDERS_FILE, savedConfig);
+  } else if (existsSync(PROVIDERS_FILE)) {
+    rmSync(PROVIDERS_FILE);
+  }
+
   try {
     rmSync(cleanupDir, { recursive: true, force: true });
   } catch {
@@ -44,13 +58,13 @@ afterEach(() => {
   }
 });
 
-describe.skip('Integration: Provider Configuration', () => {
+describe('Integration: Provider Configuration', () => {
   it('full CRUD lifecycle for providers', () => {
     const provider: LLMProviderConfig = {
       id: 'integration-test-1',
       name: 'Integration Test Provider',
       type: 'openai-compatible',
-      apiKey: process.env.OPENAI_API_KEY || 'sk-test',
+      apiKey: 'sk-test-placeholder',
       baseURL: 'https://api.openai.com/v1',
       model: 'gpt-4o-mini',
       enabled: true,
@@ -71,13 +85,9 @@ describe.skip('Integration: Provider Configuration', () => {
   });
 });
 
-describe.skip('Integration: Provider Factory with Real API', () => {
+describe.skipIf(!process.env.OPENAI_API_KEY)('Integration: Provider Factory with Real API', () => {
   it('creates OpenAI provider instance and generates text', async () => {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY environment variable is required');
-    }
-
+    const apiKey = process.env.OPENAI_API_KEY!;
     const config: LLMProviderConfig = {
       id: 'openai-real',
       name: 'OpenAI',
@@ -133,12 +143,9 @@ describe.skip('Integration: Provider Factory with Real API', () => {
   });
 });
 
-describe.skip('Integration: runTest with Specific Provider', () => {
+describe.skipIf(!process.env.OPENAI_API_KEY)('Integration: runTest with Specific Provider', () => {
   it('runs a test task using a specific provider', async () => {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY environment variable is required');
-    }
+    const apiKey = process.env.OPENAI_API_KEY!;
 
     // Set up provider config
     const provider: LLMProviderConfig = {

@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A2: Test templates with 6 built-in presets and custom template support
 - A3: Result export in JSON, CSV, and HTML formats
 - A4: Report format customization with template system and styling options
+- B1: Metrics endpoint test and fixed integration tests
+- B2: Dashboard page tests (TaskList, TaskDetail, ErrorBoundary)
+- B3: Infrastructure tests (migrations, seeds, bridge-client, IPC channel)
+- B4: E2E tests (dashboard UI, SSE streaming, batch workflow)
 
 ## [0.4.0] - 2026-05-28
 
