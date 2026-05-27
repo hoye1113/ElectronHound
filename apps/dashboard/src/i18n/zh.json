@@ -53,10 +53,6 @@
     "empty": "暂无日志",
     "emptyHint": "任务运行时日志将显示在此处"
   },
-  "a11yTree": {
-    "empty": "暂无无障碍快照",
-    "emptyHint": "步骤捕获无障碍数据后快照将显示在此处"
-  },
   "patternList": {
     "empty": "未找到模式",
     "fixLabel": "修复：",

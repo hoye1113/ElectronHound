@@ -19,7 +19,6 @@ export class SSEHub {
     reply.header('Content-Type', 'text/event-stream');
     reply.header('Cache-Control', 'no-cache');
     reply.header('Connection', 'keep-alive');
-    reply.header('Access-Control-Allow-Origin', '*');
 
     // Flush headers immediately
     reply.raw.flushHeaders();

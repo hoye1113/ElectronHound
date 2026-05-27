@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import cors from '@fastify/cors';
 import { initDatabase } from './db/index.js';
 import { runMigrations } from './db/migrations.js';
 import { registerRoutes } from './routes/index.js';
@@ -20,6 +21,12 @@ export async function buildServer(config?: Partial<ServerConfig>): Promise<Serve
     logger: {
       level: validatedConfig.logLevel,
     },
+  });
+
+  // Register CORS
+  await server.register(cors, {
+    origin: validatedConfig.cors.origin,
+    credentials: validatedConfig.cors.credentials,
   });
 
   // Initialize database

@@ -30,6 +30,11 @@ Thumbs.db
 # Sisyphus / agent metadata
 .sisyphus
 .omo
+.claude
+
+# Environment variables
+.env
+.env.*
 
 # Playwright test artifacts
 test-results

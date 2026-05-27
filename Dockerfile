@@ -10,7 +10,7 @@
 # =============================================================================
 
 # ---- Stage 1: Install dependencies & build ----
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 # Install build toolchain for native modules (better-sqlite3, esbuild deps)
 RUN apk add --no-cache python3 make g++ build-base linux-headers
@@ -46,7 +46,7 @@ COPY tsconfig.base.json eslint.config.js vitest.config.ts ./
 RUN pnpm run build
 
 # ---- Stage 2: Runtime ----
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Keep build tools ONLY if needed for runtime native module resolution
 # (better-sqlite3 was already compiled in builder; just needs compatible node)
@@ -63,9 +63,11 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=builder /app/tsconfig.base.json ./tsconfig.base.json
 
-# Expose Server API (3000) and Dashboard Vite dev server (5173)
-EXPOSE 3000 5173
+# Expose Server API only
+EXPOSE 3000
 
-# Default: run all workspaces in parallel (server + dashboard)
-# Override via docker-compose command: to run a single service
-CMD ["pnpm", "run", "dev"]
+# Run as non-root user
+USER node
+
+# Default: run server
+CMD ["pnpm", "--filter", "@eata/server", "start"]

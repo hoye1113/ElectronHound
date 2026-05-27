@@ -89,7 +89,10 @@ export class WorkerManager {
 
     // Stderr: log as errors
     child.stderr?.on('data', (chunk: Buffer) => {
-      console.error(`[worker:${options.taskId}] stderr:`, chunk.toString().trim());
+      const msg = chunk.toString().trim();
+      if (msg) {
+        process.stderr.write(JSON.stringify({ level: 'error', workerId: options.taskId, msg }) + '\n');
+      }
     });
 
     // Process exit
@@ -99,7 +102,7 @@ export class WorkerManager {
 
     // Process error (spawn failure)
     child.on('error', (err) => {
-      console.error(`[worker:${options.taskId}] spawn error:`, err.message);
+      process.stderr.write(JSON.stringify({ level: 'error', workerId: options.taskId, msg: `spawn error: ${err.message}` }) + '\n');
       const handle = this.workers.get(options.taskId);
       if (handle) {
         handle.status = 'failed';
@@ -233,7 +236,7 @@ export class WorkerManager {
         this.dispatchNotification(taskId, msg);
       } catch {
         // Non-JSON output — log as raw text
-        console.warn(`[worker:${taskId}] non-JSON stdout:`, line);
+        process.stderr.write(JSON.stringify({ level: 'warn', workerId: taskId, msg: `non-JSON stdout: ${line}` }) + '\n');
       }
     }
   }

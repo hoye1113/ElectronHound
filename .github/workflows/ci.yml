@@ -7,8 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  test:
-    name: Test, Lint, Typecheck
+  build-and-test:
+    name: Build, Test, Lint, Typecheck
     runs-on: ubuntu-latest
 
     steps:
@@ -29,18 +29,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build
+        run: pnpm build
+
       - name: Run typecheck
         run: pnpm -r run typecheck
 
       - name: Run lint
         run: pnpm run lint
 
-      - name: Run tests
-        run: pnpm test
-
-      - name: Generate coverage report
+      - name: Run tests with coverage
         run: npx vitest run --coverage --coverage.reporter=text --coverage.reporter=lcov
-        continue-on-error: true
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

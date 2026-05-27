@@ -3,13 +3,26 @@ dist/
 data/*.sqlite3
 data/*.sqlite3-wal
 data/*.sqlite3-shm
+data/feedback/
+data/few-shot-examples/
 .eata/
 *.log
 .DS_Store
 Thumbs.db
 
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Agent orchestration state
+.omo/
+.sisyphus/
+.claude/
+
 # Test artifacts
 data/reports/
+
 # TypeScript compilation output
 *.js
 *.js.map
