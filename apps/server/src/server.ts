@@ -127,7 +127,11 @@ export async function buildServer(config?: Partial<ServerConfig>): Promise<Serve
 }
 
 // Auto-start when run directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+const isDirectRun = import.meta.url === `file://${process.argv[1]}` ||
+  process.argv[1]?.endsWith('server.ts') ||
+  process.argv[1]?.endsWith('server.js');
+
+if (isDirectRun) {
   const { server } = await buildServer();
   const address = await server.listen({ port: 3000, host: '0.0.0.0' });
   server.log.info(`Server listening on ${address}`);

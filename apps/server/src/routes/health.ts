@@ -22,11 +22,10 @@ export async function healthRoutes(server: FastifyInstance) {
     try {
       const pool = server.workerPool;
       if (pool) {
-        const workers = pool.getAllWorkers();
-        const running = workers.filter((w) => w.status === 'running' || w.status === 'starting').length;
         checks.workerPool = {
           status: 'ok',
-          running,
+          running: pool.getRunningCount(),
+          queued: pool.getQueueLength(),
           maxWorkers: 3,
         };
       }

@@ -7,7 +7,7 @@
     "start": "electron .",
     "test": "vitest run"
   },
-  "dependencies": {
+  "optionalDependencies": {
     "electron": "^35.0.0"
   },
   "devDependencies": {
