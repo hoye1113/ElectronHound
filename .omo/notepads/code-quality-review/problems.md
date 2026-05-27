@@ -31,3 +31,9 @@
 **Problem:** Types are duplicated and must be manually synced with `packages/agent-core/src/sub-agents/types.ts`.
 **Status:** Non-blocking — documented with "Keep in sync" comment.
 **Recommendation:** If the dashboard package dependency model changes (e.g., shared-types is adopted), these could be deduplicated. Low priority.
+
+### 6. `createReportGraph` orphaned after `graph.ts` deletion
+**Scope:** `packages/agent-core/src/index.ts:21`, `packages/agent-core/src/nodes/report.ts:2`
+**Problem:** `createReportGraph` was exported from the deleted `report-graph/graph.ts` and re-exported via `report-graph/index.ts`. After `graph.ts` removal (commit 867807a), the function is orphaned. `report.ts` imports and calls `createReportGraph()` then `.compile()` then `.invoke()` — a full LangGraph `StateGraph` usage. Since `graph.ts` is gone and LangGraph is being eliminated, this function cannot be re-created without reintroducing LangGraph.
+**Status:** Exposed by removing the stale `./graph.js` import from `report-graph/index.ts` (which masked this error via module resolution failure). 34 total tsc errors remain, including these 2.
+**Recommendation:** Either (a) replace the LangGraph usage in `report.ts` with a direct serial call to the 4 analysis nodes + summarizer, or (b) remove the `createReportGraph` export and the `report.ts` graph invocation, calling nodes directly instead.
