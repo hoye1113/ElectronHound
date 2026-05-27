@@ -557,10 +557,10 @@ describe('cliMain', () => {
     const stdoutOutput = stdoutSpy.mock.calls
       .map((c) => c[0])
       .join('');
-    expect(stdoutOutput).toContain('[Step 1/50]');
-    expect(stdoutOutput).toContain('Observe');
-    expect(stdoutOutput).toContain('[Step 2/50]');
-    expect(stdoutOutput).toContain('Execute');
+    expect(stdoutOutput).toContain('[1/50]');
+    expect(stdoutOutput).toContain('observe');
+    expect(stdoutOutput).toContain('[2/50]');
+    expect(stdoutOutput).toContain('execute');
     expect(stdoutOutput).toContain('PASS');
     expect(stdoutOutput).toContain('Report saved to:');
   });

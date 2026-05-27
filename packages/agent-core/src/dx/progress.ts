@@ -151,6 +151,7 @@ export class Spinner {
   private frameIndex: number = 0;
   private timer: ReturnType<typeof setInterval> | null = null;
   private stream: NodeJS.WriteStream;
+  private static readonly CLEAR_MARGIN = 10;
 
   constructor(options?: SpinnerOptions) {
     this.text = options?.text ?? 'Loading...';
@@ -219,7 +220,7 @@ export class Spinner {
     const symbolStr = symbol ?? '';
 
     // Clear the spinner line
-    this.stream.write('\r' + ' '.repeat(this.text.length + 10) + '\r');
+    this.stream.write('\r' + ' '.repeat(this.text.length + Spinner.CLEAR_MARGIN) + '\r');
 
     // Write the final message
     if (symbolStr) {

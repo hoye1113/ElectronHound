@@ -210,15 +210,16 @@ export class Logger {
     }
 
     if (entry.error) {
-      obj.error = {
+      const errObj: Record<string, unknown> = {
         name: entry.error.name,
         message: entry.error.message,
         stack: entry.error.stack,
       };
       if (isEataError(entry.error)) {
-        obj.error.code = entry.error.code;
-        obj.error.solution = entry.error.solution;
+        errObj.code = entry.error.code;
+        errObj.solution = entry.error.solution;
       }
+      obj.error = errObj;
     }
 
     if (entry.duration !== undefined) {

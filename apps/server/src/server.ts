@@ -13,13 +13,23 @@ import { getWorkerPool, closeWorkerPool, attachPoolEventListeners } from './task
 import { httpRequestsTotal } from './routes/metrics.js';
 import type Database from 'better-sqlite3';
 
+// DX imports
+import { getLogger, Spinner, ErrorCode, wrapError } from '@eata/agent-core/dx';
+
 export interface ServerBundle {
   server: Fastify.FastifyInstance;
   db: Database.Database;
 }
 
 export async function buildServer(config?: Partial<ServerConfig>): Promise<ServerBundle> {
+  const logger = getLogger({ source: 'server' });
   const validatedConfig = configSchema.parse(config ?? {});
+
+  logger.info('Initializing server', {
+    port: validatedConfig.port,
+    host: validatedConfig.host,
+    logLevel: validatedConfig.logLevel,
+  });
 
   const server = Fastify({
     logger: {
@@ -132,7 +142,26 @@ const isDirectRun = import.meta.url === `file://${process.argv[1]}` ||
   process.argv[1]?.endsWith('server.js');
 
 if (isDirectRun) {
-  const { server } = await buildServer();
-  const address = await server.listen({ port: 3000, host: '0.0.0.0' });
-  server.log.info(`Server listening on ${address}`);
+  const spinner = new Spinner({ text: 'Starting EATA server...' });
+  spinner.start();
+
+  try {
+    const { server } = await buildServer();
+    const address = await server.listen({ port: 3000, host: '0.0.0.0' });
+    spinner.succeed(`Server listening on ${address}`);
+
+    const logger = getLogger({ source: 'server' });
+    logger.info('Server started successfully', {
+      address,
+      docs: `http://localhost:3000/docs`,
+      health: `http://localhost:3000/health`,
+    });
+  } catch (err) {
+    spinner.fail('Failed to start server');
+    const eataError = wrapError(err, ErrorCode.SYSTEM_NETWORK_ERROR);
+    const logger = getLogger({ source: 'server' });
+    logger.error('Server startup failed', eataError);
+    process.stderr.write(eataError.format() + '\n');
+    process.exit(1);
+  }
 }

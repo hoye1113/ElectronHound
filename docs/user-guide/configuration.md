@@ -35,7 +35,7 @@
 设置此变量后，所有 API 请求需要在 Header 中包含：
 
 ```
-Authorization: Bearer your_api_key_here
+x-api-key: your_api_key_here
 ```
 
 ## LLM 供应商配置

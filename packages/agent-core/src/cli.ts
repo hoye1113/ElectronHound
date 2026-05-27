@@ -13,6 +13,22 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 
+// DX imports
+import {
+  ErrorCode,
+  EataError,
+  wrapError,
+  formatError,
+  getLogger,
+  ProgressBar,
+  Spinner,
+  ProgressTracker,
+  formatDuration,
+  CLIHelp,
+  resolveCommandAlias,
+  runConfigWizard,
+} from './dx/index.js';
+
 // ─── Types ───────────────────────────────────────────────
 
 interface CliArgs {
@@ -249,29 +265,69 @@ export function savePatterns(
 export async function cliMain(
   argsOverride?: CliArgs,
 ): Promise<number> {
+  const logger = getLogger({ source: 'cli' });
   const startTime = new Date().toISOString();
   const startMs = Date.now();
+
+  // Check for help command
+  const argv = argsOverride ? ['node', 'eata', ...Object.entries(argsOverride).flatMap(([k, v]) => [`--${k}`, String(v)])] : process.argv;
+  const help = new CLIHelp({ colorized: true });
+
+  // Handle help flags
+  if (argv.includes('--help') || argv.includes('-h')) {
+    const commandIndex = argv.findIndex((arg) => !arg.startsWith('-'));
+    const command = commandIndex > 1 ? argv.slice(commandIndex).join(' ') : undefined;
+    help.showHelp(command);
+    return 0;
+  }
+
+  // Handle config init command
+  if (argv[2] === 'config' && argv[3] === 'init') {
+    logger.info('Starting configuration wizard...');
+    const result = await runConfigWizard({
+      interactive: !argv.includes('--non-interactive'),
+    });
+    return result.success ? 0 : 1;
+  }
 
   // Parse and validate arguments
   const args = argsOverride ?? parseArgs(process.argv);
   const validation = validateArgs(args);
 
   if (!validation.ok) {
-    process.stderr.write(validation.error + '\n');
+    const eataError = new EataError(
+      ErrorCode.CLI_INVALID_ARGS,
+      'Invalid command line arguments',
+      { context: { issues: validation.error } },
+    );
+    logger.error('Validation failed', eataError);
+    process.stderr.write(eataError.format() + '\n');
     return 1;
   }
 
   const { goal, targetAppPath, llmModel, maxSteps } = validation.data;
+
+  logger.info('Starting test execution', {
+    goal: goal.slice(0, 50) + (goal.length > 50 ? '...' : ''),
+    targetAppPath,
+    llmModel,
+    maxSteps,
+  });
 
   // Setup SIGINT handler for graceful shutdown
   let interrupted = false;
   const sigintHandler = () => {
     if (!interrupted) {
       interrupted = true;
-      process.stdout.write('\n\nInterrupted. Printing partial results...\n');
+      logger.warn('Interrupted by user. Printing partial results...');
     }
   };
   process.on('SIGINT', sigintHandler);
+
+  // Initialize progress tracking
+  const progressTracker = new ProgressTracker();
+  const spinner = new Spinner({ text: 'Initializing test execution...' });
+  spinner.start();
 
   let taskId = '';
 
@@ -285,26 +341,47 @@ export async function cliMain(
     });
 
     taskId = result.taskId;
+    spinner.succeed('Test execution completed');
 
     const history: StepRecord[] = result.history ?? [];
     const status = result.status as string;
 
-    // Print step progress
+    // Track progress
+    progressTracker.startTask(taskId, maxSteps, 'executing');
+
+    // Print step progress with enhanced formatting
     let stepNum = 0;
     for (const record of history) {
       stepNum++;
-      process.stdout.write(
-        formatStepProgress(record, stepNum, maxSteps) + '\n',
-      );
+      progressTracker.updateTask(taskId, stepNum, record.phase, record.reasoning ?? record.observation);
+
+      const icon = record.status === 'success' ? '\x1b[32m✓\x1b[0m' : record.status === 'failed' ? '\x1b[31m✗\x1b[0m' : '\x1b[33m○\x1b[0m';
+      const prefix = `[${stepNum}/${maxSteps}]`;
+      const phase = record.phase.padEnd(10);
+      const message = (record.reasoning ?? record.observation ?? '').slice(0, 60);
+      const duration = record.duration ? `(${record.duration}ms)` : '';
+
+      process.stdout.write(`${icon} ${prefix} ${phase} ${message} ${duration}\n`);
     }
+
+    // Complete progress tracking
+    progressTracker.completeTask(taskId, status);
 
     // Print final result
     const endMs = Date.now();
     const totalDuration = endMs - startMs;
-    process.stdout.write(formatResult(status, stepNum, totalDuration) + '\n');
+    const statusDisplay = status === 'completed' ? '\x1b[32mPASS\x1b[0m' : status.toUpperCase();
+    const durationStr = formatDuration(totalDuration);
+
+    process.stdout.write(`\n${'─'.repeat(50)}\n`);
+    process.stdout.write(`Result: ${statusDisplay} (${stepNum} steps, ${durationStr})\n`);
+    process.stdout.write(`${'─'.repeat(50)}\n\n`);
 
     // Save report
     const reportDir = join('data', 'reports', taskId);
+    const saveSpinner = new Spinner({ text: 'Saving report...' });
+    saveSpinner.start();
+
     saveManifest(
       reportDir,
       taskId,
@@ -316,11 +393,19 @@ export async function cliMain(
       totalDuration,
     );
     saveTimeline(reportDir, history);
-    process.stdout.write(`Report saved to: ${reportDir}/\n`);
+
+    saveSpinner.succeed(`Report saved to: ${reportDir}/`);
 
     // Save feedback patterns
     const feedbackDir = join('data', 'feedback');
     savePatterns(feedbackDir, taskId, history, goal);
+
+    logger.info('Test execution completed', {
+      taskId,
+      status,
+      steps: stepNum,
+      duration: durationStr,
+    });
 
     // Return exit code based on result
     if (status === 'completed' || status === 'passed') {
@@ -328,8 +413,11 @@ export async function cliMain(
     }
     return 1;
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    process.stderr.write(`Error: ${message}\n`);
+    spinner.fail('Test execution failed');
+
+    const eataError = wrapError(err, ErrorCode.TASK_EXECUTION_FAILED);
+    logger.error('Test execution failed', eataError);
+    process.stderr.write(eataError.format() + '\n');
 
     // Save partial report on failure if taskId was generated
     if (taskId) {
@@ -338,7 +426,10 @@ export async function cliMain(
         mkdirSync(reportDir, { recursive: true });
         writeFileSync(
           join(reportDir, 'error.json'),
-          JSON.stringify({ error: message, timestamp: new Date().toISOString() }, null, 2),
+          JSON.stringify({
+            error: eataError.toJSON(),
+            timestamp: new Date().toISOString(),
+          }, null, 2),
         );
       } catch {
         // Silently ignore filesystem errors during error reporting

@@ -81,3 +81,57 @@ export {
 // Few-shot examples
 export { loadExamples } from './prompts/few-shot/index.js';
 export type { FewShotExample, FewShotContext } from './prompts/few-shot/index.js';
+
+// Developer Experience (DX) modules
+export {
+  // Error handling
+  ErrorCode,
+  EataError,
+  isEataError,
+  wrapError,
+  formatError,
+  createConfigError,
+  createProviderError,
+  createTaskError,
+  createAgentError,
+  createMCPError,
+  createSystemError,
+  createCLIError,
+  // Logging
+  LogLevel,
+  Logger,
+  getLogger,
+  createLogger,
+  parseLogLevel,
+  getLogLevelName,
+  // Progress tracking
+  ProgressBar,
+  Spinner,
+  ProgressTracker,
+  getProgressTracker,
+  formatStepProgress,
+  formatStepSummary,
+  formatDuration,
+  // Configuration wizard
+  ConfigWizard,
+  runConfigWizard,
+  // CLI help
+  CLIHelp,
+  createCLIHelp,
+  COMMANDS,
+  resolveCommandAlias,
+} from './dx/index.js';
+export type {
+  ErrorMetadata,
+  LogEntry,
+  LogFormatter,
+  LoggerConfig,
+  ProgressBarOptions,
+  SpinnerOptions,
+  TaskProgress,
+  StepProgressOptions,
+  WizardOptions,
+  WizardResult,
+  CommandInfo,
+  CLIHelpOptions,
+} from './dx/index.js';
