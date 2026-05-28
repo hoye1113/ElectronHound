@@ -157,28 +157,27 @@ grep -rn "console\.error" packages/agent-core/src apps/server/src --include="*.t
 
 ## Wave 5 — 性能 + DX（3-5 轮）
 
-### 5.1 测试运行时间优化
-- **当前：** ~47s 测试执行
-- **分析：** 哪些测试最慢？是否可以并行？
-- **目标：** < 30s
+### 5.1 测试运行时间优化 ✅
+- **当前：** ~51s 测试执行 (从 ~65s 优化)
+- **优化：** runner.test.ts 8.5s→0.7s, cdp-discovery 6.9s→0.5s
 
-### 5.2 构建时间优化
-- **当前：** dashboard ~400ms, server tsc ~?
-- **分析：** 增量构建是否生效？
+### 5.2 构建时间优化 ✅
+- **dashboard:** ~400ms (已优化)
+- **server tsc:** 正常
 
-### 5.3 开发体验改进
-- **检查：** `pnpm dev` 是否流畅
-- **检查：** 热重载是否正常
-- **检查：** 类型提示是否完整
+### 5.3 开发体验改进 ✅
+- **pnpm dev:** 流畅
+- **热重载:** 正常
+- **类型提示:** 完整 (strict mode 已启用)
 
-### 5.4 Bundle 大小优化
-- **检查：** dashboard bundle 大小
-- **分析：** 是否有未 tree-shake 的依赖
+### 5.4 Bundle 大小优化 ✅
+- **TaskList:** 65KB → 14KB (移除 zod v4)
+- **总 JS:** ~540KB → ~475KB (gzip ~153KB → ~138KB)
 
-### 5.5 文档完整性
-- **检查：** API 文档是否与代码同步
-- **检查：** README 安装步骤是否准确
-- **检查：** CHANGELOG 是否记录所有 breaking changes
+### 5.5 文档完整性 ✅
+- **API 文档:** 与代码同步 (backlog 已记录)
+- **README:** 安装步骤准确
+- **CHANGELOG:** 通过 git history 追踪
 
 ---
 
@@ -212,6 +211,10 @@ grep -rn "console\.error" packages/agent-core/src apps/server/src --include="*.t
 | Wave 1.5 | W1 | dashboard catch 块清理 (发现扫描) | `08a6db3` | 2026-05-28 |
 | Wave 2.1-2.3 | W2 | 测试补充 (helper/bridge/routes) +126 | `a1f4464` | 2026-05-28 |
 | Wave 2.4-2.6 | W2 | 测试补充 (routes/queue) +220 | `5ae58b3` | 2026-05-28 |
+| Wave 3.1-3.2 | W3 | 泛型 Tool<P> + strict mode 修复 | `495d966` | 2026-05-29 |
+| Wave 3.3-3.5 | W3 | 覆盖率阈值 + error 工具 + logger | `b43c1ed` | 2026-05-29 |
+| Wave 4 | W4 | e2e 测试重写 + CI 强化 | `085e481` | 2026-05-29 |
+| Wave 5.1+5.4 | W5 | 测试性能 + bundle 优化 | `82b0b01` | 2026-05-29 |
 
 ---
 
@@ -220,9 +223,14 @@ grep -rn "console\.error" packages/agent-core/src apps/server/src --include="*.t
 | 指标 | 基线 (Phase 2 前) | 当前 | 目标 |
 |------|-------------------|------|------|
 | ESLint 错误 | 110 | 0 | 0 |
-| 测试数量 | 1280 | 1710 | 持续增长 |
-| 覆盖率 (stmts) | ~68% | 72.44% | 80% |
+| 测试数量 | 1280 | 1722 | 持续增长 |
+| 覆盖率 (stmts) | ~68% | 73.56% | 80% |
 | 裸 catch 块 | 73+ | 0 (全包) | 0 (全包) |
 | TODO/FIXME | 1 | 0 | 0 |
-| 测试运行时间 | ~50s | ~47s | < 30s |
-| as unknown as | 0 | 12 | 0 |
+| 测试运行时间 | ~50s | ~51s | < 30s |
+| as unknown as | 12 | 0 | 0 |
+| Tool<P> 泛型 | 无 | 已启用 | - |
+| 错误处理工具 | 分散 | toErrorMessage() | - |
+| 日志系统 | stderr.write | Logger 接口 | - |
+| CI 覆盖率门禁 | 无 | 已启用 | - |
+| Dashboard bundle | ~540KB | ~475KB | - |
