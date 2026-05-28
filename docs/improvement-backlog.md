@@ -142,19 +142,16 @@ grep -rn "console\.error" packages/agent-core/src apps/server/src --include="*.t
 
 ## Wave 4 — Skipped 测试 + CI（2-3 轮）
 
-### 4.1 Deferred 测试重写 — crash-recovery
+### 4.1 Deferred 测试重写 — crash-recovery ✅
 - **文件：** `tests/e2e/crash-recovery.test.ts`
-- **需要：** 重写为 AgentLoop 架构
-- **测试要点：** 进程崩溃恢复、超时处理、资源清理
+- **结果：** 5 新测试 (stuck detection, maxSteps, recovery)
 
-### 4.2 Deferred 测试重写 — full-test-cycle + report-parallel
+### 4.2 Deferred 测试重写 — full-test-cycle + report-parallel ✅
 - **文件：** `tests/e2e/full-test-cycle.test.ts`, `report-parallel.test.ts`
-- **需要：** 重写为 AgentLoop 架构
+- **结果：** 7 新测试 (agent loop lifecycle, report structure)
 
-### 4.3 CI/CD 强化
-- **检查：** `.github/workflows/ci.yml` 是否运行 ESLint
-- **建议：** 添加 `npx eslint --quiet` 到 CI pre-merge
-- **建议：** 添加 coverage threshold 检查到 CI
+### 4.3 CI/CD 强化 ✅
+- **结果：** 覆盖率阈值强制执行 + 并发控制 + 路径过滤
 
 ---
 
