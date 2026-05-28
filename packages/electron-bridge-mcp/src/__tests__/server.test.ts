@@ -255,6 +255,92 @@ describe('execute_main tool', () => {
     expect(result.success).toBe(false);
     expect(result.error).toBe('Connection lost');
   });
+
+  it('should handle non-Error thrown from bridge.send', async () => {
+    const bridgeClient = createMockBridgeClient({
+      send: vi.fn().mockRejectedValue('string error'),
+    });
+
+    const result = await executeMain(
+      { code: 'console.log("test")' },
+      { bridgeClient },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('string error');
+  });
+
+  it('should return the full response when response has no payload', async () => {
+    const bridgeClient = createMockBridgeClient({
+      send: vi.fn().mockResolvedValue({
+        type: 'response',
+        id: '1',
+      }),
+    });
+
+    const result = await executeMain(
+      { code: 'console.log("test")' },
+      { bridgeClient },
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.result).toEqual({ type: 'response', id: '1' });
+  });
+
+  it('should return success:false when payload.success is falsy', async () => {
+    const bridgeClient = createMockBridgeClient({
+      send: vi.fn().mockResolvedValue({
+        type: 'response',
+        id: '1',
+        payload: { success: false, error: 'runtime error' },
+      }),
+    });
+
+    const result = await executeMain(
+      { code: 'invalid()' },
+      { bridgeClient },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('runtime error');
+  });
+
+  it('should fall back to payload object when payload.data is null', async () => {
+    const bridgeClient = createMockBridgeClient({
+      send: vi.fn().mockResolvedValue({
+        type: 'response',
+        id: '1',
+        payload: { success: true, data: null },
+      }),
+    });
+
+    const result = await executeMain(
+      { code: 'void 0' },
+      { bridgeClient },
+    );
+
+    expect(result.success).toBe(true);
+    // data is null, so result falls back to payload object itself
+    expect(result.result).toEqual({ success: true, data: null });
+  });
+
+  it('should ignore non-string error in payload', async () => {
+    const bridgeClient = createMockBridgeClient({
+      send: vi.fn().mockResolvedValue({
+        type: 'response',
+        id: '1',
+        payload: { success: false, error: 12345 },
+      }),
+    });
+
+    const result = await executeMain(
+      { code: 'fail()' },
+      { bridgeClient },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeUndefined();
+  });
 });
 
 // ─── trigger_ipc tests ────────────────────────────────────────────────
@@ -318,6 +404,91 @@ describe('trigger_ipc tool', () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toBe('Timeout');
+  });
+
+  it('should handle non-Error thrown from bridge.send', async () => {
+    const bridgeClient = createMockBridgeClient({
+      send: vi.fn().mockRejectedValue(42),
+    });
+
+    const result = await triggerIpc(
+      { channel: 'test', data: null },
+      { bridgeClient },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('42');
+  });
+
+  it('should return the full response when response has no payload', async () => {
+    const bridgeClient = createMockBridgeClient({
+      send: vi.fn().mockResolvedValue({
+        type: 'response',
+        id: '1',
+      }),
+    });
+
+    const result = await triggerIpc(
+      { channel: 'test', data: 'hello' },
+      { bridgeClient },
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.response).toEqual({ type: 'response', id: '1' });
+  });
+
+  it('should return success:false when payload.success is falsy', async () => {
+    const bridgeClient = createMockBridgeClient({
+      send: vi.fn().mockResolvedValue({
+        type: 'response',
+        id: '1',
+        payload: { success: false, error: 'channel not found' },
+      }),
+    });
+
+    const result = await triggerIpc(
+      { channel: 'missing', data: null },
+      { bridgeClient },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('channel not found');
+  });
+
+  it('should fall back to null when payload.data is null', async () => {
+    const bridgeClient = createMockBridgeClient({
+      send: vi.fn().mockResolvedValue({
+        type: 'response',
+        id: '1',
+        payload: { success: true, data: null },
+      }),
+    });
+
+    const result = await triggerIpc(
+      { channel: 'test', data: 'x' },
+      { bridgeClient },
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.response).toBeNull();
+  });
+
+  it('should ignore non-string error in payload', async () => {
+    const bridgeClient = createMockBridgeClient({
+      send: vi.fn().mockResolvedValue({
+        type: 'response',
+        id: '1',
+        payload: { success: false, error: { code: 500 } },
+      }),
+    });
+
+    const result = await triggerIpc(
+      { channel: 'test', data: null },
+      { bridgeClient },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeUndefined();
   });
 });
 
@@ -393,6 +564,20 @@ describe('mock_dialog tool', () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toBe('Connection refused');
+  });
+
+  it('should handle non-Error thrown from bridge.send', async () => {
+    const bridgeClient = createMockBridgeClient({
+      send: vi.fn().mockRejectedValue({ code: 'ERR' }),
+    });
+
+    const result = await mockDialog(
+      { type: 'open', response: '/path' },
+      { bridgeClient },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('[object Object]');
   });
 });
 
