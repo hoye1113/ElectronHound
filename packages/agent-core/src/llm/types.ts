@@ -14,6 +14,8 @@ export interface GenerateObjectOptions<T = unknown> {
   prompt: string;
   /** System prompt */
   system?: string;
+  /** Maximum tokens to generate */
+  maxTokens?: number;
 }
 
 export interface GenerateTextOptions {
