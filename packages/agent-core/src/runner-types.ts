@@ -5,7 +5,8 @@
  * Maintains backward compatibility with the existing interface.
  */
 
-import type { ObservationResult, PlanResult, ExecResult, VerdictResult, StepRecord } from '@eata/shared-types';
+import type { StepRecord } from '@eata/shared-types';
+import type { Observation, Plan, ExecutionResult, Verdict } from './runtime/types.js';
 import type { AuditChainResult } from './sub-agents/types.js';
 
 /**
@@ -19,10 +20,10 @@ export interface RunTestResult {
   maxSteps: number;
   taskId: string;
   history: StepRecord[];
-  currentObservation: ObservationResult | null;
-  currentPlan: PlanResult | null;
-  currentExecResult: ExecResult | null;
-  currentVerdict: VerdictResult | null;
+  currentObservation: Observation | null;
+  currentPlan: Plan | null;
+  currentExecResult: ExecutionResult | null;
+  currentVerdict: Verdict | null;
   stepCount: number;
   stuckCounter: number;
   status: 'running' | 'completed' | 'failed' | 'aborted';

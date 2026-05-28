@@ -3,6 +3,7 @@ import { createLLMProviderAdapter, createLLMProviderAdapterForProvider } from '.
 import { loadProvidersConfig } from './config-manager.js';
 import { AgentLoop } from './runtime/agentLoop.js';
 import { SessionManager } from './session/sessionManager.js';
+import { entriesToStepRecords, extractLastStep } from './session/entryConverter.js';
 import type { RunTestResult } from './runner-types.js';
 
 export interface RunTestOptions {
@@ -63,6 +64,11 @@ export async function runTest(
   // Run the agent loop
   const result = await agentLoop.run(options.goal);
 
+  // Read session entries and convert to StepRecords
+  const session = sessionManager.getSession(result.sessionId);
+  const history = session ? entriesToStepRecords(session.entries, taskId) : [];
+  const lastStep = history.length > 0 ? extractLastStep(history) : null;
+
   // Convert AgentLoop result to RunTestResult (backward-compatible with worker-entry.ts)
   const runTestResult: RunTestResult = {
     goal: options.goal,
@@ -70,13 +76,15 @@ export async function runTest(
     llmModel: options.llmModel ?? 'gpt-4o',
     maxSteps: options.maxSteps ?? 50,
     taskId,
-    history: [],
-    currentObservation: null,
-    currentPlan: null,
-    currentExecResult: null,
-    currentVerdict: null,
+    history,
+    currentObservation: lastStep?.observation ?? null,
+    currentPlan: lastStep?.plan ?? null,
+    currentExecResult: lastStep?.execution ?? null,
+    currentVerdict: result.verdict
+      ? { verdict: result.verdict, reasoning: result.report?.reasoning ?? '' }
+      : null,
     stepCount: result.report?.stepCount ?? 0,
-    stuckCounter: 0,
+    stuckCounter: result.verdict === 'stuck' ? 3 : 0,
     status: result.verdict === 'pass'
       ? 'completed'
       : result.verdict === 'fail'
@@ -84,7 +92,7 @@ export async function runTest(
         : result.verdict === 'stuck'
           ? 'failed'
           : 'aborted',
-    lastObservationHash: '',
+    lastObservationHash: lastStep?.observationHash ?? '',
     auditChainResult: null,
   };
 
