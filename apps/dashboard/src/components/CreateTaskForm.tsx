@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Select from '@radix-ui/react-select';
 import { Check, ChevronDown, X, Plus, Star } from 'lucide-react';
-import { CreateTaskRequestSchema } from '@eata/shared-types';
 import type { CreateTaskRequest } from '@eata/shared-types';
 import { useTaskStore } from '../stores/taskStore';
 import { api, type ProvidersConfig } from '../lib/api.js';
@@ -54,25 +53,31 @@ export default function CreateTaskForm({ open, onOpenChange, onSuccess }: Create
   }, [open]);
 
   const validate = (): CreateTaskRequest | null => {
-    const result = CreateTaskRequestSchema.safeParse({
-      goal,
-      targetAppPath,
-      llmModel,
-      providerId: providerId || undefined,
-    });
+    const fieldErrors: Record<string, string> = {};
 
-    if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        const path = issue.path.join('.') || 'form';
-        fieldErrors[path] = issue.message;
-      }
+    if (!goal || !goal.trim()) {
+      fieldErrors.goal = 'Goal is required';
+    }
+    if (!targetAppPath || !targetAppPath.trim()) {
+      fieldErrors.targetAppPath = 'Target app path is required';
+    }
+    if (!llmModel || !llmModel.trim()) {
+      fieldErrors.llmModel = 'LLM model is required';
+    }
+
+    if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors);
       return null;
     }
 
     setErrors({});
-    return result.data;
+    return {
+      goal: goal.trim(),
+      targetAppPath: targetAppPath.trim(),
+      llmModel: llmModel.trim(),
+      maxSteps: 50,
+      ...(providerId ? { providerId } : {}),
+    };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

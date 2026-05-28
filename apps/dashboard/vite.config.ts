@@ -17,9 +17,6 @@ export default defineConfig({
           if (id.includes('node_modules/@radix-ui')) {
             return 'vendor-radix';
           }
-          if (id.includes('node_modules/recharts') || id.includes('node_modules/d3')) {
-            return 'vendor-charts';
-          }
         },
       },
     },

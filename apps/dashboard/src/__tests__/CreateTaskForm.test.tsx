@@ -82,7 +82,7 @@ describe('CreateTaskForm', () => {
     fireEvent.click(screen.getByText('Create Task'));
 
     await waitFor(() => {
-      expect(screen.getByText(/Too small/)).toBeInTheDocument();
+      expect(screen.getByText(/Goal is required/)).toBeInTheDocument();
     });
   });
 
@@ -96,7 +96,7 @@ describe('CreateTaskForm', () => {
     fireEvent.click(screen.getByText('Create Task'));
 
     await waitFor(() => {
-      expect(screen.getByText(/Too small/)).toBeInTheDocument();
+      expect(screen.getByText(/Target app path is required/)).toBeInTheDocument();
     });
   });
 
