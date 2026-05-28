@@ -17,24 +17,10 @@ import {
   CircleDot,
   ChevronDown,
 } from 'lucide-react';
+import { api } from '../lib/api';
+import type { LLMProviderConfig, ProvidersConfig } from '../lib/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-interface LLMProviderConfig {
-  id: string;
-  name: string;
-  type: 'openai-compatible';
-  apiKey: string;
-  baseURL: string;
-  model: string;
-  enabled?: boolean;
-}
-
-interface ProvidersConfig {
-  version: number;
-  providers: LLMProviderConfig[];
-  activeId: string;
-}
 
 type TestStatus = 'idle' | 'testing' | 'success' | 'error';
 
@@ -45,9 +31,6 @@ interface BuiltinTemplate {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const STORAGE_KEY = 'eata-providers';
-const OLD_STORAGE_KEY = 'eata-settings';
 
 const BUILTIN_TEMPLATES: BuiltinTemplate[] = [
   { label: 'OpenAI', baseURL: 'https://api.openai.com/v1', model: 'gpt-4o' },
@@ -65,51 +48,6 @@ function generateId(): string {
 function maskApiKey(key: string): string {
   if (key.length <= 8) return '••••••••';
   return key.slice(0, 4) + '••••' + key.slice(-4);
-}
-
-function loadConfig(): ProvidersConfig {
-  // Migrate old config
-  const oldRaw = localStorage.getItem(OLD_STORAGE_KEY);
-  if (oldRaw && !localStorage.getItem(STORAGE_KEY)) {
-    try {
-      const old = JSON.parse(oldRaw);
-      const migrated: ProvidersConfig = {
-        version: 1,
-        providers: [
-          {
-            id: 'default',
-            name: old.model || 'Default Provider',
-            type: 'openai-compatible',
-            apiKey: old.apiKey || '',
-            baseURL: old.baseUrl || old.baseURL || 'https://api.openai.com/v1',
-            model: old.model || 'gpt-4o',
-            enabled: true,
-          },
-        ],
-        activeId: 'default',
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
-      localStorage.removeItem(OLD_STORAGE_KEY);
-      return migrated;
-    } catch {
-      // Ignore migration errors
-    }
-  }
-
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch {
-      // Ignore parse errors
-    }
-  }
-
-  return { version: 1, providers: [], activeId: '' };
-}
-
-function saveConfig(config: ProvidersConfig): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
 }
 
 // ─── Provider Form Dialog ─────────────────────────────────────────────────────
@@ -552,81 +490,67 @@ function ProviderCard({
 export default function SettingsPage() {
   const { t } = useTranslation();
   const [config, setConfig] = useState<ProvidersConfig>({ version: 1, providers: [], activeId: '' });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProvider, setEditingProvider] = useState<LLMProviderConfig | null>(null);
   const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({});
   const [testStatus, setTestStatus] = useState<Record<string, TestStatus>>({});
   const [deleteTarget, setDeleteTarget] = useState<LLMProviderConfig | null>(null);
 
-  // Load config on mount
-  useEffect(() => {
-    setConfig(loadConfig());
+  // ─── Load providers from API ────────────────────────────────────────────────
+
+  const refreshProviders = useCallback(async () => {
+    try {
+      const data = await api.providers.list();
+      setConfig(data);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load providers');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const persist = useCallback((next: ProvidersConfig) => {
-    setConfig(next);
-    saveConfig(next);
-  }, []);
+  useEffect(() => {
+    void refreshProviders();
+  }, [refreshProviders]);
 
   // ─── CRUD operations ────────────────────────────────────────────────────────
 
-  const handleAdd = (provider: LLMProviderConfig) => {
-    const next: ProvidersConfig = {
-      ...config,
-      providers: [...config.providers, provider],
-      activeId: config.activeId || provider.id, // First provider becomes active
-    };
-    persist(next);
-  };
-
-  const handleUpdate = (provider: LLMProviderConfig) => {
-    const next: ProvidersConfig = {
-      ...config,
-      providers: config.providers.map(p => (p.id === provider.id ? provider : p)),
-    };
-    persist(next);
-  };
-
-  const handleSaveFromDialog = (provider: LLMProviderConfig) => {
+  const handleSaveFromDialog = async (provider: LLMProviderConfig) => {
     const exists = config.providers.some(p => p.id === provider.id);
     if (exists) {
-      handleUpdate(provider);
+      await api.providers.update(provider.id, provider);
     } else {
-      handleAdd(provider);
+      await api.providers.create({
+        name: provider.name,
+        apiKey: provider.apiKey,
+        baseURL: provider.baseURL,
+        model: provider.model,
+      });
     }
     setEditingProvider(null);
+    void refreshProviders();
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
     if (deleteTarget.id === config.activeId) return; // Cannot delete active
-
-    const next: ProvidersConfig = {
-      ...config,
-      providers: config.providers.filter(p => p.id !== deleteTarget.id),
-      activeId:
-        config.activeId === deleteTarget.id
-          ? config.providers.find(p => p.id !== deleteTarget.id)?.id ?? ''
-          : config.activeId,
-    };
-    persist(next);
+    await api.providers.delete(deleteTarget.id);
     setDeleteTarget(null);
+    void refreshProviders();
   };
 
-  const handleSetActive = (id: string) => {
-    persist({ ...config, activeId: id });
+  const handleSetActive = async (id: string) => {
+    await api.providers.activate(id);
+    void refreshProviders();
   };
-
-  const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
   const handleTest = async (provider: LLMProviderConfig) => {
     setTestStatus(prev => ({ ...prev, [provider.id]: 'testing' }));
     try {
-      const res = await fetch(`${API_BASE}/api/providers/${provider.id}/test`, {
-        method: 'POST',
-        signal: AbortSignal.timeout(30_000),
-      });
-      const data = await res.json();
+      const data = await api.providers.test(provider.id);
       setTestStatus(prev => ({
         ...prev,
         [provider.id]: data.success ? 'success' : 'error',
@@ -657,7 +581,22 @@ export default function SettingsPage() {
         <p className="mt-1 text-sm text-zinc-400">{t('settings.subtitle')}</p>
       </div>
 
-      {/* Provider list */}
+      {/* Error banner */}
+      {error && (
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3">
+          <AlertCircle className="size-4 shrink-0 text-red-400" />
+          <p className="text-sm text-red-200">{error}</p>
+        </div>
+      )}
+
+      {/* Loading spinner */}
+      {loading ? (
+        <div className="flex items-center justify-center p-12">
+          <Loader2 className="size-6 animate-spin text-zinc-400" />
+        </div>
+      ) : (
+        <>
+          {/* Provider list */}
       <div className="space-y-3">
         {config.providers.length === 0 && (
           <div className="rounded-lg border border-dashed border-zinc-700 bg-zinc-900/50 p-8 text-center">
@@ -710,6 +649,8 @@ export default function SettingsPage() {
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
       />
+        </>
+      )}
     </div>
   );
 }

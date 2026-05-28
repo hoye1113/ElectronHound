@@ -8,10 +8,12 @@ import {
   Settings,
   LayoutTemplate,
   Heart,
+  Layers,
 } from 'lucide-react';
 
 const navItems = [
   { to: '/', labelKey: 'nav.tasks', icon: ListTodo },
+  { to: '/batches', labelKey: 'nav.batches', icon: Layers },
   { to: '/monitor', labelKey: 'nav.monitor', icon: Activity },
   { to: '/feedback', labelKey: 'nav.feedback', icon: MessageSquare },
   { to: '/templates', labelKey: 'nav.templates', icon: LayoutTemplate },

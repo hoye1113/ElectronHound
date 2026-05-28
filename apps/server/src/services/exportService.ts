@@ -4,7 +4,7 @@
  * Provides export functionality for tasks, reports, and batches
  * in JSON, CSV, and HTML formats.
  */
-import { readFileSync, existsSync } from 'node:fs';
+import { readFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
 import type Database from 'better-sqlite3';
 import type { Task, StepRecord } from '@eata/shared-types';
@@ -227,7 +227,7 @@ export class ExportService {
   /**
    * Export a report (task data from DB plus filesystem report data).
    */
-  exportReport(reportId: string, format: ExportFormat): ExportResult {
+  async exportReport(reportId: string, format: ExportFormat): Promise<ExportResult> {
     const taskRow = this.db
       .prepare('SELECT * FROM tasks WHERE id = ?')
       .get(reportId) as Record<string, unknown> | undefined;
@@ -248,9 +248,8 @@ export class ExportService {
     try {
       const reportDir = validatePath(join('data', 'reports'), reportId);
       const manifestPath = join(reportDir, 'manifest.json');
-      if (existsSync(manifestPath)) {
-        reportData = JSON.parse(readFileSync(manifestPath, 'utf-8'));
-      }
+      await access(manifestPath);
+      reportData = JSON.parse(await readFile(manifestPath, 'utf-8'));
     } catch {
       // No filesystem report; use DB data only
     }

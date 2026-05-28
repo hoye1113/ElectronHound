@@ -81,7 +81,7 @@ export async function exportRoutes(server: FastifyInstance) {
 
     try {
       const exportService = createExportService(server.db);
-      const result = exportService.exportReport(reportId, format);
+      const result = await exportService.exportReport(reportId, format);
 
       reply
         .code(200)

@@ -171,6 +171,7 @@
   },
   "nav": {
     "tasks": "Tasks",
+    "batches": "Batches",
     "monitor": "Monitor",
     "feedback": "Feedback",
     "settings": "Settings",
@@ -246,5 +247,34 @@
     "exportCsv": "Export CSV",
     "exportHtml": "Export HTML",
     "loadError": "Failed to load task details"
+  },
+  "batch": {
+    "title": "Batch Testing",
+    "newBatch": "New Batch",
+    "name": "Name",
+    "namePlaceholder": "Batch name (optional)",
+    "goal": "Goal",
+    "goalPlaceholder": "What should the AI agent accomplish?",
+    "taskCount": "Number of Tasks",
+    "priority": "Priority",
+    "priority_low": "Low",
+    "priority_medium": "Medium",
+    "priority_high": "High",
+    "status": "Status",
+    "status_pending": "Pending",
+    "status_running": "Running",
+    "status_completed": "Completed",
+    "status_failed": "Failed",
+    "status_cancelled": "Cancelled",
+    "created": "Created",
+    "noBatches": "No batches found",
+    "noBatchesHint": "Create your first batch",
+    "tasks": "Tasks",
+    "progress": "Progress",
+    "cancel": "Cancel Batch",
+    "cancelConfirm": "Cancel this batch?",
+    "createSuccess": "Batch created successfully",
+    "createError": "Failed to create batch. Please try again.",
+    "loadError": "Failed to load batches"
   }
 }

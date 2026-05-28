@@ -11,6 +11,7 @@ const FeedbackLoop = React.lazy(() => import('./pages/FeedbackLoop'));
 const SettingsPage = React.lazy(() => import('./pages/Settings'));
 const Templates = React.lazy(() => import('./pages/Templates'));
 const SystemHealth = React.lazy(() => import('./pages/SystemHealth'));
+const BatchList = React.lazy(() => import('./pages/BatchList'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
               <Route path="/monitor/:id" element={<LiveMonitor />} />
               <Route path="/monitor" element={<LiveMonitor />} />
               <Route path="/feedback" element={<FeedbackLoop />} />
+              <Route path="/batches" element={<BatchList />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/templates" element={<Templates />} />
               <Route path="/health" element={<SystemHealth />} />

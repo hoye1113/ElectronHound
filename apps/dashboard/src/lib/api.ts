@@ -174,4 +174,35 @@ export const api = {
       return fetchJson(`${API_BASE}/health`);
     },
   },
+  batches: {
+    create(data: {
+      name?: string;
+      tasks: Array<{ goal: string; config?: { targetAppPath?: string; llmModel?: string; maxSteps?: number; providerId?: string } }>;
+      priority?: 'low' | 'medium' | 'high';
+    }): Promise<{ batchId: string; taskIds: string[]; totalTasks: number }> {
+      return fetchJson(`${API_BASE}/api/tasks/batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    },
+    get(batchId: string): Promise<{
+      id: string;
+      name: string | null;
+      status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+      totalTasks: number;
+      completedTasks: number;
+      failedTasks: number;
+      priority: string;
+      createdAt: string;
+      updatedAt: string;
+      tasks: Array<{ id: string; goal: string; status: string; createdAt: string; updatedAt: string }>;
+      progress: number;
+    }> {
+      return fetchJson(`${API_BASE}/api/tasks/batch/${batchId}`);
+    },
+    cancel(batchId: string): Promise<{ success: boolean; batchId: string }> {
+      return fetchJson(`${API_BASE}/api/tasks/batch/${batchId}/cancel`, { method: 'POST' });
+    },
+  },
 };

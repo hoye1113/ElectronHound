@@ -171,6 +171,7 @@
   },
   "nav": {
     "tasks": "任务",
+    "batches": "批量",
     "monitor": "监控",
     "feedback": "反馈",
     "settings": "设置",
@@ -246,5 +247,34 @@
     "exportCsv": "导出 CSV",
     "exportHtml": "导出 HTML",
     "loadError": "加载任务详情失败"
+  },
+  "batch": {
+    "title": "批量测试",
+    "newBatch": "新建批量",
+    "name": "名称",
+    "namePlaceholder": "批量任务名称（可选）",
+    "goal": "目标",
+    "goalPlaceholder": "AI 代理需要完成什么任务？",
+    "taskCount": "任务数量",
+    "priority": "优先级",
+    "priority_low": "低",
+    "priority_medium": "中",
+    "priority_high": "高",
+    "status": "状态",
+    "status_pending": "待处理",
+    "status_running": "运行中",
+    "status_completed": "已完成",
+    "status_failed": "已失败",
+    "status_cancelled": "已取消",
+    "created": "创建时间",
+    "noBatches": "暂无批量任务",
+    "noBatchesHint": "创建您的第一个批量任务",
+    "tasks": "任务",
+    "progress": "进度",
+    "cancel": "取消批量",
+    "cancelConfirm": "取消此批量任务？",
+    "createSuccess": "批量任务创建成功",
+    "createError": "创建批量任务失败，请重试。",
+    "loadError": "加载批量任务失败"
   }
 }
