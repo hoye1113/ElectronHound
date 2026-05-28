@@ -47,7 +47,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     try {
       const result = await api.tasks.list();
       set({ tasks: result.data, isLoading: false });
-    } catch (e) {
+    } catch (e: unknown) {
       set({ error: extractErrorMessage(e), isLoading: false });
     }
   },
@@ -57,7 +57,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     try {
       const result = await api.tasks.get(id);
       set({ currentTask: result.task, currentTaskSteps: result.steps, isLoading: false });
-    } catch (e) {
+    } catch (e: unknown) {
       set({ error: extractErrorMessage(e), isLoading: false });
     }
   },
@@ -66,7 +66,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     try {
       const task = await api.tasks.create(data);
       set((state) => ({ tasks: [task, ...state.tasks] }));
-    } catch (e) {
+    } catch (e: unknown) {
       set({ error: extractErrorMessage(e) });
     }
   },
@@ -77,7 +77,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       set((state) => ({
         tasks: state.tasks.map((t) => (t.id === id ? task : t)),
       }));
-    } catch (e) {
+    } catch (e: unknown) {
       set({ error: extractErrorMessage(e) });
     }
   },
@@ -86,7 +86,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     try {
       await api.tasks.delete(id);
       set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) }));
-    } catch (e) {
+    } catch (e: unknown) {
       set({ error: extractErrorMessage(e) });
     }
   },
