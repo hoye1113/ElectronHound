@@ -64,12 +64,17 @@ grep -rn "console\.error" packages/agent-core/src apps/server/src --include="*.t
 - **数量：** 2 个裸 `catch (err)` → 已修复
 - **模式：** 同上
 
-### 1.4 TypeScript noImplicitAny 评估
+### 1.4 TypeScript noImplicitAny 评估 ✅
 - **范围：** `packages/agent-core/tsconfig.json`
-- **步骤：** 开启 `noImplicitAny: true`，运行 `tsc --noEmit`，记录错误数
-- **输出：** 错误清单 + 分批修复计划
-- **如错误 < 50：** 直接修复
-- **如错误 > 50：** 写入 Wave 3 分批任务
+- **结果：** `strict: true` 已启用（包含 noImplicitAny）
+- **错误数：** 29 个（cdp.ts 21, test 7, execution.ts 1）
+- **根因：** `strictFunctionTypes` 下 invoke 签名不匹配
+- **修复方案：** 合并到 Wave 3.1 泛型 Tool<P> 重构
+
+### 1.5 dashboard catch 块清理 ✅（发现扫描补充）
+- **范围：** `apps/dashboard/src/`
+- **数量：** 8 个裸 `catch (err/e)` → 已修复
+- **文件：** api.ts, sse.ts, taskStore.ts
 
 ---
 
