@@ -74,7 +74,7 @@ export class TaskQueue {
     } catch (err) {
       next.status = 'failed';
       next.completedAt = new Date();
-      console.error(`[taskQueue] Failed to spawn worker for ${next.taskId}:`, err);
+      process.stderr.write(`[taskQueue] Failed to spawn worker for ${next.taskId}: ${err instanceof Error ? err.message : String(err)}\n`);
       this.current = null;
       // Try next task
       this.dequeue();

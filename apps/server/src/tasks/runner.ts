@@ -35,7 +35,7 @@ class ProcessTaskExecutor implements TaskExecutor {
     task: PoolTask,
     onComplete: (taskId: string, result: 'completed' | 'failed', error?: string) => void,
   ): void {
-    console.error(`[ProcessTaskExecutor] Spawning worker for task ${task.id}, goal: ${task.goal.substring(0, 50)}`);
+    process.stderr.write(`[ProcessTaskExecutor] Spawning worker for task ${task.id}, goal: ${task.goal.substring(0, 50)}\n`);
     try {
       this.workerManager.spawnWorker({
         taskId: task.id,
@@ -46,16 +46,16 @@ class ProcessTaskExecutor implements TaskExecutor {
         contextInjection: task.contextInjection,
         providerId: task.providerId,
       });
-      console.error(`[ProcessTaskExecutor] Worker spawned for task ${task.id}`);
+      process.stderr.write(`[ProcessTaskExecutor] Worker spawned for task ${task.id}\n`);
     } catch (err) {
-      console.error(`[ProcessTaskExecutor] Spawn failed for task ${task.id}:`, err);
+      process.stderr.write(`[ProcessTaskExecutor] Spawn failed for task ${task.id}: ${err instanceof Error ? err.message : String(err)}\n`);
       onComplete(task.id, 'failed', err instanceof Error ? err.message : String(err));
       return;
     }
 
     const listener = (event: { taskId: string; type: 'started' | 'completed' | 'failed' | 'cancelled'; error?: string }) => {
       if (event.taskId !== task.id) return;
-      console.error(`[ProcessTaskExecutor] Event for task ${task.id}: ${event.type}${event.error ? ` - ${event.error}` : ''}`);
+      process.stderr.write(`[ProcessTaskExecutor] Event for task ${task.id}: ${event.type}${event.error ? ` - ${event.error}` : ''}\n`);
       if (event.type === 'completed' || event.type === 'failed') {
         this.workerManager.removeListener(listener);
         onComplete(task.id, event.type, event.error);

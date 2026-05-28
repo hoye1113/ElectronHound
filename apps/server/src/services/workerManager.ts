@@ -121,7 +121,7 @@ export class WorkerManager {
 
     // Process exit
     child.on('exit', (code, signal) => {
-      console.error(`[WorkerManager] Worker ${options.taskId} exited with code=${code}, signal=${signal}`);
+      process.stderr.write(`[WorkerManager] Worker ${options.taskId} exited with code=${code}, signal=${signal}\n`);
       this.handleExit(options.taskId, code, signal);
     });
 
