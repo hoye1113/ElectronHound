@@ -18,7 +18,7 @@ ElectronHound 采用 **monorepo** 结构，由以下核心层组成：
 │           Worker Pool + 任务队列                       │
 ├─────────────────────────────────────────────────────┤
 │               Agent 核心层                            │
-│        LangGraph 状态图 + LLM 集成                    │
+│     Pure TypeScript Agent Loop + Native Fetch LLM     │
 ├─────────────────────────────────────────────────────┤
 │                 MCP 工具层                            │
 │    Playwright MCP + Electron Bridge MCP              │
@@ -44,7 +44,7 @@ graph TB
     end
 
     subgraph Worker["Worker 子进程"]
-        AgentCore["agent-core<br/>LangGraph 状态图"]
+        AgentCore["agent-core<br/>Agent Loop Runtime"]
         MCP["MCP Client"]
     end
 
@@ -69,7 +69,7 @@ graph TB
     MCP --> Playwright
     MCP --> Bridge
     MCP --> Launcher
-    AgentCore -->|Vercel AI SDK| LLM
+    AgentCore -->|Native Fetch| LLM
     API --> DB
     AgentCore -->|"报告存储"| DB
 ```
@@ -214,27 +214,25 @@ buckets: {
 
 ### 4. Agent 核心层
 
-**技术栈**: LangGraph + Vercel AI SDK + OpenAI SDK
+**技术栈**: Pure TypeScript Agent Loop + Native Fetch LLMProvider
 
 **职责**:
 - Observe-Plan-Execute-Verify 循环编排
 - LLM 调用和结果解析
 - 卡死检测和智能终止
+- 会话持久化
 - 报告生成
 
 **核心模块**:
 
 | 模块 | 文件 | 说明 |
 |------|------|------|
-| 状态图 | `packages/agent-core/src/graph.ts` | LangGraph 主图定义 |
-| 状态定义 | `packages/agent-core/src/state.ts` | TestState 类型定义 |
-| Observe 节点 | `packages/agent-core/src/nodes/observe.ts` | 无障碍树快照 |
-| Plan 节点 | `packages/agent-core/src/nodes/plan.ts` | LLM 决策 |
-| Execute 节点 | `packages/agent-core/src/nodes/execute.ts` | MCP 工具执行 |
-| Verify 节点 | `packages/agent-core/src/nodes/verify.ts` | LLM 验证 |
-| Report 节点 | `packages/agent-core/src/nodes/report.ts` | 报告生成 |
-| Abort 节点 | `packages/agent-core/src/nodes/abort.ts` | 异常中止 |
-| LLM 集成 | `packages/agent-core/src/llm.ts` | LLM 提供者创建 |
+| Agent Loop | `packages/agent-core/src/runtime/agentLoop.ts` | 核心 while 循环编排 |
+| 卡死检测 | `packages/agent-core/src/runtime/stuckDetection.ts` | 指纹窗口检测 |
+| 运行时类型 | `packages/agent-core/src/runtime/types.ts` | AgentLoopConfig, Observation, Plan 等 |
+| LLM Provider | `packages/agent-core/src/llm/openai-provider.ts` | Native Fetch OpenAI 兼容 |
+| LLM 适配器 | `packages/agent-core/src/llm/adapter.ts` | 向后兼容桥接 |
+| 会话管理 | `packages/agent-core/src/session/sessionManager.ts` | SQLite 会话持久化 |
 | MCP 客户端 | `packages/agent-core/src/mcp/client.ts` | MCP 工具调用 |
 | 配置管理 | `packages/agent-core/src/config-manager.ts` | 供应商配置管理 |
 
@@ -258,56 +256,44 @@ graph LR
     Verify -->|"pass"| Report
     Verify -->|"retry"| Observe
     Verify -->|"fail"| Report
-    Verify -->|"escalate"| Abort
+    Verify -->|"stuck"| Report
 
-    Abort["Abort<br/>中止并记录"]
-    Report["Report 子图<br/>安全/性能/无障碍/模式分析"]
-
-    Report --> SubAgent["子代理审计链"]
-    SubAgent --> Output(["输出报告"])
+    Report["Report<br/>生成最终报告"]
+    Report --> Output(["输出报告"])
 ```
 
-**状态定义**:
+**状态定义** (纯 TypeScript，无 Annotation/Reducer):
 
 ```typescript
-const TestState = Annotation.Root({
-  goal: Annotation<string>(),              // 测试目标
-  targetAppPath: Annotation<string>(),     // 应用路径
-  llmModel: Annotation<string>(),          // LLM 模型
-  maxSteps: Annotation<number>(),          // 最大步数
-  taskId: Annotation<string>(),            // 任务 ID
-  history: Annotation<StepRecord[]>(),     // 步骤历史
-  currentObservation: Annotation<ObservationResult | null>(),
-  currentPlan: Annotation<PlanResult | null>(),
-  currentExecResult: Annotation<ExecResult | null>(),
-  currentVerdict: Annotation<VerdictResult | null>(),
-  stepCount: Annotation<number>(),         // 当前步数
-  stuckCounter: Annotation<number>(),      // 卡死计数器
-  status: Annotation<'running' | 'completed' | 'failed' | 'aborted'>(),
-  lastObservationHash: Annotation<string>(), // 观察哈希（用于卡死检测）
-});
+interface AgentLoopState {
+  sessionId: string;           // 会话 ID
+  taskPrompt: string;          // 测试目标
+  stepCount: number;           // 当前步数
+  currentObservation: Observation | null;
+  lastPlan: Plan | null;
+  lastExecution: ExecutionResult | null;
+  stuckCount: number;          // 卡死计数器
+}
 ```
 
-**路由逻辑**:
+**路由逻辑** (if/else，无条件边图):
 
 ```typescript
-// Observe 之后的路由
-const routeAfterObserve = (state) => {
-  if (state.stuckCounter >= 3) return 'stuck';   // 卡死检测
-  if (state.stepCount >= state.maxSteps) return 'stuck';  // 步数限制
-  return 'normal';  // 继续 Plan
-};
+while (state.stepCount < maxSteps) {
+  const observation = await this.observe(state);
 
-// Verify 之后的路由
-const routeAfterVerify = (state) => {
-  if (state.stepCount >= state.maxSteps) return 'fail';  // 步数限制
-  if (state.stuckCounter >= 3) return 'escalate';  // 卡死升级
-  const verdict = state.currentVerdict?.verdict;
-  if (verdict === 'pass') return 'pass';   // 通过
-  if (verdict === 'fail') return 'fail';   // 失败
-  if (verdict === 'escalate') return 'escalate';  // 升级
-  return 'retry';  // 重试
-};
+  // 卡死检测：N 次相同指纹 → abort
+  if (stuckDetector.isStuck()) return { verdict: 'stuck', report };
+
+  const plan = await this.plan(observation);
+  const execution = await this.execute(plan);
+  const verdict = await this.verify(execution, plan);
+
+  if (verdict === 'pass' || verdict === 'fail' || verdict === 'stuck') {
+    return { verdict, report: await this.report(state, verdict) };
+  }
+  // verdict === 'retry': continue loop
+}
 ```
 
 ---
@@ -496,7 +482,7 @@ Worker 子进程启动
     ↓
 初始化 MCP Client
     ↓
-启动 LangGraph 状态图
+启动 Agent Loop
 ```
 
 ### 2. Agent 执行流程
@@ -589,12 +575,12 @@ React 组件重新渲染
 
 ## 关键设计决策
 
-### 1. 为什么使用 LangGraph?
+### 1. 为什么使用纯 TypeScript Agent Loop?
 
-- **状态管理**: LangGraph 提供声明式的状态定义和管理
-- **条件路由**: 支持复杂的条件分支逻辑
-- **检查点**: 内置崩溃恢复能力
-- **可视化**: 状态图可可视化，便于调试
+- **轻量**: 移除 LangGraph / Vercel AI SDK 依赖，减少 bundle 大小和启动时间
+- **可控**: 纯 while 循环 + if/else 路由，逻辑完全透明
+- **可测试**: 纯函数和接口，易于单元测试
+- **会话持久化**: SQLite 会话管理替代 LangGraph checkpoint
 
 ### 2. 为什么使用 MCP?
 
@@ -644,7 +630,7 @@ agent-core ← electron-bridge-mcp
 | 包 | 职责 | 依赖 |
 |----|------|------|
 | `shared-types` | Zod schemas + TypeScript 类型 | 无 |
-| `agent-core` | LangGraph 状态图、LLM 集成、子代理 | shared-types |
+| `agent-core` | Agent Loop Runtime、LLM Provider、会话管理、子代理 | shared-types |
 | `electron-bridge-mcp` | Electron 专属 MCP 服务器 | launcher |
 | `launcher` | Electron 启动 + CDP 发现 | 无 |
 | `electron-helper` | Electron 主进程 IPC 通道 | 无 |

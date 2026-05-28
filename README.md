@@ -21,7 +21,7 @@ ElectronHound is an open-source autonomous AI testing agent that automates testi
 ### Features
 
 - **Natural language driven** — describe test goals in Chinese or English, no scripting required
-- **Autonomous closed-loop** — LangGraph-based Observe-Plan-Execute-Verify state graph
+- **Autonomous closed-loop** — Pure TypeScript Observe-Plan-Execute-Verify agent loop
 - **Accessibility tree aware** — precise UI element targeting via Playwright MCP
 - **Screenshot per step** — complete visual test trail
 - **Multi-provider LLM** — OpenAI, DeepSeek, Qwen, Groq support
@@ -79,11 +79,11 @@ EATA 让你只需描述测试目标（如"验证登录表单在密码为空时�
 ### AI 代理能力
 
 - **自然语言驱动** — 用中文或英文描述测试目标，无需编写脚本
-- **自主闭环循环** — 基于 LangGraph 的 Observe-Plan-Execute-Verify 状态图
+- **自主闭环循环** — 纯 TypeScript 实现的 Observe-Plan-Execute-Verify 代理循环
 - **无障碍树感知** — 通过 Playwright MCP 获取精确 UI 元素定位
 - **每步截图** — 完整的视觉测试轨迹
 - **智能终止** — 卡死检测（3 次相同观察自动中止）、最大步数限制、优雅中断
-- **断点恢复** — LangGraph SQLite 检查点支持崩溃恢复
+- **断点恢复** — SQLite 会话持久化支持崩溃恢复
 
 ### Electron 专属工具
 
@@ -129,7 +129,7 @@ graph TB
     end
 
     subgraph Worker["Worker 子进程"]
-        AgentCore["agent-core<br/>LangGraph 状态图"]
+        AgentCore["agent-core<br/>Agent Loop Runtime"]
         MCP["MCP Client"]
     end
 
@@ -154,7 +154,7 @@ graph TB
     MCP --> Playwright
     MCP --> Bridge
     MCP --> Launcher
-    AgentCore -->|Vercel AI SDK| LLM
+    AgentCore -->|Native Fetch| LLM
     API --> DB
     AgentCore -->|"报告存储"| DB
 ```
@@ -268,7 +268,7 @@ ElectronHound/
 │   ├── dashboard/              # React 前端 (Vite + Tailwind + Zustand)
 │   └── server/                 # Fastify HTTP 服务 + SQLite
 ├── packages/
-│   ├── agent-core/             # LangGraph 测试图 + LLM 集成 + 子代理
+│   ├── agent-core/             # Agent Loop Runtime + LLM 集成 + 子代理
 │   ├── electron-bridge-mcp/    # Electron 专属 MCP 服务器
 │   ├── electron-helper/        # Electron 进程辅助
 │   ├── launcher/               # Electron 启动 + CDP 发现
@@ -290,7 +290,7 @@ ElectronHound/
 
 | 包 | 职责 |
 | -- | ---- |
-| `agent-core` | LangGraph 状态图编排、LLM 调用、Observe/Plan/Execute/Verify 节点、报告子图、子代理审计链 |
+| `agent-core` | Agent Loop 编排、LLM 调用、Observe/Plan/Execute/Verify 循环、会话持久化、子代理审计链 |
 | `electron-bridge-mcp` | MCP 服务器，封装 Electron 专属自动化工具（launch/close/IPC/dialog） |
 | `launcher` | Electron 应用启动器，CDP WebSocket 端口自动发现 |
 | `electron-helper` | Electron 主进程 IPC 通道与操作处理 |
@@ -323,7 +323,7 @@ pnpm format
 
 | 层 | 技术 |
 | -- | ---- |
-| AI 编排 | LangGraph + Vercel AI SDK + OpenAI SDK |
+| AI 编排 | Pure TypeScript Agent Loop + Native Fetch LLMProvider |
 | 自动化 | Playwright (MCP) + CDP |
 | 后端 | Fastify 5 + better-sqlite3 + Pino |
 | 前端 | React 19 + Vite 8 + Tailwind CSS 4 + Zustand 5 |
@@ -417,7 +417,7 @@ docker-compose up -d
 | ---- | ---- |
 | `~/.eata/providers.json` | LLM 供应商配置 |
 | `data/db.sqlite3` | 服务端数据库 |
-| `data/agent-checkpoints.sqlite3` | LangGraph 检查点 |
+| `data/agent-checkpoints.sqlite3` | 会话持久化（SQLite） |
 | `data/reports/` | 测试报告输出 |
 | `data/feedback/patterns.jsonl` | 反馈模式存储 |
 

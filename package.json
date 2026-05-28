@@ -18,7 +18,7 @@
     "testing",
     "ai",
     "automation",
-    "langgraph",
+    "agent-loop",
     "mcp",
     "e2e",
     "ui-testing"
@@ -48,9 +48,6 @@
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
     "@eslint/js": "^9.29.0",
-    "@langchain/core": "^0.3.0",
-    "@langchain/langgraph": "^0.3.0",
-    "@langchain/langgraph-checkpoint-sqlite": "^0.1.0",
     "@vitest/coverage-v8": "^3.2.0",
     "eslint": "^9.29.0",
     "prettier": "^3.5.0",

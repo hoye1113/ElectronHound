@@ -9,7 +9,7 @@
     "url": "https://github.com/hoye1113/ElectronHound.git",
     "directory": "packages/agent-core"
   },
-  "keywords": ["electron", "testing", "ai", "langgraph", "agent"],
+  "keywords": ["electron", "testing", "ai", "agent", "agent-loop"],
   "author": { "name": "hoye1113" },
   "license": "MIT",
   "types": "src/index.ts",
