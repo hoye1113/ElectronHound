@@ -76,13 +76,12 @@ describe('Full test cycle: REST API + Graph + PatternStore', () => {
     expect(body.total).toBeDefined();
   });
 
-  // TODO: Rewrite for AgentLoop (LangGraph StateGraph removed in Pi migration)
+  // Deferred: Needs AgentLoop + mock LLM provider integration
   it.skip('executes agent loop and reaches a terminal state', async () => {
     // Previously tested createTestGraph().compile().invoke()
-    // Now needs to test AgentLoop via runTest() with a mock LLM provider
   });
 
-  // TODO: PatternStore was removed with report-graph in Pi migration
+  // Deferred: PatternStore was removed in Pi migration
   it.skip('reads and writes feedback patterns', () => {
     // PatternStore no longer exists — needs reimplementation
   });

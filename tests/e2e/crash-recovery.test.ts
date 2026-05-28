@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setMCPClient, MCPClient } from '../../packages/agent-core/src/mcp/client.js';
 
-// TODO: Rewrite for AgentLoop (LangGraph StateGraph removed in Pi migration)
-// These tests previously used createTestGraph() to test crash recovery behavior.
-// They need to be rewritten to use AgentLoop or runTest() with appropriate mocks.
+// Deferred: These tests need rewriting to use AgentLoop or runTest() with appropriate mocks.
+// Previously tested crash recovery via createTestGraph() which was removed in Pi migration.
 describe.skip('Crash recovery and abort scenarios (needs rewrite for AgentLoop)', () => {
   beforeEach(() => {
     const mockClient = new MCPClient();

@@ -149,8 +149,9 @@ export function extractLastStep(steps: StepRecord[]): {
       if (isObservation(parsed)) {
         observation = parsed;
       }
-    } catch {
-      // Malformed JSON — leave as null
+    } catch (err) {
+      // JSON parse failure — leave observation as null
+      process.stderr.write(`[entryConverter] extractLastStep observation parse: ${err instanceof Error ? err.message : String(err)}\n`);
     }
   }
 
@@ -219,8 +220,9 @@ function buildStepRecord(
     if (isObservation(obsParsed)) {
       observationData = obsParsed;
     }
-  } catch {
-    // Observe entry is not valid JSON — continue with nulls
+  } catch (err) {
+    // JSON parse failure — observe entry is not valid JSON, continue with nulls
+    process.stderr.write(`[entryConverter] observe entry parse: ${err instanceof Error ? err.message : String(err)}\n`);
   }
 
   try {
@@ -228,8 +230,9 @@ function buildStepRecord(
     if (isPlan(planParsed)) {
       planData = planParsed;
     }
-  } catch {
-    // Plan entry is not valid JSON
+  } catch (err) {
+    // JSON parse failure — plan entry is not valid JSON
+    process.stderr.write(`[entryConverter] plan entry parse: ${err instanceof Error ? err.message : String(err)}\n`);
   }
 
   try {
@@ -237,8 +240,9 @@ function buildStepRecord(
     if (isExecutionResult(execParsed)) {
       execData = execParsed;
     }
-  } catch {
-    // Execute entry is not valid JSON
+  } catch (err) {
+    // JSON parse failure — execute entry is not valid JSON
+    process.stderr.write(`[entryConverter] execute entry parse: ${err instanceof Error ? err.message : String(err)}\n`);
   }
 
   try {
@@ -251,8 +255,9 @@ function buildStepRecord(
     ) {
       verdictData = verdictParsed as { verdict: string; reasoning: string };
     }
-  } catch {
-    // Verify entry is not valid JSON
+  } catch (err) {
+    // JSON parse failure — verify entry is not valid JSON
+    process.stderr.write(`[entryConverter] verify entry parse: ${err instanceof Error ? err.message : String(err)}\n`);
   }
 
   // If we couldn't parse any data, still create a minimal record

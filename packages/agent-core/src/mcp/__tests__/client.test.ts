@@ -277,6 +277,100 @@ describe('MCPClient', () => {
     });
   });
 
+  describe('Dynamic Playwright connection', () => {
+    it('electron_launch with webSocketUrl auto-spawns Playwright', async () => {
+      // Connect only electron
+      await client.connect({ electron: { appPath: '/app' } });
+      expect(mockTransportInstances.length).toBe(1); // only electron
+
+      // Mock the electron_launch tool call to return a webSocketUrl
+      const electronClient = mockClientInstances[0]!;
+      electronClient.callTool.mockResolvedValueOnce({
+        content: [{ type: 'text', text: JSON.stringify({ pid: 1234, cdpPort: 9222, webSocketUrl: 'ws://127.0.0.1:9222/devtools/browser/abc' }) }],
+      });
+
+      const result = await client.callTool('electron', 'electron_launch', { targetAppPath: '/app' });
+
+      expect(result.success).toBe(true);
+      // Playwright should have been spawned with --cdp-endpoint
+      expect(mockTransportInstances.length).toBe(2);
+      expect(mockTransportInstances[1]!.params).toEqual({
+        command: 'npx',
+        args: ['@playwright/mcp', '--cdp-endpoint', 'ws://127.0.0.1:9222/devtools/browser/abc'],
+      });
+      // Playwright client should have connected
+      expect(mockClientInstances[1]!.connect).toHaveBeenCalled();
+    });
+
+    it('electron_launch without webSocketUrl does not spawn Playwright', async () => {
+      await client.connect({ electron: { appPath: '/app' } });
+
+      const electronClient = mockClientInstances[0]!;
+      electronClient.callTool.mockResolvedValueOnce({
+        content: [{ type: 'text', text: JSON.stringify({ pid: 1234, cdpPort: 9222 }) }],
+      });
+
+      await client.callTool('electron', 'electron_launch', { targetAppPath: '/app' });
+
+      // No additional transport should be spawned
+      expect(mockTransportInstances.length).toBe(1);
+    });
+
+    it('electron_close disconnects dynamically-spawned Playwright', async () => {
+      await client.connect({ electron: { appPath: '/app' } });
+
+      const electronClient = mockClientInstances[0]!;
+
+      // First, launch to spawn Playwright
+      electronClient.callTool.mockResolvedValueOnce({
+        content: [{ type: 'text', text: JSON.stringify({ pid: 1234, cdpPort: 9222, webSocketUrl: 'ws://127.0.0.1:9222/devtools/browser/abc' }) }],
+      });
+      await client.callTool('electron', 'electron_launch', { targetAppPath: '/app' });
+      expect(mockTransportInstances.length).toBe(2);
+
+      // Now close — should disconnect Playwright
+      electronClient.callTool.mockResolvedValueOnce({
+        content: [{ type: 'text', text: 'closed' }],
+      });
+      await client.callTool('electron', 'electron_close', { pid: 1234 });
+
+      // Playwright transport should have been closed
+      expect(mockTransportInstances[1]!.close).toHaveBeenCalled();
+    });
+
+    it('Playwright spawn failure does not break electron tool result', async () => {
+      await client.connect({ electron: { appPath: '/app' } });
+
+      // Make the second transport (Playwright) fail to connect
+      const originalImpl = vi.mocked(mockClientInstances[0]!.connect);
+      // We need the next Client instance (Playwright) to fail on connect
+      // Since mockClientInstances is shared, we'll make the NEXT connect throw
+      const failConnect = vi.fn().mockRejectedValueOnce(new Error('Connection refused'));
+
+      // Patch the Client mock to fail on the next instantiation
+      const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
+      vi.mocked(Client).mockImplementationOnce((info: { name: string; version: string }) => {
+        const instance = {
+          connect: failConnect,
+          callTool: vi.fn(),
+          info,
+        };
+        mockClientInstances.push(instance);
+        return instance as unknown as InstanceType<typeof Client>;
+      });
+
+      const electronClient = mockClientInstances[0]!;
+      electronClient.callTool.mockResolvedValueOnce({
+        content: [{ type: 'text', text: JSON.stringify({ pid: 1234, cdpPort: 9222, webSocketUrl: 'ws://127.0.0.1:9222/devtools/browser/abc' }) }],
+      });
+
+      // The callTool itself should still succeed (electron_launch result is valid)
+      // but Playwright spawn fails silently
+      const result = await client.callTool('electron', 'electron_launch', { targetAppPath: '/app' });
+      expect(result.success).toBe(true);
+    });
+  });
+
   describe('getClient()', () => {
     it('returns the MCP client for a connected server', async () => {
       await client.connect({ playwright: true });

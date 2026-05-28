@@ -431,8 +431,8 @@ export async function cliMain(
             timestamp: new Date().toISOString(),
           }, null, 2),
         );
-      } catch {
-        // Silently ignore filesystem errors during error reporting
+      } catch (reportErr) {
+        process.stderr.write(`[cli] Error: ${reportErr instanceof Error ? reportErr.message : String(reportErr)}\n`);
       }
     }
 

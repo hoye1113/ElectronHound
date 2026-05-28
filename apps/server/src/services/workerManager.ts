@@ -389,7 +389,7 @@ export class WorkerManager {
       try {
         listener(event);
       } catch {
-        // Swallow listener errors
+        // Swallow listener errors — don't let one bad listener crash the loop
       }
     }
   }

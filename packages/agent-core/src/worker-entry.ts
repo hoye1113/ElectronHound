@@ -66,8 +66,8 @@ export async function workerMain(argv: string[] = process.argv): Promise<number>
         emit('task_end', { status: 'cancelled' });
         process.exit(0);
       }
-    } catch {
-      // Non-JSON stdin input - ignore
+    } catch (err) {
+      process.stderr.write(`[worker-entry] Error: ${err instanceof Error ? err.message : String(err)}\n`);
     }
   });
 

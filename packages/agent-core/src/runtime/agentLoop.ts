@@ -60,6 +60,22 @@ const PLAN_SYSTEM = [
   '  - browser_click: Click an element. Args: { ref: string }',
   '  - browser_type: Type text. Args: { ref: string, text: string }',
   '  - browser_navigate: Navigate to URL. Args: { url: string }',
+  '',
+  '## Workflow',
+  '',
+  'Follow this sequence for testing an Electron app:',
+  '1. **Launch**: Use `electron_launch` with the target app path',
+  '2. **Observe**: Use `browser_snapshot` to see the current UI state',
+  '3. **Interact**: Use `browser_click`, `browser_type`, etc. to test features',
+  '4. **Verify**: Use `browser_snapshot` again to confirm the result',
+  '5. **Cleanup**: Use `electron_close` with the PID from step 1',
+  '',
+  'Rules:',
+  '- Always launch the app before using browser_* tools',
+  '- Always close the app when testing is complete',
+  '- Use electron_* tools for main process operations (IPC, dialogs)',
+  '- Use browser_* tools for UI interactions (click, type, navigate)',
+  '- If a tool call fails, check if the app is still running before retrying',
 ].join('\n');
 
 const VERIFY_SYSTEM = [
@@ -209,104 +225,113 @@ export class AgentLoop {
       type: 'user',
     });
 
-    while (state.stepCount < this.maxSteps) {
-      // ── 1. Observe ──────────────────────────────────────────────
-      process.stderr.write(`[agentLoop] Step ${state.stepCount + 1}: Observing...\n`);
-      const observation = await this.observe(state);
-      state.currentObservation = observation;
+    try {
+      while (state.stepCount < this.maxSteps) {
+        // ── 1. Observe ──────────────────────────────────────────────
+        process.stderr.write(`[agentLoop] Step ${state.stepCount + 1}: Observing...\n`);
+        const observation = await this.observe(state);
+        state.currentObservation = observation;
 
-      this.session.addEntry(sessionId, {
-        role: 'assistant',
-        content: JSON.stringify(observation),
-        type: 'assistant',
-      });
+        this.session.addEntry(sessionId, {
+          role: 'assistant',
+          content: JSON.stringify(observation),
+          type: 'assistant',
+        });
 
-      // ── Stuck detection ─────────────────────────────────────────
-      const fp = fingerprintObservation(observation);
-      fingerprintWindow.push(fp);
-      if (fingerprintWindow.length > this.stuckThreshold) {
-        fingerprintWindow.shift();
-      }
+        // ── Stuck detection ─────────────────────────────────────────
+        const fp = fingerprintObservation(observation);
+        fingerprintWindow.push(fp);
+        if (fingerprintWindow.length > this.stuckThreshold) {
+          fingerprintWindow.shift();
+        }
 
-      if (
-        fingerprintWindow.length >= this.stuckThreshold &&
-        fingerprintWindow.every((f) => f === fingerprintWindow[0])
-      ) {
-        state.stuckCount = this.stuckThreshold;
-        const stuckVerdict: Verdict = {
-          verdict: 'stuck',
-          reasoning: `Stuck: ${this.stuckThreshold} consecutive identical observations detected.`,
-        };
+        if (
+          fingerprintWindow.length >= this.stuckThreshold &&
+          fingerprintWindow.every((f) => f === fingerprintWindow[0])
+        ) {
+          state.stuckCount = this.stuckThreshold;
+          const stuckVerdict: Verdict = {
+            verdict: 'stuck',
+            reasoning: `Stuck: ${this.stuckThreshold} consecutive identical observations detected.`,
+          };
+
+          this.session.addEntry(sessionId, {
+            role: 'system',
+            content: stuckVerdict.reasoning,
+            type: 'system',
+          });
+
+          const report = await this.report(state, stuckVerdict);
+          return { verdict: 'stuck', report, sessionId };
+        }
+
+        // ── 2. Plan ─────────────────────────────────────────────────
+        process.stderr.write(`[agentLoop] Observation: ${observation.summary.substring(0, 100)}\n`);
+        process.stderr.write(`[agentLoop] Planning...\n`);
+        const plan = await this.plan(observation);
+        state.lastPlan = plan;
+
+        this.session.addEntry(sessionId, {
+          role: 'assistant',
+          content: JSON.stringify(plan),
+          type: 'assistant',
+        });
+
+        // ── 3. Execute ──────────────────────────────────────────────
+        process.stderr.write(`[agentLoop] Plan: ${plan.action} (tool: ${plan.toolName})\n`);
+        process.stderr.write(`[agentLoop] Executing ${plan.toolName}...\n`);
+        const execution = await this.execute(plan);
+        state.lastExecution = execution;
+        state.stepCount++;
 
         this.session.addEntry(sessionId, {
           role: 'system',
-          content: stuckVerdict.reasoning,
+          content: JSON.stringify(execution),
           type: 'system',
         });
 
-        const report = await this.report(state, stuckVerdict);
-        return { verdict: 'stuck', report, sessionId };
+        // ── 4. Verify ───────────────────────────────────────────────
+        process.stderr.write(`[agentLoop] Execution result: success=${execution.success}, error=${execution.error ?? 'none'}\n`);
+        process.stderr.write(`[agentLoop] Verifying...\n`);
+        const verdict = await this.verify(execution, plan);
+
+        this.session.addEntry(sessionId, {
+          role: 'assistant',
+          content: JSON.stringify(verdict),
+          type: 'assistant',
+        });
+
+        // ── Terminal verdict → 5. Report ────────────────────────────
+        if (verdict.verdict === 'pass' || verdict.verdict === 'fail' || verdict.verdict === 'stuck') {
+          const report = await this.report(state, verdict);
+          return { verdict: verdict.verdict, report, sessionId };
+        }
+
+        // verdict === 'retry': continue to next iteration
       }
 
-      // ── 2. Plan ─────────────────────────────────────────────────
-      process.stderr.write(`[agentLoop] Observation: ${observation.summary.substring(0, 100)}\n`);
-      process.stderr.write(`[agentLoop] Planning...\n`);
-      const plan = await this.plan(observation);
-      state.lastPlan = plan;
-
-      this.session.addEntry(sessionId, {
-        role: 'assistant',
-        content: JSON.stringify(plan),
-        type: 'assistant',
-      });
-
-      // ── 3. Execute ──────────────────────────────────────────────
-      process.stderr.write(`[agentLoop] Plan: ${plan.action} (tool: ${plan.toolName})\n`);
-      process.stderr.write(`[agentLoop] Executing ${plan.toolName}...\n`);
-      const execution = await this.execute(plan);
-      state.lastExecution = execution;
-      state.stepCount++;
+      // ── Exhausted maxSteps ────────────────────────────────────────
+      const exhaustedVerdict: Verdict = {
+        verdict: 'fail',
+        reasoning: `Exceeded maximum steps (${this.maxSteps}).`,
+      };
 
       this.session.addEntry(sessionId, {
         role: 'system',
-        content: JSON.stringify(execution),
+        content: exhaustedVerdict.reasoning,
         type: 'system',
       });
 
-      // ── 4. Verify ───────────────────────────────────────────────
-      process.stderr.write(`[agentLoop] Execution result: success=${execution.success}, error=${execution.error ?? 'none'}\n`);
-      process.stderr.write(`[agentLoop] Verifying...\n`);
-      const verdict = await this.verify(execution, plan);
-
-      this.session.addEntry(sessionId, {
-        role: 'assistant',
-        content: JSON.stringify(verdict),
-        type: 'assistant',
-      });
-
-      // ── Terminal verdict → 5. Report ────────────────────────────
-      if (verdict.verdict === 'pass' || verdict.verdict === 'fail' || verdict.verdict === 'stuck') {
-        const report = await this.report(state, verdict);
-        return { verdict: verdict.verdict, report, sessionId };
+      const report = await this.report(state, exhaustedVerdict);
+      return { verdict: 'fail', report, sessionId };
+    } finally {
+      // Disconnect all MCP servers
+      if (this.mcp) {
+        await this.mcp.disconnect().catch((err) => {
+          process.stderr.write(`[agentLoop] MCP disconnect error: ${err instanceof Error ? err.message : String(err)}\n`);
+        });
       }
-
-      // verdict === 'retry': continue to next iteration
     }
-
-    // ── Exhausted maxSteps ────────────────────────────────────────
-    const exhaustedVerdict: Verdict = {
-      verdict: 'fail',
-      reasoning: `Exceeded maximum steps (${this.maxSteps}).`,
-    };
-
-    this.session.addEntry(sessionId, {
-      role: 'system',
-      content: exhaustedVerdict.reasoning,
-      type: 'system',
-    });
-
-    const report = await this.report(state, exhaustedVerdict);
-    return { verdict: 'fail', report, sessionId };
   }
 
   // ── Loop phases ────────────────────────────────────────────────────────

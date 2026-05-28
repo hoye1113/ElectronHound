@@ -57,7 +57,8 @@ export class OperationHandler {
       }
       this.electron = mod as typeof import('electron');
       return this.electron;
-    } catch {
+    } catch (err) {
+      process.stderr.write(`[electron-helper] getElectron: ${err instanceof Error ? err.message : String(err)}\n`);
       this.electron = null;
       return null;
     }

@@ -70,7 +70,7 @@ export class OpenAIProvider implements LLMProvider {
           const content = parsed.choices?.[0]?.delta?.content;
           if (content) yield content;
         } catch {
-          // Skip non-JSON lines
+          // Non-JSON lines (empty, [DONE], comments) are normal in SSE streams
         }
       }
     }

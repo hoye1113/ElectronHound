@@ -16,7 +16,8 @@ export function safeJsonParse(value: unknown): unknown {
   if (!value) return undefined;
   try {
     return JSON.parse(value as string);
-  } catch {
+  } catch (err) {
+    process.stderr.write(`[dbMappers] safeJsonParse failed: ${err instanceof Error ? err.message : String(err)}\n`);
     return undefined;
   }
 }

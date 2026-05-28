@@ -198,9 +198,8 @@ export class CDPClient implements CDPContext {
     return `ws://${host}:${port}/devtools/browser/`;
   }
 
-  // TODO(#wave3-5): Implement WebSocket connection with retry/timeout logic.
-  // Currently a no-op — the CDP session assumes the browser is already reachable.
-  // See spec: docs/superpowers/specs/2026-05-28-pi-migration-design.md (Defect 5)
+  // Intentional no-op: Playwright MCP handles CDP connection lifecycle.
+  // The browser is already reachable when this is called (electron_launch discovers the port).
   private async waitForConnection(_endpoint: string, _timeout: number): Promise<void> {
     return;
   }

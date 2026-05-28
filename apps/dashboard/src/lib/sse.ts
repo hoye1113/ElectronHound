@@ -14,8 +14,8 @@ export interface SSECallbacks {
 function safeParseEventData(e: MessageEvent<string>): unknown {
   try {
     return JSON.parse(e.data);
-  } catch {
-    console.error('[SSE] Failed to parse event data:', e.data);
+  } catch (err) {
+    console.warn('[SSE] Failed to parse event data:', err instanceof Error ? err.message : String(err));
     return null;
   }
 }

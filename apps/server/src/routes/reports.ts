@@ -26,7 +26,8 @@ export async function reportRoutes(server: FastifyInstance) {
     let reportDir: string;
     try {
       reportDir = validatePath(join('data', 'reports'), id);
-    } catch {
+    } catch (err) {
+      process.stderr.write(`[reports] path validation failed: ${err instanceof Error ? err.message : String(err)}\n`);
       reply.code(400);
       return { error: 'Invalid report path' };
     }

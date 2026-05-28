@@ -4,6 +4,7 @@ import { loadProvidersConfig } from './config-manager.js';
 import { AgentLoop } from './runtime/agentLoop.js';
 import { SessionManager } from './session/sessionManager.js';
 import { entriesToStepRecords, extractLastStep } from './session/entryConverter.js';
+import { runAuditChain } from './sub-agents/audit-chain.js';
 import type { RunTestResult } from './runner-types.js';
 
 export interface RunTestOptions {
@@ -75,6 +76,18 @@ export async function runTest(
   const history = session ? entriesToStepRecords(session.entries, taskId) : [];
   const lastStep = history.length > 0 ? extractLastStep(history) : null;
 
+  // Run audit chain (4-role sub-agent pipeline)
+  let auditChainResult = null;
+  try {
+    auditChainResult = await runAuditChain({
+      goal: options.goal,
+      targetAppPath: options.targetAppPath,
+      context: { history, stepCount: result.report?.stepCount ?? 0 },
+    });
+  } catch (err) {
+    process.stderr.write(`[runner] Audit chain failed: ${err instanceof Error ? err.message : String(err)}\n`);
+  }
+
   // Convert AgentLoop result to RunTestResult (backward-compatible with worker-entry.ts)
   const runTestResult: RunTestResult = {
     goal: options.goal,
@@ -99,7 +112,7 @@ export async function runTest(
           ? 'failed'
           : 'aborted',
     lastObservationHash: lastStep?.observationHash ?? '',
-    auditChainResult: null,
+    auditChainResult,
   };
 
   return runTestResult;

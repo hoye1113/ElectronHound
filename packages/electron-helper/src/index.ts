@@ -29,7 +29,8 @@ function isElectronMain(): boolean {
     // We check for the 'app' property which only exists in the main process
     const electronModule = eval('require')('electron') as Record<string, unknown>;
     return electronModule !== null && 'app' in electronModule;
-  } catch {
+  } catch (err) {
+    process.stderr.write(`[electron-helper] isElectronMain: ${err instanceof Error ? err.message : String(err)}\n`);
     return false;
   }
 }
@@ -51,8 +52,8 @@ function setCdpPort(port: number): void {
     if (commandLine && typeof commandLine.appendSwitch === 'function') {
       commandLine.appendSwitch('remote-debugging-port', String(port));
     }
-  } catch {
-    // Silently fail if Electron APIs are unavailable
+  } catch (err) {
+    process.stderr.write(`[electron-helper] setCdpPort: ${err instanceof Error ? err.message : String(err)}\n`);
   }
 }
 

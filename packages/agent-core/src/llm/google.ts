@@ -79,7 +79,7 @@ export class GoogleProvider implements LLMProvider {
           const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
           if (text) yield text;
         } catch {
-          // Skip non-JSON lines
+          // Non-JSON lines (empty, [DONE], comments) are normal in SSE streams
         }
       }
     }
@@ -130,7 +130,9 @@ export class GoogleProvider implements LLMProvider {
       const description = (schema as { description?: string }).description;
       if (description) return { type: 'object', description };
       return { type: 'object' };
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`[llm/google] zodToGeminiSchema fallback: ${msg}\n`);
       return { type: 'object' };
     }
   }

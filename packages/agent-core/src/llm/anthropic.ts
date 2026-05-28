@@ -78,7 +78,7 @@ export class AnthropicProvider implements LLMProvider {
             if (content) yield content;
           }
         } catch {
-          // Skip non-JSON lines
+          // Non-JSON lines (empty, [DONE], comments) are normal in SSE streams
         }
       }
     }

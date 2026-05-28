@@ -178,8 +178,9 @@ export class IpcChannel {
         for (const handler of this.handlers) {
           handler(message);
         }
-      } catch {
+      } catch (err) {
         // Skip malformed messages
+        process.stderr.write(`[ipc-channel] malformed message: ${err instanceof Error ? err.message : String(err)}\n`);
       }
     }
   }

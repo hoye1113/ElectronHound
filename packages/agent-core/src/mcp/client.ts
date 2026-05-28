@@ -79,11 +79,19 @@ export class MCPClient {
 
   /**
    * Spawn the Playwright MCP server.
+   * When `cdpUrl` is provided, connects to a running browser via CDP instead of launching headless.
    */
-  private async spawnPlaywright(): Promise<void> {
+  private async spawnPlaywright(cdpUrl?: string): Promise<void> {
+    // Disconnect existing Playwright connection if any
+    if (this.connections.has('playwright')) {
+      await this.disconnectServer('playwright');
+    }
+
     const params: StdioServerParameters = {
       command: 'npx',
-      args: ['@playwright/mcp', '--headless'],
+      args: cdpUrl
+        ? ['@playwright/mcp', '--cdp-endpoint', cdpUrl]
+        : ['@playwright/mcp', '--headless'],
     };
 
     const transport = new StdioClientTransport(params);
@@ -132,6 +140,52 @@ export class MCPClient {
   }
 
   /**
+   * Disconnect a single server by name and remove it from the connections map.
+   */
+  private async disconnectServer(server: string): Promise<void> {
+    const conn = this.connections.get(server);
+    if (conn) {
+      try {
+        await conn.transport.close();
+      } catch {
+        // Ignore cleanup errors
+      }
+      this.connections.delete(server);
+    }
+  }
+
+  /**
+   * Intercept an electron_launch result; if it contains a webSocketUrl,
+   * spawn a Playwright MCP server connected to that CDP endpoint.
+   */
+  private async handleElectronLaunchResult(result: MCPToolResult): Promise<void> {
+    const content = result.result as { content?: Array<{ text?: string }> };
+    const text = content?.content?.[0]?.text;
+    if (!text) return;
+
+    try {
+      const data = JSON.parse(text) as { webSocketUrl?: string };
+      if (data.webSocketUrl) {
+        process.stderr.write(`[MCPClient] electron_launch returned webSocketUrl: ${data.webSocketUrl}, spawning Playwright...\n`);
+        await this.spawnPlaywright(data.webSocketUrl);
+      }
+    } catch (err) {
+      // Playwright spawn failure or JSON parse error shouldn't break electron_launch
+      process.stderr.write(`[MCPClient] Failed to auto-connect Playwright: ${err instanceof Error ? err.message : String(err)}\n`);
+    }
+  }
+
+  /**
+   * Handle electron_close by disconnecting the dynamically-spawned Playwright server.
+   */
+  private async handleElectronClose(): Promise<void> {
+    if (this.connections.has('playwright')) {
+      process.stderr.write(`[MCPClient] electron_close called, disconnecting Playwright...\n`);
+      await this.disconnectServer('playwright');
+    }
+  }
+
+  /**
    * Call a tool on the specified server.
    * In mock mode, returns a mock result.
    * In real mode, uses the connected MCP client.
@@ -169,10 +223,22 @@ export class MCPClient {
         arguments: args,
       });
 
-      return {
+      const toolResult: MCPToolResult = {
         success: !result.isError,
         result,
       };
+
+      // Intercept electron_launch result to dynamically connect Playwright
+      if (server === 'electron' && toolName === 'electron_launch' && toolResult.success) {
+        await this.handleElectronLaunchResult(toolResult);
+      }
+
+      // Intercept electron_close to disconnect Playwright
+      if (server === 'electron' && toolName === 'electron_close') {
+        await this.handleElectronClose();
+      }
+
+      return toolResult;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -187,19 +253,10 @@ export class MCPClient {
    * Disconnect from all MCP servers and clean up.
    */
   async disconnect(): Promise<void> {
-    // Close all transports
-    const closePromises = Array.from(this.connections.values()).map(
-      async (conn) => {
-        try {
-          await conn.transport.close();
-        } catch {
-          // Ignore cleanup errors on transport close
-        }
-      },
-    );
-    await Promise.all(closePromises);
-
-    this.connections.clear();
+    const serverNames = Array.from(this.connections.keys());
+    for (const server of serverNames) {
+      await this.disconnectServer(server);
+    }
     this.connected = false;
     this.mockMode = false;
   }

@@ -19,7 +19,8 @@ async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
       if (body.details) {
         detail += `: ${JSON.stringify(body.details)}`;
       }
-    } catch {
+    } catch (err) {
+      console.warn('[api] Failed to parse error response body:', err instanceof Error ? err.message : String(err));
       detail = res.statusText;
     }
     throw new Error(`${res.status}: ${detail}`);
@@ -223,7 +224,8 @@ export const api = {
     list(): FewShotExample[] {
       try {
         return JSON.parse(localStorage.getItem('eata-few-shot-examples') ?? '[]');
-      } catch {
+      } catch (err) {
+        console.warn('[api] Failed to parse few-shot examples from localStorage:', err instanceof Error ? err.message : String(err));
         return [];
       }
     },

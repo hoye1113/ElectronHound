@@ -68,7 +68,7 @@ export class OllamaProvider implements LLMProvider {
           const content = parsed.message?.content;
           if (content) yield content;
         } catch {
-          // Skip non-JSON lines
+          // Non-JSON lines (empty, [DONE], comments) are normal in SSE streams
         }
       }
     }

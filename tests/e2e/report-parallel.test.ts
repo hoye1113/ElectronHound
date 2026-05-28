@@ -3,9 +3,8 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-// TODO: Rewrite for AgentLoop (LangGraph report-graph removed in Pi migration)
-// Previously tested createReportGraph() — now needs to test report generation
-// within the AgentLoop's report phase.
+// Deferred: Previously tested createReportGraph() which was removed in Pi migration.
+// Needs rewriting to test report generation within AgentLoop's report phase.
 describe.skip('Report Sub Graph parallel execution (needs rewrite for AgentLoop)', () => {
   let dataDir: string;
 

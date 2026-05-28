@@ -34,8 +34,8 @@ async function resolveElectronPath(): Promise<string> {
     if (typeof electronPath === 'string' && electronPath.length > 0) {
       return electronPath;
     }
-  } catch {
-    // Fall through to PATH lookup
+  } catch (err) {
+    process.stderr.write(`[launcher] resolveElectronPath: ${err instanceof Error ? err.message : String(err)}\n`);
   }
   return 'electron';
 }
