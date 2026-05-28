@@ -23,6 +23,7 @@ import type {
   Report,
   AgentRunResult,
 } from './types.js';
+import { fingerprintObservation } from './stuckDetection.js';
 
 // ── Defaults ──────────────────────────────────────────────────────────────
 
@@ -102,19 +103,6 @@ const verdictSchema: SchemaLike<Verdict> = schema((v) => {
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────
-
-/**
- * Compute a stable fingerprint for an observation.
- * Used to detect when the agent is stuck seeing the same state repeatedly.
- */
-function fingerprintObservation(obs: Observation): string {
-  const raw = `${obs.summary}::${JSON.stringify(obs.details)}`;
-  let hash = 5381;
-  for (let i = 0; i < raw.length; i++) {
-    hash = ((hash << 5) + hash + raw.charCodeAt(i)) & 0xffffffff;
-  }
-  return (hash >>> 0).toString(36);
-}
 
 /**
  * Attempt to parse a string as JSON. Returns the parsed value or null.
