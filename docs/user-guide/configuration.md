@@ -203,7 +203,7 @@ apps/dashboard/src/i18n/locales/
 ```
 data/
 ├── db.sqlite3                 # 主数据库
-├── agent-checkpoints.sqlite3  # LangGraph 检查点
+├── agent-checkpoints.sqlite3  # 会话持久化（SQLite）
 ├── feedback/
 │   └── patterns.jsonl         # 反馈模式存储
 ├── few-shot-examples/         # Few-shot 示例

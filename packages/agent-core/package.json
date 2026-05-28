@@ -25,7 +25,8 @@
   },
   "dependencies": {
     "@eata/shared-types": "workspace:*",
-    "better-sqlite3": "^11.0.0"
+    "better-sqlite3": "^11.0.0",
+    "zod": "^3.25.0"
   },
   "devDependencies": {
     "tsx": "^4.0.0",

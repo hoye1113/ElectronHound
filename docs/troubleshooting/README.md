@@ -406,7 +406,7 @@ sqlite3 data/db.sqlite3 "SELECT * FROM steps WHERE task_id = 'your-task-id';"
 ### 3. 查看检查点数据
 
 ```bash
-# 查看 LangGraph 检查点
+# 查看会话持久化数据
 sqlite3 data/agent-checkpoints.sqlite3 ".tables"
 ```
 
