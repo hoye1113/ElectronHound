@@ -84,7 +84,7 @@ export async function runTest(
       targetAppPath: options.targetAppPath,
       context: { history, stepCount: result.report?.stepCount ?? 0 },
     });
-  } catch (err) {
+  } catch (err: unknown) {
     process.stderr.write(`[runner] Audit chain failed: ${err instanceof Error ? err.message : String(err)}\n`);
   }
 

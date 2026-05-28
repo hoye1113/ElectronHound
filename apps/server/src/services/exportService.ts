@@ -250,7 +250,7 @@ export class ExportService {
       const manifestPath = join(reportDir, 'manifest.json');
       await access(manifestPath);
       reportData = JSON.parse(await readFile(manifestPath, 'utf-8'));
-    } catch (err) {
+    } catch (err: unknown) {
       // No filesystem report; use DB data only
       process.stderr.write(`[exportService] filesystem report read failed for ${reportId}: ${err instanceof Error ? err.message : String(err)}\n`);
     }

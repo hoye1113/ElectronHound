@@ -409,7 +409,7 @@ export async function cliMain(
       return 0;
     }
     return 1;
-  } catch (err) {
+  } catch (err: unknown) {
     spinner.fail('Test execution failed');
 
     const eataError = wrapError(err, ErrorCode.TASK_EXECUTION_FAILED);
@@ -428,7 +428,7 @@ export async function cliMain(
             timestamp: new Date().toISOString(),
           }, null, 2),
         );
-      } catch (reportErr) {
+      } catch (reportErr: unknown) {
         process.stderr.write(`[cli] Error: ${reportErr instanceof Error ? reportErr.message : String(reportErr)}\n`);
       }
     }
@@ -450,7 +450,7 @@ const isDirectExecution =
 if (isDirectExecution) {
   cliMain().then((code) => {
     process.exit(code);
-  }).catch((err) => {
+  }).catch((err: unknown) => {
     process.stderr.write(`Fatal: ${String(err)}\n`);
     process.exit(1);
   });

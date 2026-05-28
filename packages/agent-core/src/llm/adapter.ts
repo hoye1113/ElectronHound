@@ -72,7 +72,7 @@ export async function testProviderConnection(config: LLMProviderConfig): Promise
     const provider = createOpenAIProvider(config);
     await provider.generateText({ prompt: 'Say "OK" to confirm connection', maxTokens: 10 });
     return { success: true, message: 'Connection successful', latencyMs: Date.now() - t0 };
-  } catch (err) {
+  } catch (err: unknown) {
     return { success: false, message: err instanceof Error ? err.message : String(err), latencyMs: Date.now() - t0 };
   }
 }

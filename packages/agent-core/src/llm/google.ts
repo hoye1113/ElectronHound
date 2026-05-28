@@ -130,7 +130,7 @@ export class GoogleProvider implements LLMProvider {
       const description = (schema as { description?: string }).description;
       if (description) return { type: 'object', description };
       return { type: 'object' };
-    } catch (err) {
+    } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       process.stderr.write(`[llm/google] zodToGeminiSchema fallback: ${msg}\n`);
       return { type: 'object' };

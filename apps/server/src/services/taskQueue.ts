@@ -71,7 +71,7 @@ export class TaskQueue {
     // Spawn the worker
     try {
       this.workerManager.spawnWorker(next.options);
-    } catch (err) {
+    } catch (err: unknown) {
       next.status = 'failed';
       next.completedAt = new Date();
       process.stderr.write(`[taskQueue] Failed to spawn worker for ${next.taskId}: ${err instanceof Error ? err.message : String(err)}\n`);

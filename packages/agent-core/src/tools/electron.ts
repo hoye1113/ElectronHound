@@ -84,7 +84,7 @@ export class LaunchElectronTool extends ElectronTool {
         success: true,
         data: { launched: true, appPath: p.appPath, ...data },
       };
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `Launch failed: ${errMsg(err)}` };
     }
   }
@@ -100,7 +100,7 @@ export class CloseElectronTool extends ElectronTool {
     try {
       await this.context.close(p);
       return { success: true, data: { closed: true } };
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `Close failed: ${errMsg(err)}` };
     }
   }
@@ -116,7 +116,7 @@ export class ExecuteMainTool extends ElectronTool {
     try {
       const data = await this.context.executeMain(code, timeout);
       return { success: true, data };
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `ExecuteMain failed: ${errMsg(err)}` };
     }
   }
@@ -138,7 +138,7 @@ export class TriggerIpcTool extends ElectronTool {
         success: true,
         data: { channel, ...data },
       };
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `TriggerIPC failed: ${errMsg(err)}` };
     }
   }
@@ -160,7 +160,7 @@ export class MockDialogTool extends ElectronTool {
         success: true,
         data: { mocked: true, type, response },
       };
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `MockDialog failed: ${errMsg(err)}` };
     }
   }

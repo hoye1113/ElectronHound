@@ -98,7 +98,7 @@ export class ToolRegistry implements ToolRegistryType {
     try {
       const result = await tool.invoke(parseResult.data as ToolParams);
       return result;
-    } catch (err) {
+    } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       return {
         success: false,
@@ -151,7 +151,7 @@ export class ToolRegistry implements ToolRegistryType {
     try {
       const result = await tool.invoke(parseResult.data as ToolParams);
       yield { type: 'done', result };
-    } catch (err) {
+    } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       yield {
         type: 'error',

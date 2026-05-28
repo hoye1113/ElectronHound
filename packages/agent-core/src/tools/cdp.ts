@@ -383,7 +383,7 @@ export class BrowserSnapshotTool extends CDPTool {
     const method = params.format === 'screenshot' ? 'Page.captureSnapshot' : 'Accessibility.getFullAXTree';
     try {
       return await this.sendCDP(method, { format: params.format }, params.sessionId);
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `browser_snapshot failed: ${errMsg(err)}` };
     }
   }
@@ -408,7 +408,7 @@ export class BrowserClickTool extends CDPTool {
         return { success: true, data: { clicked: true, selector: params.selector } };
       }
       return result;
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `browser_click failed: ${errMsg(err)}` };
     }
   }
@@ -432,7 +432,7 @@ export class BrowserTypeTool extends CDPTool {
         return { success: true, data: { typed: true, selector: params.selector, text: params.text } };
       }
       return result;
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `browser_type failed: ${errMsg(err)}` };
     }
   }
@@ -454,7 +454,7 @@ export class BrowserNavigateTool extends CDPTool {
         return { success: true, data: { navigated: true, url: params.url } };
       }
       return result;
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `browser_navigate failed: ${errMsg(err)}` };
     }
   }
@@ -476,7 +476,7 @@ export class BrowserPressKeyTool extends CDPTool {
         return { success: true, data: { keyPressed: params.key } };
       }
       return result;
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `browser_press_key failed: ${errMsg(err)}` };
     }
   }
@@ -499,7 +499,7 @@ export class BrowserHoverTool extends CDPTool {
         return { success: true, data: { hovered: true, selector: params.selector } };
       }
       return result;
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `browser_hover failed: ${errMsg(err)}` };
     }
   }
@@ -527,7 +527,7 @@ export class BrowserDragTool extends CDPTool {
         };
       }
       return result;
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `browser_drag failed: ${errMsg(err)}` };
     }
   }
@@ -554,7 +554,7 @@ export class CDPLaunchTool extends CDPTool {
         success: true,
         data: { launched: true, appPath: params.appPath, sessionId: sessionInfo.sessionId },
       };
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `cdp_launch failed: ${errMsg(err)}` };
     }
   }
@@ -570,7 +570,7 @@ export class CDPCloseTool extends CDPTool {
     try {
       await this.client.disconnect();
       return { success: true, data: { closed: true } };
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `cdp_close failed: ${errMsg(err)}` };
     }
   }
@@ -590,7 +590,7 @@ export class CDPExecuteMainTool extends CDPTool {
         timeout: params.timeout,
       }, params.sessionId);
       return result;
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `cdp_execute_main failed: ${errMsg(err)}` };
     }
   }
@@ -624,7 +624,7 @@ export class CDPTriggerIpcTool extends CDPTool {
         };
       }
       return result;
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `cdp_trigger_ipc failed: ${errMsg(err)}` };
     }
   }
@@ -650,7 +650,7 @@ export class CDPMockDialogTool extends CDPTool {
         };
       }
       return result;
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `cdp_mock_dialog failed: ${errMsg(err)}` };
     }
   }

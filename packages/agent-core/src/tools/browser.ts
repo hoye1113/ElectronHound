@@ -93,7 +93,7 @@ export class SnapshotTool extends BrowserTool {
     try {
       const data = await this.context.snapshot(format);
       return { success: true, data };
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `Snapshot failed: ${errMsg(err)}` };
     }
   }
@@ -113,7 +113,7 @@ export class ClickTool extends BrowserTool {
         timeout,
       });
       return { success: true, data: { clicked: true, selector } };
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `Click failed: ${errMsg(err)}` };
     }
   }
@@ -132,7 +132,7 @@ export class TypeTool extends BrowserTool {
         delay,
       });
       return { success: true, data: { typed: true, selector, text } };
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `Type failed: ${errMsg(err)}` };
     }
   }
@@ -151,7 +151,7 @@ export class NavigateTool extends BrowserTool {
         timeout,
       });
       return { success: true, data: { navigated: true, url } };
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `Navigate failed: ${errMsg(err)}` };
     }
   }
@@ -167,7 +167,7 @@ export class PressKeyTool extends BrowserTool {
     try {
       await this.context.pressKey(key, selector);
       return { success: true, data: { keyPressed: key } };
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `PressKey failed: ${errMsg(err)}` };
     }
   }
@@ -183,7 +183,7 @@ export class HoverTool extends BrowserTool {
     try {
       await this.context.hover(selector, { timeout });
       return { success: true, data: { hovered: true, selector } };
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `Hover failed: ${errMsg(err)}` };
     }
   }
@@ -204,7 +204,7 @@ export class DragTool extends BrowserTool {
         success: true,
         data: { dragged: true, from: sourceSelector, to: targetSelector },
       };
-    } catch (err) {
+    } catch (err: unknown) {
       return { success: false, error: `Drag failed: ${errMsg(err)}` };
     }
   }

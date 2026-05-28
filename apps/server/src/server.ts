@@ -178,7 +178,7 @@ if (isDirectRun) {
       docs: `http://localhost:3000/docs`,
       health: `http://localhost:3000/health`,
     });
-  } catch (err) {
+  } catch (err: unknown) {
     spinner.fail('Failed to start server');
     const eataError = wrapError(err, ErrorCode.SYSTEM_NETWORK_ERROR);
     const logger = getLogger({ source: 'server' });

@@ -327,7 +327,7 @@ export class AgentLoop {
     } finally {
       // Disconnect all MCP servers
       if (this.mcp) {
-        await this.mcp.disconnect().catch((err) => {
+        await this.mcp.disconnect().catch((err: unknown) => {
           process.stderr.write(`[agentLoop] MCP disconnect error: ${err instanceof Error ? err.message : String(err)}\n`);
         });
       }
@@ -424,7 +424,7 @@ export class AgentLoop {
         success: toolResult.success,
         result: toolResult.result,
       };
-    } catch (err) {
+    } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       return {
         success: false,

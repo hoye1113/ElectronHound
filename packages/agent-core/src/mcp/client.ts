@@ -169,7 +169,7 @@ export class MCPClient {
         process.stderr.write(`[MCPClient] electron_launch returned webSocketUrl: ${data.webSocketUrl}, spawning Playwright...\n`);
         await this.spawnPlaywright(data.webSocketUrl);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       // Playwright spawn failure or JSON parse error shouldn't break electron_launch
       process.stderr.write(`[MCPClient] Failed to auto-connect Playwright: ${err instanceof Error ? err.message : String(err)}\n`);
     }
@@ -239,7 +239,7 @@ export class MCPClient {
       }
 
       return toolResult;
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       return {

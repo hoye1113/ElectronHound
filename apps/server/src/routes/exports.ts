@@ -56,7 +56,7 @@ export async function exportRoutes(server: FastifyInstance) {
           `attachment; filename="task-${taskId}.${result.fileExtension}"`,
         )
         .send(result.content);
-    } catch (error) {
+    } catch (error: unknown) {
       return handleExportError(error, reply);
     }
   });
@@ -85,7 +85,7 @@ export async function exportRoutes(server: FastifyInstance) {
           `attachment; filename="report-${reportId}.${result.fileExtension}"`,
         )
         .send(result.content);
-    } catch (error) {
+    } catch (error: unknown) {
       return handleExportError(error, reply);
     }
   });
@@ -114,7 +114,7 @@ export async function exportRoutes(server: FastifyInstance) {
           `attachment; filename="batch-${batchId}.${result.fileExtension}"`,
         )
         .send(result.content);
-    } catch (error) {
+    } catch (error: unknown) {
       return handleExportError(error, reply);
     }
   });

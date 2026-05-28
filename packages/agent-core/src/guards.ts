@@ -26,7 +26,7 @@ export class GuardError extends Error {
 export function guardObservation(data: unknown): ObservationResult {
   try {
     return ObservationResultSchema.parse(data);
-  } catch (err) {
+  } catch (err: unknown) {
     if (err instanceof z.ZodError) {
       throw new GuardError(
         `Observation validation failed: ${formatZodError(err)}`,
@@ -45,7 +45,7 @@ export function guardObservation(data: unknown): ObservationResult {
 export function guardPlan(data: unknown): PlanResult {
   try {
     return PlanResultSchema.parse(data);
-  } catch (err) {
+  } catch (err: unknown) {
     if (err instanceof z.ZodError) {
       throw new GuardError(
         `Plan validation failed: ${formatZodError(err)}`,
@@ -64,7 +64,7 @@ export function guardPlan(data: unknown): PlanResult {
 export function guardExecResult(data: unknown): ExecResult {
   try {
     return ExecResultSchema.parse(data);
-  } catch (err) {
+  } catch (err: unknown) {
     if (err instanceof z.ZodError) {
       throw new GuardError(
         `ExecResult validation failed: ${formatZodError(err)}`,
@@ -83,7 +83,7 @@ export function guardExecResult(data: unknown): ExecResult {
 export function guardVerdict(data: unknown): VerdictResult {
   try {
     return VerdictResultSchema.parse(data);
-  } catch (err) {
+  } catch (err: unknown) {
     if (err instanceof z.ZodError) {
       throw new GuardError(
         `Verdict validation failed: ${formatZodError(err)}`,

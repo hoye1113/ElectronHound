@@ -168,7 +168,7 @@ export class ConfigWizard {
         config,
         configPath,
       };
-    } catch (err) {
+    } catch (err: unknown) {
       spinner.fail('Configuration wizard failed');
       const message = err instanceof Error ? err.message : String(err);
       this.logger.error('Wizard failed', err instanceof Error ? err : new Error(message));
@@ -214,7 +214,7 @@ export class ConfigWizard {
     try {
       const configPath = this.saveConfig(config);
       return { success: true, config, configPath };
-    } catch (err) {
+    } catch (err: unknown) {
       return {
         success: false,
         error: err instanceof Error ? err.message : String(err),

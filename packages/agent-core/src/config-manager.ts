@@ -86,7 +86,7 @@ export function loadProvidersConfig(): ProvidersConfig {
     const content = readFileSync(PROVIDERS_FILE, 'utf-8');
     const raw = JSON.parse(content) as ProvidersConfig;
     return decryptConfig(raw);
-  } catch (err) {
+  } catch (err: unknown) {
     console.warn(`Failed to parse providers.json: ${err instanceof Error ? err.message : String(err)}. Using defaults.`);
     return DEFAULT_PROVIDERS;
   }

@@ -165,7 +165,7 @@ function rowToCompaction(row: CompactionRow): CompactionEntry {
   let branchSummaries: BranchSummaryEntry[] = [];
   try {
     branchSummaries = JSON.parse(row.branch_summaries) as BranchSummaryEntry[];
-  } catch (err) {
+  } catch (err: unknown) {
     process.stderr.write(`[persistence] Warning: ${err instanceof Error ? err.message : String(err)}\n`);
     branchSummaries = [];
   }

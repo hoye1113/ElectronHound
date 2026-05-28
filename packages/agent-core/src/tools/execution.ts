@@ -47,7 +47,7 @@ export class ExecuteCodeTool implements Tool {
         data,
         metadata: { runtime: params.runtime ?? 'node' },
       };
-    } catch (err) {
+    } catch (err: unknown) {
       return {
         success: false,
         error: `ExecuteCode failed: ${err instanceof Error ? err.message : String(err)}`,

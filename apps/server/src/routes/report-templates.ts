@@ -82,7 +82,7 @@ export async function reportTemplateRoutes(server: FastifyInstance) {
         return { error: 'Template not found' };
       }
       return template;
-    } catch (err) {
+    } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Update failed';
       reply.code(409);
       return { error: message };
@@ -107,7 +107,7 @@ export async function reportTemplateRoutes(server: FastifyInstance) {
       }
       reply.code(204);
       return;
-    } catch (err) {
+    } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Delete failed';
       reply.code(409);
       return { error: message };

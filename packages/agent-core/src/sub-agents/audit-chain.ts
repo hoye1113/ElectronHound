@@ -50,7 +50,7 @@ export async function runAuditChain(input: SubAgentInput): Promise<AuditChainRes
   let testPlannerOutput: SubAgentOutput;
   try {
     testPlannerOutput = await planner.run(input);
-  } catch (err) {
+  } catch (err: unknown) {
     process.stderr.write(`[audit-chain] test-planner failed: ${err instanceof Error ? err.message : String(err)}\n`);
     return {
       goal: input.goal,
@@ -75,7 +75,7 @@ export async function runAuditChain(input: SubAgentInput): Promise<AuditChainRes
   let executionAnalystOutput: SubAgentOutput;
   try {
     executionAnalystOutput = await analyst.run(executionInput);
-  } catch (err) {
+  } catch (err: unknown) {
     process.stderr.write(`[audit-chain] execution-analyst failed: ${err instanceof Error ? err.message : String(err)}\n`);
     return {
       goal: input.goal,
@@ -101,7 +101,7 @@ export async function runAuditChain(input: SubAgentInput): Promise<AuditChainRes
   let securityReviewerOutput: SubAgentOutput;
   try {
     securityReviewerOutput = await security.run(securityInput);
-  } catch (err) {
+  } catch (err: unknown) {
     process.stderr.write(`[audit-chain] security-reviewer failed: ${err instanceof Error ? err.message : String(err)}\n`);
     return {
       goal: input.goal,
@@ -128,7 +128,7 @@ export async function runAuditChain(input: SubAgentInput): Promise<AuditChainRes
   let reportSynthesizerOutput: SubAgentOutput;
   try {
     reportSynthesizerOutput = await synthesizer.run(synthesizerInput);
-  } catch (err) {
+  } catch (err: unknown) {
     process.stderr.write(`[audit-chain] report-synthesizer failed: ${err instanceof Error ? err.message : String(err)}\n`);
     return {
       goal: input.goal,

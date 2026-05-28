@@ -32,7 +32,7 @@ export function createToolRegistryAdapter(registry: ToolRegistry): ToolRegistryA
           result: result.data ?? null,
           error: result.error,
         };
-      } catch (error) {
+      } catch (error: unknown) {
         return {
           success: false,
           result: null,

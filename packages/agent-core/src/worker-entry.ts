@@ -66,7 +66,7 @@ export async function workerMain(argv: string[] = process.argv): Promise<number>
         emit('task_end', { status: 'cancelled' });
         process.exit(0);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       process.stderr.write(`[worker-entry] Error: ${err instanceof Error ? err.message : String(err)}\n`);
     }
   });
@@ -95,7 +95,7 @@ export async function workerMain(argv: string[] = process.argv): Promise<number>
     emit('step_complete', { taskId: args.taskId, phase: 'completed', status: result.status });
     emit('task_end', { taskId: args.taskId, success: result.status === 'completed', status: result.status, stepCount: result.stepCount });
     exitCode = 0;
-  } catch (error) {
+  } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     emit('error', { taskId: args.taskId, message });
     emit('task_end', { taskId: args.taskId, success: false, status: 'failed', message });
@@ -118,7 +118,7 @@ const isDirectRun = process.argv[1] && (
 );
 
 if (isDirectRun) {
-  workerMain().then((code) => process.exit(code)).catch((err) => {
+  workerMain().then((code) => process.exit(code)).catch((err: unknown) => {
     emit('error', { message: String(err) });
     emit('task_end', { status: 'failed' });
     process.exit(1);

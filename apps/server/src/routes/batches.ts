@@ -42,7 +42,7 @@ export async function batchRoutes(server: FastifyInstance) {
         taskIds: result.taskIds,
         totalTasks: result.taskIds.length,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       server.log.error(error, 'Failed to create batch');
       reply.code(500);
       return { error: 'Failed to create batch' };
@@ -73,7 +73,7 @@ export async function batchRoutes(server: FastifyInstance) {
       }
 
       return batch;
-    } catch (error) {
+    } catch (error: unknown) {
       server.log.error(error, 'Failed to get batch status');
       reply.code(500);
       return { error: 'Failed to get batch status' };
@@ -111,7 +111,7 @@ export async function batchRoutes(server: FastifyInstance) {
       }
 
       return { success: true, batchId };
-    } catch (error) {
+    } catch (error: unknown) {
       server.log.error(error, 'Failed to cancel batch');
       reply.code(500);
       return { error: 'Failed to cancel batch' };

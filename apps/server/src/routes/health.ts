@@ -11,7 +11,7 @@ export async function healthRoutes(server: FastifyInstance) {
         db.prepare('SELECT 1').get();
         checks.database = { status: 'ok' };
       }
-    } catch (err) {
+    } catch (err: unknown) {
       checks.database = {
         status: 'error',
         message: err instanceof Error ? err.message : 'Database unavailable',
@@ -29,7 +29,7 @@ export async function healthRoutes(server: FastifyInstance) {
           maxWorkers: 3,
         };
       }
-    } catch (err) {
+    } catch (err: unknown) {
       process.stderr.write(`[health] worker pool check failed: ${err instanceof Error ? err.message : String(err)}\n`);
       checks.workerPool = { status: 'error', message: 'Worker pool unavailable' };
     }

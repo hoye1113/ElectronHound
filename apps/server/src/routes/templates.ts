@@ -90,7 +90,7 @@ export async function templateRoutes(server: FastifyInstance) {
         return { error: 'Template not found' };
       }
       return template;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof Error && error.message === 'Cannot modify built-in templates') {
         reply.code(403);
         return { error: error.message };
@@ -119,7 +119,7 @@ export async function templateRoutes(server: FastifyInstance) {
       }
       reply.code(204);
       return;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof Error && error.message === 'Cannot delete built-in templates') {
         reply.code(403);
         return { error: error.message };
