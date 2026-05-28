@@ -166,11 +166,11 @@ describe('validateArgs', () => {
     expect(result.ok).toBe(false);
   });
 
-  it('rejects invalid llmModel', () => {
+  it('rejects empty llmModel', () => {
     const result = validateArgs({
       goal: 'Test',
       targetAppPath: '/test/app',
-      llmModel: 'invalid-model',
+      llmModel: '',
       maxSteps: 30,
     });
 
@@ -180,8 +180,8 @@ describe('validateArgs', () => {
     }
   });
 
-  it('accepts all valid llmModel values', () => {
-    for (const model of ['gpt-4o', 'gpt-4o-mini', 'claude-3.5-sonnet']) {
+  it('accepts any non-empty llmModel string', () => {
+    for (const model of ['gpt-4o', 'gpt-4o-mini', 'claude-3.5-sonnet', 'custom-model-v2']) {
       const result = validateArgs({
         goal: 'Test',
         targetAppPath: '/test/app',

@@ -29,13 +29,9 @@
     "downloadJson": "下载 JSON 报告",
     "downloadHtml": "下载 HTML 报告",
     "searchFeedback": "搜索反馈模式",
-    "stepPrefix": "步骤"
-  },
-  "nav": {
-    "tasks": "任务",
-    "monitor": "监控",
-    "feedback": "反馈",
-    "settings": "设置"
+    "stepPrefix": "步骤",
+    "retry": "重试",
+    "error": "发生错误"
   },
   "layout": {
     "footer": "Electron AI 测试代理"
@@ -129,15 +125,6 @@
     "searchPlaceholder": "按错误类型、描述或关键词搜索...",
     "loading": "加载模式中..."
   },
-  "taskDetail": {
-    "loading": "加载任务详情...",
-    "notFound": "任务未找到",
-    "backToTasks": "← 返回任务列表",
-    "stepsSection": "步骤",
-    "screenshotsSection": "截图 ({{count}})",
-    "downloadJson": "JSON",
-    "downloadHtml": "HTML 报告"
-  },
   "liveMonitor": {
     "noTaskId": "未提供任务 ID",
     "selectTask": "请选择一个任务进行监控",
@@ -180,5 +167,82 @@
     "deleteProvider": "删除 {{name}}",
     "testProvider": "测试 {{name}} 连接",
     "setDefaultProvider": "将 {{name}} 设为默认"
+  },
+  "nav": {
+    "tasks": "任务",
+    "monitor": "监控",
+    "feedback": "反馈",
+    "settings": "设置",
+    "templates": "模板",
+    "system": "系统"
+  },
+  "templates": {
+    "title": "模板画廊",
+    "subtitle": "浏览和管理测试模板",
+    "searchPlaceholder": "搜索模板...",
+    "allCategories": "全部",
+    "category_login": "登录",
+    "category_crud": "增删改查",
+    "category_form": "表单",
+    "category_navigation": "导航",
+    "category_file": "文件",
+    "category_settings": "设置",
+    "category_custom": "自定义",
+    "builtinBadge": "内置",
+    "customBadge": "自定义",
+    "variables": "变量",
+    "useTemplate": "使用模板",
+    "createCustom": "创建自定义模板",
+    "deleteTemplate": "删除",
+    "deleteConfirm": "删除模板 \"{{name}}\"？此操作无法撤销。",
+    "empty": "未找到模板",
+    "emptyHint": "创建一个自定义模板以开始使用",
+    "formTitle": "新建模板",
+    "formName": "名称",
+    "formNamePlaceholder": "我的自定义模板",
+    "formDescription": "描述",
+    "formDescriptionPlaceholder": "描述此模板的用途...",
+    "formCategory": "分类",
+    "formVariables": "变量（逗号分隔）",
+    "formVariablesPlaceholder": "username, password, url",
+    "formGoal": "目标模板",
+    "formGoalPlaceholder": "使用 {{username}} 和 {{password}} 测试登录流程",
+    "nameRequired": "名称为必填项",
+    "descriptionRequired": "描述为必填项",
+    "goalRequired": "目标模板为必填项"
+  },
+  "systemHealth": {
+    "title": "系统健康",
+    "subtitle": "监控系统状态和 Worker 池",
+    "loading": "加载系统状态...",
+    "error": "加载系统健康失败",
+    "overallStatus": "整体状态",
+    "status_ok": "健康",
+    "status_degraded": "降级",
+    "status_error": "错误",
+    "database": "数据库",
+    "dbStatus_ok": "已连接",
+    "dbStatus_error": "已断开",
+    "workerPool": "Worker 池",
+    "running": "运行中",
+    "queued": "排队中",
+    "maxWorkers": "最大 Worker 数",
+    "uptime": "运行时间",
+    "lastUpdated": "最后更新",
+    "autoRefresh": "每 30 秒自动刷新",
+    "autoRefreshTitle": "自动刷新"
+  },
+  "taskDetail": {
+    "loading": "加载任务详情...",
+    "notFound": "任务未找到",
+    "backToTasks": "← 返回任务列表",
+    "stepsSection": "步骤",
+    "screenshotsSection": "截图 ({{count}})",
+    "downloadJson": "JSON",
+    "downloadHtml": "HTML 报告",
+    "export": "导出",
+    "exportJson": "导出 JSON",
+    "exportCsv": "导出 CSV",
+    "exportHtml": "导出 HTML"
   }
 }

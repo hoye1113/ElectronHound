@@ -35,14 +35,23 @@ describe('CreateTaskRequestSchema', () => {
     ).toThrow();
   });
 
-  it('rejects invalid llmModel', () => {
+  it('rejects empty llmModel', () => {
     expect(() =>
       CreateTaskRequestSchema.parse({
         goal: 'Test',
         targetAppPath: '/app',
-        llmModel: 'invalid-model',
+        llmModel: '',
       })
     ).toThrow();
+  });
+
+  it('accepts any non-empty llmModel string', () => {
+    const result = CreateTaskRequestSchema.parse({
+      goal: 'Test',
+      targetAppPath: '/app',
+      llmModel: 'custom-model-v2',
+    });
+    expect(result.llmModel).toBe('custom-model-v2');
   });
 
   it('applies default maxSteps', () => {

@@ -29,13 +29,9 @@
     "downloadJson": "Download JSON report",
     "downloadHtml": "Download HTML report",
     "searchFeedback": "Search feedback patterns",
-    "stepPrefix": "Step"
-  },
-  "nav": {
-    "tasks": "Tasks",
-    "monitor": "Monitor",
-    "feedback": "Feedback",
-    "settings": "Settings"
+    "stepPrefix": "Step",
+    "retry": "Retry",
+    "error": "An error occurred"
   },
   "layout": {
     "footer": "Electron AI Testing Agent"
@@ -129,15 +125,6 @@
     "searchPlaceholder": "Search by error type, description, or keyword...",
     "loading": "Loading patterns..."
   },
-  "taskDetail": {
-    "loading": "Loading task details...",
-    "notFound": "Task not found",
-    "backToTasks": "← Back to tasks",
-    "stepsSection": "Steps",
-    "screenshotsSection": "Screenshots ({{count}})",
-    "downloadJson": "JSON",
-    "downloadHtml": "HTML Report"
-  },
   "liveMonitor": {
     "noTaskId": "No task ID provided",
     "selectTask": "Please select a task to monitor",
@@ -180,5 +167,82 @@
     "deleteProvider": "Delete {{name}}",
     "testProvider": "Test {{name}} connection",
     "setDefaultProvider": "Set {{name}} as default"
+  },
+  "nav": {
+    "tasks": "Tasks",
+    "monitor": "Monitor",
+    "feedback": "Feedback",
+    "settings": "Settings",
+    "templates": "Templates",
+    "system": "System"
+  },
+  "templates": {
+    "title": "Template Gallery",
+    "subtitle": "Browse and manage test templates",
+    "searchPlaceholder": "Search templates...",
+    "allCategories": "All",
+    "category_login": "Login",
+    "category_crud": "CRUD",
+    "category_form": "Form",
+    "category_navigation": "Navigation",
+    "category_file": "File",
+    "category_settings": "Settings",
+    "category_custom": "Custom",
+    "builtinBadge": "Built-in",
+    "customBadge": "Custom",
+    "variables": "Variables",
+    "useTemplate": "Use Template",
+    "createCustom": "Create Custom Template",
+    "deleteTemplate": "Delete",
+    "deleteConfirm": "Delete template \"{{name}}\"? This cannot be undone.",
+    "empty": "No templates found",
+    "emptyHint": "Create a custom template to get started",
+    "formTitle": "New Template",
+    "formName": "Name",
+    "formNamePlaceholder": "My Custom Template",
+    "formDescription": "Description",
+    "formDescriptionPlaceholder": "Describe what this template does...",
+    "formCategory": "Category",
+    "formVariables": "Variables (comma-separated)",
+    "formVariablesPlaceholder": "username, password, url",
+    "formGoal": "Goal Template",
+    "formGoalPlaceholder": "Test the login flow with {{username}} and {{password}}",
+    "nameRequired": "Name is required",
+    "descriptionRequired": "Description is required",
+    "goalRequired": "Goal template is required"
+  },
+  "systemHealth": {
+    "title": "System Health",
+    "subtitle": "Monitor system status and worker pool",
+    "loading": "Loading system status...",
+    "error": "Failed to load system health",
+    "overallStatus": "Overall Status",
+    "status_ok": "Healthy",
+    "status_degraded": "Degraded",
+    "status_error": "Error",
+    "database": "Database",
+    "dbStatus_ok": "Connected",
+    "dbStatus_error": "Disconnected",
+    "workerPool": "Worker Pool",
+    "running": "Running",
+    "queued": "Queued",
+    "maxWorkers": "Max Workers",
+    "uptime": "Uptime",
+    "lastUpdated": "Last updated",
+    "autoRefresh": "Auto-refreshing every 30s",
+    "autoRefreshTitle": "Auto Refresh"
+  },
+  "taskDetail": {
+    "loading": "Loading task details...",
+    "notFound": "Task not found",
+    "backToTasks": "← Back to tasks",
+    "stepsSection": "Steps",
+    "screenshotsSection": "Screenshots ({{count}})",
+    "downloadJson": "JSON",
+    "downloadHtml": "HTML Report",
+    "export": "Export",
+    "exportJson": "Export JSON",
+    "exportCsv": "Export CSV",
+    "exportHtml": "Export HTML"
   }
 }

@@ -31,6 +31,10 @@ export function getScreenshotUrl(taskId: string, stepIndex: number): string {
   return `${API_BASE}/api/tasks/${taskId}/steps/${stepIndex}/screenshot`;
 }
 
+export function getExportUrl(taskId: string, format: 'json' | 'csv' | 'html'): string {
+  return `${API_BASE}/api/tasks/${taskId}/export/${format}`;
+}
+
 export interface LLMProviderConfig {
   id: string;
   name: string;
@@ -45,6 +49,27 @@ export interface ProvidersConfig {
   version: number;
   providers: LLMProviderConfig[];
   activeId: string;
+}
+
+export type TemplateCategory = 'login' | 'crud' | 'form' | 'navigation' | 'file' | 'settings' | 'custom';
+
+export interface Template {
+  id: string;
+  name: string;
+  description: string;
+  category: TemplateCategory;
+  variables: string[];
+  builtin: boolean;
+}
+
+export interface HealthResponse {
+  status: 'ok' | 'degraded' | 'error';
+  timestamp: string;
+  checks: {
+    database: { status: string; message?: string };
+    workerPool: { status: string; running: number; queued: number; maxWorkers: number };
+  };
+  uptime: number;
 }
 
 export const api = {
@@ -85,12 +110,6 @@ export const api = {
     getHtmlUrl(taskId: string): string {
       return `${API_BASE}/api/tasks/${taskId}/report/html`;
     },
-    getManifest(id: string): Promise<unknown> {
-      return fetchJson(`${API_BASE}/api/reports/${id}/manifest`);
-    },
-    getTimeline(id: string): Promise<unknown> {
-      return fetchJson(`${API_BASE}/api/reports/${id}/timeline`);
-    },
   },
   feedback: {
     getPatterns(): Promise<{ patterns: FeedbackPattern[] }> {
@@ -101,10 +120,58 @@ export const api = {
     list(): Promise<ProvidersConfig> {
       return fetchJson(`${API_BASE}/api/providers`);
     },
+    create(data: { name: string; apiKey: string; baseURL: string; model: string }): Promise<LLMProviderConfig> {
+      return fetchJson(`${API_BASE}/api/providers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    },
+    update(id: string, data: Partial<LLMProviderConfig>): Promise<LLMProviderConfig> {
+      return fetchJson(`${API_BASE}/api/providers/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    },
+    delete(id: string): Promise<void> {
+      return fetch(`${API_BASE}/api/providers/${id}`, { method: 'DELETE' }).then(() => undefined);
+    },
     test(id: string): Promise<{ success: boolean; error?: string; message?: string }> {
       return fetchJson(`${API_BASE}/api/providers/${id}/test`, {
         method: 'POST',
       });
+    },
+    activate(id: string): Promise<unknown> {
+      return fetchJson(`${API_BASE}/api/providers/${id}/activate`, {
+        method: 'POST',
+      });
+    },
+  },
+  templates: {
+    list(params?: { category?: string; search?: string }): Promise<{ data: Template[] }> {
+      const query = new URLSearchParams();
+      if (params?.category) query.set('category', params.category);
+      if (params?.search) query.set('search', params.search);
+      return fetchJson(`${API_BASE}/api/templates?${query}`);
+    },
+    get(id: string): Promise<unknown> {
+      return fetchJson(`${API_BASE}/api/templates/${id}`);
+    },
+    create(data: unknown): Promise<unknown> {
+      return fetchJson(`${API_BASE}/api/templates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    },
+    delete(id: string): Promise<void> {
+      return fetch(`${API_BASE}/api/templates/${id}`, { method: 'DELETE' }).then(() => undefined);
+    },
+  },
+  health: {
+    check(): Promise<HealthResponse> {
+      return fetchJson(`${API_BASE}/health`);
     },
   },
 };

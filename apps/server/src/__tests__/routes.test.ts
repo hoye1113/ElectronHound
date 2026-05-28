@@ -111,14 +111,24 @@ describe('Route: POST /api/tasks', () => {
     expect(body.details).toBeDefined();
   });
 
-  it('returns 400 for invalid llmModel', async () => {
+  it('returns 400 for empty llmModel', async () => {
     const res = await server.inject({
       method: 'POST',
       url: '/api/tasks',
-      payload: { ...validBody, llmModel: 'invalid-model' },
+      payload: { ...validBody, llmModel: '' },
     });
 
     expect(res.statusCode).toBe(400);
+  });
+
+  it('accepts any non-empty llmModel string', async () => {
+    const res = await server.inject({
+      method: 'POST',
+      url: '/api/tasks',
+      payload: { ...validBody, llmModel: 'custom-model-v2' },
+    });
+
+    expect(res.statusCode).toBe(201);
   });
 
   it('persists task in database', async () => {

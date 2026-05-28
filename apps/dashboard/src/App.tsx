@@ -9,6 +9,8 @@ const TaskDetail = React.lazy(() => import('./pages/TaskDetail'));
 const LiveMonitor = React.lazy(() => import('./pages/LiveMonitor'));
 const FeedbackLoop = React.lazy(() => import('./pages/FeedbackLoop'));
 const SettingsPage = React.lazy(() => import('./pages/Settings'));
+const Templates = React.lazy(() => import('./pages/Templates'));
+const SystemHealth = React.lazy(() => import('./pages/SystemHealth'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 
 function App() {
@@ -24,6 +26,8 @@ function App() {
               <Route path="/monitor" element={<LiveMonitor />} />
               <Route path="/feedback" element={<FeedbackLoop />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/templates" element={<Templates />} />
+              <Route path="/health" element={<SystemHealth />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

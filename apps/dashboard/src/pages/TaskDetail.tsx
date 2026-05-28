@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -8,9 +8,13 @@ import {
   Cpu,
   ListChecks,
   Image as ImageIcon,
+  ChevronDown,
+  FileJson,
+  FileSpreadsheet,
+  FileText,
 } from 'lucide-react';
 import type { Task, TaskStatus, StepRecord } from '@eata/shared-types';
-import { api, getScreenshotUrl } from '../lib/api';
+import { api, getScreenshotUrl, getExportUrl } from '../lib/api';
 import StepTimeline from '../components/StepTimeline';
 import ScreenshotGallery from '../components/ScreenshotGallery';
 
@@ -38,6 +42,19 @@ export default function TaskDetail() {
   const [screenshots, setScreenshots] = useState<ScreenshotItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  // Close export dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
+        setExportOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -173,6 +190,44 @@ export default function TaskDetail() {
             <Download className="size-4" />
             {t('taskDetail.downloadHtml')}
           </button>
+
+          {/* Export dropdown */}
+          <div ref={exportRef} className="relative">
+            <button
+              onClick={() => setExportOpen(!exportOpen)}
+              className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800/60 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+              aria-label={t('taskDetail.export')}
+            >
+              <Download className="size-4" />
+              {t('taskDetail.export')}
+              <ChevronDown className={`size-3.5 transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {exportOpen && (
+              <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-zinc-800 bg-zinc-900 py-1 shadow-xl">
+                <button
+                  onClick={() => { if (id) window.open(getExportUrl(id, 'json')); setExportOpen(false); }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+                >
+                  <FileJson className="size-4 text-zinc-500" />
+                  {t('taskDetail.exportJson')}
+                </button>
+                <button
+                  onClick={() => { if (id) window.open(getExportUrl(id, 'csv')); setExportOpen(false); }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+                >
+                  <FileSpreadsheet className="size-4 text-zinc-500" />
+                  {t('taskDetail.exportCsv')}
+                </button>
+                <button
+                  onClick={() => { if (id) window.open(getExportUrl(id, 'html')); setExportOpen(false); }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+                >
+                  <FileText className="size-4 text-zinc-500" />
+                  {t('taskDetail.exportHtml')}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

@@ -3,6 +3,8 @@ dist/
 data/*.sqlite3
 data/*.sqlite3-wal
 data/*.sqlite3-shm
+apps/server/data/
+apps/server/data.db.sqlite3
 data/feedback/
 data/few-shot-examples/
 .eata/

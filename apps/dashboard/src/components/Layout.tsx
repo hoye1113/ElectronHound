@@ -1,12 +1,22 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LayoutDashboard, ListTodo, Activity, MessageSquare, Settings } from 'lucide-react';
+import {
+  LayoutDashboard,
+  ListTodo,
+  Activity,
+  MessageSquare,
+  Settings,
+  LayoutTemplate,
+  Heart,
+} from 'lucide-react';
 
 const navItems = [
   { to: '/', labelKey: 'nav.tasks', icon: ListTodo },
   { to: '/monitor', labelKey: 'nav.monitor', icon: Activity },
   { to: '/feedback', labelKey: 'nav.feedback', icon: MessageSquare },
+  { to: '/templates', labelKey: 'nav.templates', icon: LayoutTemplate },
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },
+  { to: '/health', labelKey: 'nav.system', icon: Heart },
 ];
 
 export default function Layout() {

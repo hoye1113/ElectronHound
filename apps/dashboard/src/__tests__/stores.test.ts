@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { api } from '../lib/api.js';
 import { useTaskStore } from '../stores/taskStore.js';
-import { useUIStore } from '../stores/uiStore.js';
 import type { Task } from '@eata/shared-types';
 
 // Mock fetch globally
@@ -215,44 +214,4 @@ describe('taskStore', () => {
   });
 });
 
-describe('uiStore', () => {
-  beforeEach(() => {
-    useUIStore.setState({
-      currentPage: 'tasks',
-      selectedTaskId: null,
-      sidebarOpen: true,
-    });
-  });
 
-  it('navigate changes currentPage', () => {
-    useUIStore.getState().navigate('monitor');
-
-    expect(useUIStore.getState().currentPage).toBe('monitor');
-  });
-
-  it('navigate with taskId sets selectedTaskId', () => {
-    useUIStore.getState().navigate('detail', 'task-123');
-
-    const state = useUIStore.getState();
-    expect(state.currentPage).toBe('detail');
-    expect(state.selectedTaskId).toBe('task-123');
-  });
-
-  it('toggleSidebar flips sidebarOpen', () => {
-    expect(useUIStore.getState().sidebarOpen).toBe(true);
-
-    useUIStore.getState().toggleSidebar();
-    expect(useUIStore.getState().sidebarOpen).toBe(false);
-
-    useUIStore.getState().toggleSidebar();
-    expect(useUIStore.getState().sidebarOpen).toBe(true);
-  });
-
-  it('navigate without taskId clears selectedTaskId', () => {
-    useUIStore.getState().navigate('detail', 'task-123');
-    expect(useUIStore.getState().selectedTaskId).toBe('task-123');
-
-    useUIStore.getState().navigate('tasks');
-    expect(useUIStore.getState().selectedTaskId).toBeNull();
-  });
-});

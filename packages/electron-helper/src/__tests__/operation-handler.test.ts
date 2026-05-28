@@ -14,73 +14,115 @@ describe('OperationHandler', () => {
       const result = await handler.handle({ type: 'health_check' });
 
       expect(result.success).toBe(true);
-      expect(result.data).toEqual({ status: 'ok' });
+      expect((result.data as Record<string, unknown>).status).toBe('ok');
       expect(result.error).toBeUndefined();
     });
   });
 
   describe('execute_main', () => {
-    it('should return placeholder result', async () => {
+    it('should return error when Electron is not available', async () => {
       const result = await handler.handle({
         type: 'execute_main',
         payload: { code: 'console.log("test")' },
       });
 
-      expect(result.success).toBe(true);
-      expect(result.data).toEqual({
-        status: 'placeholder',
-        message: 'execute_main not yet implemented',
-      });
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Electron module not available');
     });
 
-    it('should handle empty payload', async () => {
+    it('should return error for missing code', async () => {
+      const result = await handler.handle({
+        type: 'execute_main',
+        payload: {},
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('non-empty string');
+    });
+
+    it('should return error for empty payload', async () => {
       const result = await handler.handle({ type: 'execute_main' });
 
-      expect(result.success).toBe(true);
-      expect((result.data as Record<string, string>).status).toBe('placeholder');
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('non-empty string');
     });
   });
 
   describe('send_ipc', () => {
-    it('should return placeholder result', async () => {
+    it('should return error when Electron is not available', async () => {
       const result = await handler.handle({
         type: 'send_ipc',
-        payload: { channel: 'test', message: 'hello' },
+        payload: { channel: 'test', args: ['hello'] },
       });
 
-      expect(result.success).toBe(true);
-      expect(result.data).toEqual({
-        status: 'placeholder',
-        message: 'send_ipc not yet implemented',
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Electron module not available');
+    });
+
+    it('should return error for missing channel', async () => {
+      const result = await handler.handle({
+        type: 'send_ipc',
+        payload: {},
       });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('non-empty string');
     });
   });
 
   describe('mock_dialog', () => {
-    it('should return placeholder result', async () => {
+    it('should store mock config and return success', async () => {
       const result = await handler.handle({
         type: 'mock_dialog',
-        payload: { type: 'alert', message: 'test' },
+        payload: { dialogType: 'open', response: { filePaths: ['/tmp/test'] } },
       });
 
       expect(result.success).toBe(true);
-      expect(result.data).toEqual({
-        status: 'placeholder',
-        message: 'mock_dialog not yet implemented',
+      expect((result.data as Record<string, unknown>).mocked).toBe(true);
+      expect((result.data as Record<string, unknown>).dialogType).toBe('open');
+    });
+
+    it('should reject invalid dialogType', async () => {
+      const result = await handler.handle({
+        type: 'mock_dialog',
+        payload: { dialogType: 'invalid', response: {} },
       });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('dialogType');
+    });
+
+    it('should reject missing response', async () => {
+      const result = await handler.handle({
+        type: 'mock_dialog',
+        payload: { dialogType: 'save' },
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('response');
+    });
+
+    it('should track active mock count', async () => {
+      await handler.handle({
+        type: 'mock_dialog',
+        payload: { dialogType: 'open', response: {} },
+      });
+      const result = await handler.handle({
+        type: 'mock_dialog',
+        payload: { dialogType: 'save', response: {} },
+      });
+
+      expect(result.success).toBe(true);
+      expect((result.data as Record<string, unknown>).activeMockCount).toBe(2);
     });
   });
 
   describe('get_menu_items', () => {
-    it('should return placeholder result with empty items array', async () => {
+    it('should return error when Electron is not available', async () => {
       const result = await handler.handle({ type: 'get_menu_items' });
 
-      expect(result.success).toBe(true);
-      expect(result.data).toEqual({
-        status: 'placeholder',
-        message: 'get_menu_items not yet implemented',
-        items: [],
-      });
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Electron module not available');
     });
   });
 
