@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import { buildServer } from '../server.js';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { mkdtempSync, rmSync, mkdirSync, existsSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import type Database from 'better-sqlite3';
 import type { FastifyInstance } from 'fastify';
 
@@ -86,7 +86,7 @@ describe('Route: POST /api/tasks', () => {
   });
 
   it('uses default maxSteps when omitted', async () => {
-    const { maxSteps, ...withoutMax } = validBody;
+    const withoutMax = { goal: validBody.goal, targetAppPath: validBody.targetAppPath, llmModel: validBody.llmModel };
     const res = await server.inject({
       method: 'POST',
       url: '/api/tasks',

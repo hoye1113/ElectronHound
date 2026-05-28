@@ -201,7 +201,7 @@ export class WorkerManager {
       this.heartbeatInterval = null;
     }
 
-    for (const [taskId, handle] of this.workers) {
+    for (const [_taskId, handle] of this.workers) {
       if (handle.process.exitCode === null && handle.process.signalCode === null) {
         handle.process.kill('SIGTERM');
       }

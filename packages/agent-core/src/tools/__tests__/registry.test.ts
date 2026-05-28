@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
 import { ToolRegistry } from '../registry.js';
-import type { Tool, ToolResult, ToolStreamChunk } from '../types.js';
+import type { Tool, ToolStreamChunk } from '../types.js';
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
@@ -170,7 +170,7 @@ describe('ToolRegistry', () => {
         schema: z.object({ value: z.string() }),
         invoke: vi.fn(),
         stream: nativeStream,
-      } as any as Tool & { stream: () => AsyncIterable<ToolStreamChunk> };
+      } as unknown as Tool & { stream: () => AsyncIterable<ToolStreamChunk> };
 
       registry.register(tool);
 

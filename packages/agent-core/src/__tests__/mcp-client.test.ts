@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { MCPClient, getMCPClient, setMCPClient } from '../mcp/client.js';
 
 describe('MCPClient', () => {

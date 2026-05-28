@@ -58,8 +58,6 @@ describe('Browser tools', () => {
   // ── snapshot ──────────────────────────────────────────────────────────
 
   describe('snapshot', () => {
-    const tool = () => new SnapshotTool(createMockBrowserContext());
-
     it('returns success with snapshot data', async () => {
       const t = new SnapshotTool(ctx);
       const result = await t.invoke({ format: 'aria' });

@@ -6,30 +6,30 @@ import { join } from 'node:path';
 import { mkdtempSync, rmSync } from 'node:fs';
 
 // Mock @eata/agent-core to avoid file system side effects
-const mockProviders = { version: 1, providers: [] as any[], activeId: '' };
+const mockProviders = { version: 1, providers: [] as Record<string, unknown>[], activeId: '' };
 
 vi.mock('@eata/agent-core', async (importOriginal) => {
   const original = await importOriginal<typeof import('@eata/agent-core')>();
   return {
     ...original,
     loadProvidersConfig: () => mockProviders,
-    addProvider: (config: any) => {
+    addProvider: (config: Record<string, unknown>) => {
       mockProviders.providers.push(config);
       return mockProviders;
     },
-    updateProvider: (id: string, updates: any) => {
-      const idx = mockProviders.providers.findIndex((p: any) => p.id === id);
+    updateProvider: (id: string, updates: Record<string, unknown>) => {
+      const idx = mockProviders.providers.findIndex((p: Record<string, unknown>) => p.id === id);
       if (idx === -1) return null;
       mockProviders.providers[idx] = { ...mockProviders.providers[idx], ...updates };
       return mockProviders;
     },
     deleteProvider: (id: string) => {
       const before = mockProviders.providers.length;
-      mockProviders.providers = mockProviders.providers.filter((p: any) => p.id !== id);
+      mockProviders.providers = mockProviders.providers.filter((p: Record<string, unknown>) => p.id !== id);
       return mockProviders.providers.length === before ? null : mockProviders;
     },
     setActiveProvider: (id: string) => {
-      const exists = mockProviders.providers.some((p: any) => p.id === id);
+      const exists = mockProviders.providers.some((p: Record<string, unknown>) => p.id === id);
       if (!exists) return null;
       mockProviders.activeId = id;
       return mockProviders;

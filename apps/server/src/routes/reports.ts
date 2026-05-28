@@ -36,8 +36,8 @@ export async function reportRoutes(server: FastifyInstance) {
     try {
       const content = await readFile(manifestPath, 'utf-8');
       return JSON.parse(content);
-    } catch (err: any) {
-      if (err.code === 'ENOENT') {
+    } catch (err: unknown) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
         reply.code(404);
         return { error: 'Report or manifest not found' };
       }
@@ -106,8 +106,8 @@ export async function reportRoutes(server: FastifyInstance) {
         .header('Content-Type', 'image/png')
         .header('Cache-Control', 'public, max-age=31536000')
         .send(fileBuffer);
-    } catch (err: any) {
-      if (err.code === 'ENOENT') {
+    } catch (err: unknown) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
         reply.code(404);
         return { error: 'Screenshot file not found' };
       }

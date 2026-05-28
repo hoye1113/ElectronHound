@@ -9,7 +9,7 @@
  *   const result = await adapter.execute({ toolName: 'snapshot', toolArgs: {} });
  */
 
-import type { ToolRegistry, ToolResult } from './types.js';
+import type { ToolRegistry } from './types.js';
 import type { ExecutionResult } from '../runtime/types.js';
 
 /**

@@ -23,6 +23,7 @@ Thumbs.db
 .claude/
 
 # Test artifacts
+coverage/
 data/reports/
 packages/*/data/
 

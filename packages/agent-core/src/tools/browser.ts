@@ -11,6 +11,7 @@ import { z } from 'zod';
 import type {
   Tool,
   ToolResult,
+  ToolParams,
   BrowserContext,
   SnapshotParams,
   ClickParams,
@@ -72,11 +73,11 @@ const dragSchema = z.object({
 export abstract class BrowserTool implements Tool {
   abstract readonly name: string;
   abstract readonly description: string;
-  abstract readonly schema: z.ZodSchema<any>;
+  abstract readonly schema: z.ZodSchema<unknown>;
 
   constructor(protected readonly context: BrowserContext) {}
 
-  abstract invoke(params: any): Promise<ToolResult>;
+  abstract invoke(params: ToolParams): Promise<ToolResult>;
 }
 
 // ─── Concrete tools ─────────────────────────────────────────────────────
@@ -87,9 +88,10 @@ export class SnapshotTool extends BrowserTool {
     'Take an accessibility snapshot or screenshot of the current page';
   readonly schema = snapshotSchema;
 
-  async invoke(params: SnapshotParams): Promise<ToolResult> {
+  async invoke(params: ToolParams): Promise<ToolResult> {
+    const { format } = params as unknown as SnapshotParams;
     try {
-      const data = await this.context.snapshot(params.format);
+      const data = await this.context.snapshot(format);
       return { success: true, data };
     } catch (err) {
       return { success: false, error: `Snapshot failed: ${errMsg(err)}` };
@@ -102,14 +104,15 @@ export class ClickTool extends BrowserTool {
   readonly description = 'Click an element on the page';
   readonly schema = clickSchema;
 
-  async invoke(params: ClickParams): Promise<ToolResult> {
+  async invoke(params: ToolParams): Promise<ToolResult> {
+    const { selector, button, clickCount, timeout } = params as unknown as ClickParams;
     try {
-      await this.context.click(params.selector, {
-        button: params.button,
-        clickCount: params.clickCount,
-        timeout: params.timeout,
+      await this.context.click(selector, {
+        button,
+        clickCount,
+        timeout,
       });
-      return { success: true, data: { clicked: true, selector: params.selector } };
+      return { success: true, data: { clicked: true, selector } };
     } catch (err) {
       return { success: false, error: `Click failed: ${errMsg(err)}` };
     }
@@ -121,13 +124,14 @@ export class TypeTool extends BrowserTool {
   readonly description = 'Type text into an input element';
   readonly schema = typeSchema;
 
-  async invoke(params: TypeParams): Promise<ToolResult> {
+  async invoke(params: ToolParams): Promise<ToolResult> {
+    const { selector, text, clear, delay } = params as unknown as TypeParams;
     try {
-      await this.context.type(params.selector, params.text, {
-        clear: params.clear,
-        delay: params.delay,
+      await this.context.type(selector, text, {
+        clear,
+        delay,
       });
-      return { success: true, data: { typed: true, selector: params.selector, text: params.text } };
+      return { success: true, data: { typed: true, selector, text } };
     } catch (err) {
       return { success: false, error: `Type failed: ${errMsg(err)}` };
     }
@@ -139,13 +143,14 @@ export class NavigateTool extends BrowserTool {
   readonly description = 'Navigate to a URL';
   readonly schema = navigateSchema;
 
-  async invoke(params: NavigateParams): Promise<ToolResult> {
+  async invoke(params: ToolParams): Promise<ToolResult> {
+    const { url, waitUntil, timeout } = params as unknown as NavigateParams;
     try {
-      await this.context.navigate(params.url, {
-        waitUntil: params.waitUntil,
-        timeout: params.timeout,
+      await this.context.navigate(url, {
+        waitUntil,
+        timeout,
       });
-      return { success: true, data: { navigated: true, url: params.url } };
+      return { success: true, data: { navigated: true, url } };
     } catch (err) {
       return { success: false, error: `Navigate failed: ${errMsg(err)}` };
     }
@@ -157,10 +162,11 @@ export class PressKeyTool extends BrowserTool {
   readonly description = 'Press a keyboard key, optionally on a focused element';
   readonly schema = pressKeySchema;
 
-  async invoke(params: PressKeyParams): Promise<ToolResult> {
+  async invoke(params: ToolParams): Promise<ToolResult> {
+    const { key, selector } = params as unknown as PressKeyParams;
     try {
-      await this.context.pressKey(params.key, params.selector);
-      return { success: true, data: { keyPressed: params.key } };
+      await this.context.pressKey(key, selector);
+      return { success: true, data: { keyPressed: key } };
     } catch (err) {
       return { success: false, error: `PressKey failed: ${errMsg(err)}` };
     }
@@ -172,10 +178,11 @@ export class HoverTool extends BrowserTool {
   readonly description = 'Hover over an element on the page';
   readonly schema = hoverSchema;
 
-  async invoke(params: HoverParams): Promise<ToolResult> {
+  async invoke(params: ToolParams): Promise<ToolResult> {
+    const { selector, timeout } = params as unknown as HoverParams;
     try {
-      await this.context.hover(params.selector, { timeout: params.timeout });
-      return { success: true, data: { hovered: true, selector: params.selector } };
+      await this.context.hover(selector, { timeout });
+      return { success: true, data: { hovered: true, selector } };
     } catch (err) {
       return { success: false, error: `Hover failed: ${errMsg(err)}` };
     }
@@ -187,14 +194,15 @@ export class DragTool extends BrowserTool {
   readonly description = 'Drag an element from source to target';
   readonly schema = dragSchema;
 
-  async invoke(params: DragParams): Promise<ToolResult> {
+  async invoke(params: ToolParams): Promise<ToolResult> {
+    const { sourceSelector, targetSelector, timeout } = params as unknown as DragParams;
     try {
-      await this.context.drag(params.sourceSelector, params.targetSelector, {
-        timeout: params.timeout,
+      await this.context.drag(sourceSelector, targetSelector, {
+        timeout,
       });
       return {
         success: true,
-        data: { dragged: true, from: params.sourceSelector, to: params.targetSelector },
+        data: { dragged: true, from: sourceSelector, to: targetSelector },
       };
     } catch (err) {
       return { success: false, error: `Drag failed: ${errMsg(err)}` };

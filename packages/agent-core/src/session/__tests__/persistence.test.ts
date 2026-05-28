@@ -356,7 +356,7 @@ describe('persistence', () => {
       addEntry(q, id, { role: 'assistant', content: 'msg2', type: 'assistant' });
 
       // Verify entries exist before delete
-      let session = getSession(q, id);
+      const session = getSession(q, id);
       expect(session!.entries).toHaveLength(2);
 
       deleteSession(q, id);
@@ -375,7 +375,7 @@ describe('persistence', () => {
       compactSession(q, id, 'summary', []);
 
       // Verify compaction exists
-      let session = getSession(q, id);
+      const session = getSession(q, id);
       expect(session!.compaction).toBeDefined();
 
       deleteSession(q, id);

@@ -70,8 +70,8 @@ describe('Tasks Routes - JSON.parse Error Handling', () => {
     expect(body.data).toHaveLength(2);
 
     // task-bad should have undefined resultSummary
-    const badTask = body.data.find((t: any) => t.id === 'task-bad');
-    const goodTask = body.data.find((t: any) => t.id === 'task-good');
+    const badTask = body.data.find((t: Record<string, unknown>) => t.id === 'task-bad');
+    const goodTask = body.data.find((t: Record<string, unknown>) => t.id === 'task-good');
     expect(badTask).toBeDefined();
     expect(goodTask).toBeDefined();
     expect(badTask.resultSummary).toBeUndefined();

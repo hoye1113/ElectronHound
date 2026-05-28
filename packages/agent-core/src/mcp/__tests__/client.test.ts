@@ -342,7 +342,6 @@ describe('MCPClient', () => {
       await client.connect({ electron: { appPath: '/app' } });
 
       // Make the second transport (Playwright) fail to connect
-      const originalImpl = vi.mocked(mockClientInstances[0]!.connect);
       // We need the next Client instance (Playwright) to fail on connect
       // Since mockClientInstances is shared, we'll make the NEXT connect throw
       const failConnect = vi.fn().mockRejectedValueOnce(new Error('Connection refused'));

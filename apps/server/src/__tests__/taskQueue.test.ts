@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TaskQueue, type QueueEntry } from '../services/taskQueue.js';
+import { TaskQueue } from '../services/taskQueue.js';
 import { WorkerManager, type WorkerOptions } from '../services/workerManager.js';
 
 // ── Helpers ─────────────────────────────────────────────────────────

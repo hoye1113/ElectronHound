@@ -6,7 +6,7 @@
  */
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { createExportService, ExportError, type ExportFormat } from '../services/exportService.js';
+import { createExportService, ExportError } from '../services/exportService.js';
 
 // ── Validation schemas ──────────────────────────────────────────────
 
@@ -28,12 +28,6 @@ const BatchExportParams = z.object({
 });
 
 // ── Content type mapping ────────────────────────────────────────────
-
-const CONTENT_TYPES: Record<ExportFormat, string> = {
-  json: 'application/json; charset=utf-8',
-  csv: 'text/csv; charset=utf-8',
-  html: 'text/html; charset=utf-8',
-};
 
 // ── Routes ──────────────────────────────────────────────────────────
 

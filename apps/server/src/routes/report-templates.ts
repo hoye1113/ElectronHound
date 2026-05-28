@@ -22,7 +22,7 @@ import { UuidParam } from '../utils/validation.js';
 
 export async function reportTemplateRoutes(server: FastifyInstance) {
   // GET /report-templates — list all templates
-  server.get('/report-templates', async (_request, reply) => {
+  server.get('/report-templates', async (_request, _reply) => {
     const svc = new ReportTemplateService(server.db);
     const templates = svc.listTemplates();
     return { data: templates };

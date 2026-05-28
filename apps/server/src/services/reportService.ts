@@ -67,8 +67,8 @@ export class ReportService {
         .filter(Boolean)
         .map((line) => TimelineEntrySchema.parse(JSON.parse(line)));
       return { manifest, timeline };
-    } catch (err: any) {
-      if (err.code === 'ENOENT') {
+    } catch (err: unknown) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
         throw new Error(`Report not found for task ${taskId}`);
       }
       throw err;

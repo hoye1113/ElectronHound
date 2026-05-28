@@ -10,8 +10,8 @@ export async function feedbackRoutes(server: FastifyInstance) {
     let content: string;
     try {
       content = await readFile(PATTERNS_FILE, 'utf-8');
-    } catch (err: any) {
-      if (err.code === 'ENOENT') return { patterns: [] };
+    } catch (err: unknown) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return { patterns: [] };
       throw err;
     }
     const patterns: FeedbackPattern[] = [];
@@ -21,7 +21,7 @@ export async function feedbackRoutes(server: FastifyInstance) {
       try {
         const raw = JSON.parse(line);
         patterns.push(FeedbackPatternSchema.parse(raw));
-      } catch (err) {
+      } catch (err: unknown) {
         server.log.warn(
           { err, line: line.slice(0, 120) },
           'Skipping invalid feedback pattern line',

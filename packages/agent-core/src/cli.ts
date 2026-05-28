@@ -18,14 +18,11 @@ import {
   ErrorCode,
   EataError,
   wrapError,
-  formatError,
   getLogger,
-  ProgressBar,
   Spinner,
   ProgressTracker,
   formatDuration,
   CLIHelp,
-  resolveCommandAlias,
   runConfigWizard,
 } from './dx/index.js';
 

@@ -14,7 +14,7 @@ import { emit, parseArgs, resolveArgs } from './worker-entry.js';
 // ── emit ──────────────────────────────────────────────────
 
 describe('emit', () => {
-  let spy: any;
+  let spy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     spy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
@@ -150,9 +150,9 @@ describe('resolveArgs', () => {
 // ── workerMain integration (mocked runTest) ───────────────
 
 describe('workerMain', () => {
-  let stdoutSpy: any;
-  let stderrSpy: any;
-  let exitSpy: any;
+  let stdoutSpy: ReturnType<typeof vi.spyOn>;
+  let stderrSpy: ReturnType<typeof vi.spyOn>;
+  let exitSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     mockRunTest.mockReset();
@@ -178,7 +178,7 @@ describe('workerMain', () => {
     // advance past heartbeat interval so the timer fires
     await vi.advanceTimersByTimeAsync(100);
 
-    const output = stdoutSpy.mock.calls.map((c: any) => c[0]).join('');
+    const output = stdoutSpy.mock.calls.map((c: unknown[]) => c[0]).join('');
     expect(output).toContain('step_start');
     expect(output).toContain('task_end');
 
@@ -194,7 +194,7 @@ describe('workerMain', () => {
 
     await vi.advanceTimersByTimeAsync(100);
 
-    const output = stdoutSpy.mock.calls.map((c: any) => c[0]).join('');
+    const output = stdoutSpy.mock.calls.map((c: unknown[]) => c[0]).join('');
     expect(output).toContain('error');
     expect(output).toContain('LLM API down');
     expect(output).toContain('task_end');
@@ -207,18 +207,18 @@ describe('workerMain', () => {
     mockRunTest.mockImplementation(() => new Promise(() => {})); // hang forever
 
     const { workerMain } = await import('./worker-entry.js');
-    const _promise = workerMain(['node', 'worker-entry.ts', '--task-id', 'hb', '--goal', 'g', '--target-app', '/a']);
+    workerMain(['node', 'worker-entry.ts', '--task-id', 'hb', '--goal', 'g', '--target-app', '/a']);
 
     // Advance 2.1s — heartbeat should fire once
     await vi.advanceTimersByTimeAsync(2100);
 
-    const output = stdoutSpy.mock.calls.map((c: any) => c[0]).join('');
+    const output = stdoutSpy.mock.calls.map((c: unknown[]) => c[0]).join('');
     const heartbeatCount = (output.match(/"method":"heartbeat"/g) || []).length;
     expect(heartbeatCount).toBeGreaterThanOrEqual(1);
 
     // Advance another 2s — should fire again
     await vi.advanceTimersByTimeAsync(2000);
-    const output2 = stdoutSpy.mock.calls.map((c: any) => c[0]).join('');
+    const output2 = stdoutSpy.mock.calls.map((c: unknown[]) => c[0]).join('');
     const heartbeatCount2 = (output2.match(/"method":"heartbeat"/g) || []).length;
     expect(heartbeatCount2).toBeGreaterThanOrEqual(2);
   });

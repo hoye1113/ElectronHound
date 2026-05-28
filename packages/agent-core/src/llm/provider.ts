@@ -15,7 +15,7 @@ export interface GenerateOptions {
 }
 
 export interface GenerateObjectOptions extends GenerateOptions {
-  schema: ZodSchema<any>;
+  schema: ZodSchema<unknown>;
 }
 
 export interface LLMProvider {

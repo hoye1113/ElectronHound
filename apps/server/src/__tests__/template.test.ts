@@ -285,7 +285,7 @@ describe('Template Routes', () => {
       const res = await server.inject({ method: 'GET', url: '/api/templates' });
       const body = JSON.parse(res.body);
 
-      const templateNames = body.data.map((t: any) => t.name);
+      const templateNames = body.data.map((t: Record<string, unknown>) => t.name);
       expect(templateNames).toContain('Login Flow');
       expect(templateNames).toContain('CRUD Operations');
       expect(templateNames).toContain('Form Validation');
@@ -298,7 +298,7 @@ describe('Template Routes', () => {
       const res = await server.inject({ method: 'GET', url: '/api/templates' });
       const body = JSON.parse(res.body);
 
-      const templatesByCategory = body.data.reduce((acc: any, t: any) => {
+      const templatesByCategory = body.data.reduce((acc: Record<string, string>, t: { category: string; name: string }) => {
         acc[t.category] = t.name;
         return acc;
       }, {});

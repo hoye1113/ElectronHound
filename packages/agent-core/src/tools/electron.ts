@@ -11,6 +11,7 @@ import { z } from 'zod';
 import type {
   Tool,
   ToolResult,
+  ToolParams,
   ElectronContext,
   LaunchParams,
   CloseParams,
@@ -41,7 +42,7 @@ const executeMainSchema = z.object({
 
 const triggerIpcSchema = z.object({
   channel: z.string().min(1),
-  payload: z.any().optional(),
+  payload: z.unknown().optional(),
   expectResponse: z.boolean().optional().default(false),
   timeout: z.number().int().positive().optional(),
 });
@@ -61,11 +62,11 @@ const mockDialogSchema = z.object({
 export abstract class ElectronTool implements Tool {
   abstract readonly name: string;
   abstract readonly description: string;
-  abstract readonly schema: z.ZodSchema<any>;
+  abstract readonly schema: z.ZodSchema<unknown>;
 
   constructor(protected readonly context: ElectronContext) {}
 
-  abstract invoke(params: any): Promise<ToolResult>;
+  abstract invoke(params: ToolParams): Promise<ToolResult>;
 }
 
 // ─── Concrete tools ─────────────────────────────────────────────────────
@@ -75,12 +76,13 @@ export class LaunchElectronTool extends ElectronTool {
   readonly description = 'Launch an Electron application';
   readonly schema = launchSchema;
 
-  async invoke(params: LaunchParams): Promise<ToolResult> {
+  async invoke(params: ToolParams): Promise<ToolResult> {
+    const p = params as unknown as LaunchParams;
     try {
-      const data = await this.context.launch(params);
+      const data = (await this.context.launch(p)) as Record<string, unknown>;
       return {
         success: true,
-        data: { launched: true, appPath: params.appPath, ...data },
+        data: { launched: true, appPath: p.appPath, ...data },
       };
     } catch (err) {
       return { success: false, error: `Launch failed: ${errMsg(err)}` };
@@ -93,9 +95,10 @@ export class CloseElectronTool extends ElectronTool {
   readonly description = 'Close a running Electron application';
   readonly schema = closeSchema;
 
-  async invoke(params: CloseParams): Promise<ToolResult> {
+  async invoke(params: ToolParams): Promise<ToolResult> {
+    const p = params as unknown as CloseParams;
     try {
-      await this.context.close(params);
+      await this.context.close(p);
       return { success: true, data: { closed: true } };
     } catch (err) {
       return { success: false, error: `Close failed: ${errMsg(err)}` };
@@ -108,9 +111,10 @@ export class ExecuteMainTool extends ElectronTool {
   readonly description = 'Execute JavaScript code in the Electron main process';
   readonly schema = executeMainSchema;
 
-  async invoke(params: ExecuteMainParams): Promise<ToolResult> {
+  async invoke(params: ToolParams): Promise<ToolResult> {
+    const { code, timeout } = params as unknown as ExecuteMainParams;
     try {
-      const data = await this.context.executeMain(params.code, params.timeout);
+      const data = await this.context.executeMain(code, timeout);
       return { success: true, data };
     } catch (err) {
       return { success: false, error: `ExecuteMain failed: ${errMsg(err)}` };
@@ -123,15 +127,16 @@ export class TriggerIpcTool extends ElectronTool {
   readonly description = 'Trigger an IPC event on a specific channel';
   readonly schema = triggerIpcSchema;
 
-  async invoke(params: TriggerIpcParams): Promise<ToolResult> {
+  async invoke(params: ToolParams): Promise<ToolResult> {
+    const { channel, payload, expectResponse, timeout } = params as unknown as TriggerIpcParams;
     try {
-      const data = await this.context.triggerIpc(params.channel, params.payload, {
-        expectResponse: params.expectResponse,
-        timeout: params.timeout,
-      });
+      const data = (await this.context.triggerIpc(channel, payload, {
+        expectResponse,
+        timeout,
+      })) as Record<string, unknown>;
       return {
         success: true,
-        data: { channel: params.channel, ...data },
+        data: { channel, ...data },
       };
     } catch (err) {
       return { success: false, error: `TriggerIPC failed: ${errMsg(err)}` };
@@ -144,15 +149,16 @@ export class MockDialogTool extends ElectronTool {
   readonly description = 'Mock a native dialog (alert, confirm, prompt) with an auto-response';
   readonly schema = mockDialogSchema;
 
-  async invoke(params: MockDialogParams): Promise<ToolResult> {
+  async invoke(params: ToolParams): Promise<ToolResult> {
+    const { type, response, dismiss } = params as unknown as MockDialogParams;
     try {
-      await this.context.mockDialog(params.type, {
-        response: params.response,
-        dismiss: params.dismiss,
+      await this.context.mockDialog(type, {
+        response,
+        dismiss,
       });
       return {
         success: true,
-        data: { mocked: true, type: params.type, response: params.response },
+        data: { mocked: true, type, response },
       };
     } catch (err) {
       return { success: false, error: `MockDialog failed: ${errMsg(err)}` };

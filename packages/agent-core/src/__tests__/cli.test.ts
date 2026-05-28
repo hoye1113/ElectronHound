@@ -20,7 +20,7 @@ import {
   savePatterns,
   cliMain,
 } from '../cli.js';
-import { runTest } from '../runner.js';
+
 import {
   mkdtempSync,
   existsSync,

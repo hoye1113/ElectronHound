@@ -10,10 +10,8 @@ import { existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { CONFIG_DIR, PROVIDERS_FILE } from '../config-paths.js';
 import type { LLMProviderConfig, ProvidersConfig } from '../llm-types.js';
-import { BUILTIN_TEMPLATES } from '../llm-types.js';
 import { Spinner } from './progress.js';
 import { getLogger } from './logger.js';
-import { ErrorCode, createConfigError } from './errors.js';
 
 // ─── Types ─────────────────────────────────────────────────────────────
 

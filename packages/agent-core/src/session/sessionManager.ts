@@ -15,7 +15,6 @@
 import Database from 'better-sqlite3';
 import type {
   SessionEntry,
-  CompactionEntry,
   BranchSummaryEntry,
   SessionWithEntries,
 } from './types.js';
@@ -27,8 +26,6 @@ import {
   addEntry,
   compactSession,
   deleteSession,
-  generateId,
-  nowISO,
   DEFAULT_SESSIONS_DB_PATH,
 } from './persistence.js';
 

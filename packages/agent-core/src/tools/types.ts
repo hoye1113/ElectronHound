@@ -10,6 +10,9 @@
 
 import type { ZodSchema } from 'zod';
 
+/** Parameters passed to tool.invoke() */
+export type ToolParams = Record<string, unknown>;
+
 // ─── Core interfaces ────────────────────────────────────────────────────
 
 /**
@@ -18,9 +21,9 @@ import type { ZodSchema } from 'zod';
 export interface Tool {
   readonly name: string;
   readonly description: string;
-  readonly schema: ZodSchema<any>;
+  readonly schema: ZodSchema<unknown>;
 
-  invoke(params: any): Promise<ToolResult>;
+  invoke(params: ToolParams): Promise<ToolResult>;
 }
 
 /**
@@ -28,9 +31,9 @@ export interface Tool {
  */
 export interface ToolResult {
   success: boolean;
-  data?: any;
+  data?: unknown;
   error?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -38,7 +41,7 @@ export interface ToolResult {
  */
 export type ToolStreamChunk =
   | { type: 'progress'; percent: number; message?: string }
-  | { type: 'data'; payload: any }
+  | { type: 'data'; payload: unknown }
   | { type: 'done'; result: ToolResult }
   | { type: 'error'; error: string };
 
@@ -50,8 +53,8 @@ export interface ToolRegistry {
 
   register(tool: Tool): void;
   get(name: string): Tool | undefined;
-  invoke(name: string, params: any): Promise<ToolResult>;
-  streamInvoke(name: string, params: any): AsyncIterable<ToolStreamChunk>;
+  invoke(name: string, params: ToolParams): Promise<ToolResult>;
+  streamInvoke(name: string, params: ToolParams): AsyncIterable<ToolStreamChunk>;
 }
 
 // ─── Browser tool params ────────────────────────────────────────────────
@@ -148,7 +151,7 @@ export interface TriggerIpcParams {
   /** IPC channel name */
   channel: string;
   /** Payload to send */
-  payload?: any;
+  payload?: unknown;
   /** Whether to wait for a response */
   expectResponse?: boolean;
   /** Timeout in ms */
@@ -184,7 +187,7 @@ export interface ExecuteCodeParams {
  * Implementations wrap Playwright CDP connections.
  */
 export interface BrowserContext {
-  snapshot(format?: 'aria' | 'screenshot'): Promise<any>;
+  snapshot(format?: 'aria' | 'screenshot'): Promise<unknown>;
   click(selector: string, options?: { button?: string; clickCount?: number; timeout?: number }): Promise<void>;
   type(selector: string, text: string, options?: { clear?: boolean; delay?: number }): Promise<void>;
   navigate(url: string, options?: { waitUntil?: string; timeout?: number }): Promise<void>;
@@ -198,10 +201,10 @@ export interface BrowserContext {
  * Implementations wrap Electron CDP connections.
  */
 export interface ElectronContext {
-  launch(options: LaunchParams): Promise<any>;
+  launch(options: LaunchParams): Promise<unknown>;
   close(options?: CloseParams): Promise<void>;
-  executeMain(code: string, timeout?: number): Promise<any>;
-  triggerIpc(channel: string, payload?: any, options?: { expectResponse?: boolean; timeout?: number }): Promise<any>;
+  executeMain(code: string, timeout?: number): Promise<unknown>;
+  triggerIpc(channel: string, payload?: unknown, options?: { expectResponse?: boolean; timeout?: number }): Promise<unknown>;
   mockDialog(type: string, options?: { response?: string | boolean; dismiss?: boolean }): Promise<void>;
 }
 
@@ -209,7 +212,7 @@ export interface ElectronContext {
  * Abstraction over a code execution sandbox.
  */
 export interface ExecutionContext {
-  execute(code: string, options?: { runtime?: string; timeout?: number; env?: Record<string, string> }): Promise<any>;
+  execute(code: string, options?: { runtime?: string; timeout?: number; env?: Record<string, string> }): Promise<unknown>;
 }
 
 // ─── CDP types (Playwright CDP integration, replaces MCP) ───────────────
@@ -247,7 +250,7 @@ export interface CDPSessionInfo {
  */
 export interface CDPRawResult {
   /** CDP method result payload */
-  result?: any;
+  result?: unknown;
   /** CDP error if any */
   error?: { code: number; message: string };
 }
@@ -259,7 +262,7 @@ export interface CDPToolParams {
   /** Target session ID to execute the tool on */
   sessionId?: string;
   /** Additional CDP-specific options */
-  options?: Record<string, any>;
+  options?: Record<string, unknown>;
 }
 
 /**
@@ -269,7 +272,7 @@ export interface CDPToolResult {
   /** Whether the CDP command succeeded */
   success: boolean;
   /** Result data from the CDP command */
-  data?: any;
+  data?: unknown;
   /** Error message if the command failed */
   error?: string;
   /** CDP session info */
@@ -288,7 +291,7 @@ export interface CDPContext {
   /** Check if connected */
   isConnected(): boolean;
   /** Send a CDP command and return the result */
-  sendCommand(method: string, params?: Record<string, any>, sessionId?: string): Promise<CDPRawResult>;
+  sendCommand(method: string, params?: Record<string, unknown>, sessionId?: string): Promise<CDPRawResult>;
   /** Create a new CDP session for a specific target */
   createSession(targetId?: string, type?: CDPSessionInfo['type']): Promise<CDPSessionInfo>;
   /** Close a CDP session */
@@ -362,7 +365,7 @@ export interface CDPExecuteMainParams extends CDPToolParams {
 
 export interface CDPTriggerIpcParams extends CDPToolParams {
   channel: string;
-  payload?: any;
+  payload?: unknown;
   expectResponse?: boolean;
   timeout?: number;
 }

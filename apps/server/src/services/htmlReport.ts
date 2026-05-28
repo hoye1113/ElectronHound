@@ -141,7 +141,7 @@ function formatDuration(ms: number): string {
   return `${min}m ${remSec}s`;
 }
 
-function renderStep(step: StepRecord, taskId: string): string {
+function renderStep(step: StepRecord, _taskId: string): string {
   const statusColor = STATUS_COLORS[step.status] ?? '#71717a';
   const phaseLabel = PHASE_LABELS[step.phase] ?? step.phase;
 

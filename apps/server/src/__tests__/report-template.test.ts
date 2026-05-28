@@ -53,7 +53,7 @@ describe('Report Template Routes', () => {
       expect(body.data).toBeDefined();
       expect(body.data.length).toBeGreaterThanOrEqual(1);
 
-      const defaultTpl = body.data.find((t: any) => t.isDefault === true);
+      const defaultTpl = body.data.find((t: Record<string, unknown>) => t.isDefault === true);
       expect(defaultTpl).toBeDefined();
       expect(defaultTpl.id).toBe(DEFAULT_TEMPLATE_ID);
       expect(defaultTpl.name).toBe('Default');
@@ -282,7 +282,7 @@ describe('Report Template Routes', () => {
       const body = JSON.parse(res.body);
       expect(body.sections).toHaveLength(7);
 
-      const sectionTypes = body.sections.map((s: any) => s.type);
+      const sectionTypes = body.sections.map((s: Record<string, unknown>) => s.type);
       expect(sectionTypes).toContain('summary');
       expect(sectionTypes).toContain('steps');
       expect(sectionTypes).toContain('screenshots');
@@ -296,7 +296,7 @@ describe('Report Template Routes', () => {
       const res = await server.inject({ method: 'GET', url: `/api/report-templates/${DEFAULT_TEMPLATE_ID}` });
 
       const body = JSON.parse(res.body);
-      const rawSection = body.sections.find((s: any) => s.type === 'raw');
+      const rawSection = body.sections.find((s: Record<string, unknown>) => s.type === 'raw');
       expect(rawSection).toBeDefined();
       expect(rawSection.enabled).toBe(false);
     });

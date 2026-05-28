@@ -3,8 +3,6 @@ import { buildServer } from '../server.js';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mkdtempSync, rmSync } from 'node:fs';
-import type Database from 'better-sqlite3';
-import type { FastifyInstance } from 'fastify';
 
 function createTempDbPath(): string {
   const tmpDir = mkdtempSync(join(tmpdir(), 'eata-server-test-'));

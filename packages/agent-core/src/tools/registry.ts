@@ -8,6 +8,7 @@
 import type {
   Tool,
   ToolResult,
+  ToolParams,
   ToolRegistry as ToolRegistryType,
   ToolStreamChunk,
   CDPContext,
@@ -75,7 +76,7 @@ export class ToolRegistry implements ToolRegistryType {
    * 3. Invokes the tool with validated params
    * 4. Catches and wraps errors into ToolResult
    */
-  async invoke(name: string, params: any): Promise<ToolResult> {
+  async invoke(name: string, params: ToolParams): Promise<ToolResult> {
     const tool = this.tools.get(name);
     if (!tool) {
       return {
@@ -95,7 +96,7 @@ export class ToolRegistry implements ToolRegistryType {
 
     // Invoke with validated params
     try {
-      const result = await tool.invoke(parseResult.data);
+      const result = await tool.invoke(parseResult.data as ToolParams);
       return result;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -113,7 +114,7 @@ export class ToolRegistry implements ToolRegistryType {
    * call into a single 'done' chunk. For tools with streaming support,
    * delegates to the tool's own streaming if available.
    */
-  async *streamInvoke(name: string, params: any): AsyncIterable<ToolStreamChunk> {
+  async *streamInvoke(name: string, params: ToolParams): AsyncIterable<ToolStreamChunk> {
     const tool = this.tools.get(name);
     if (!tool) {
       yield {
@@ -135,12 +136,12 @@ export class ToolRegistry implements ToolRegistryType {
 
     // Check if the tool supports native streaming
     const streamableTool = tool as Tool & {
-      stream?: (params: any) => AsyncIterable<ToolStreamChunk>;
+      stream?: (params: ToolParams) => AsyncIterable<ToolStreamChunk>;
     };
 
     if (streamableTool.stream && typeof streamableTool.stream === 'function') {
       // Native streaming: delegate to the tool
-      yield* streamableTool.stream(parseResult.data);
+      yield* streamableTool.stream(parseResult.data as ToolParams);
       return;
     }
 
@@ -148,7 +149,7 @@ export class ToolRegistry implements ToolRegistryType {
     yield { type: 'progress', percent: 0, message: `Invoking ${name}...` };
 
     try {
-      const result = await tool.invoke(parseResult.data);
+      const result = await tool.invoke(parseResult.data as ToolParams);
       yield { type: 'done', result };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

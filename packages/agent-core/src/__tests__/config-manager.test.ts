@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import type { LLMProviderConfig } from '../llm-types.js';
@@ -71,7 +71,6 @@ describe('ConfigManager', () => {
       // Write invalid JSON
       saveProvidersConfig({ version: 1, providers: [], activeId: '' });
       // Manually corrupt it
-      const { writeFileSync } = require('node:fs');
       writeFileSync(mockProvidersFile, 'not json');
 
       const config = loadProvidersConfig();

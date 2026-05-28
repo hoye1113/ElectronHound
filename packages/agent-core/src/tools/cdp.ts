@@ -66,12 +66,9 @@ export class CDPClient implements CDPContext {
       throw new Error('CDPClient is already connected. Disconnect first.');
     }
 
-    const endpoint = config.endpoint ?? this.buildEndpoint(config);
-    const timeout = config.timeout ?? 30_000;
-
-    // In a real implementation, this would open a WebSocket to `endpoint`.
+    // In a real implementation, this would open a WebSocket to `config.endpoint`.
     // Here we simulate the connection establishment.
-    await this.waitForConnection(endpoint, timeout);
+    await this.waitForConnection();
 
     this._connected = true;
     this._config = config;
@@ -116,7 +113,7 @@ export class CDPClient implements CDPContext {
    */
   async sendCommand(
     method: string,
-    params?: Record<string, any>,
+    params?: Record<string, unknown>,
     sessionId?: string,
   ): Promise<CDPRawResult> {
     if (!this._connected) {
@@ -184,7 +181,7 @@ export class CDPClient implements CDPContext {
 
   private async sendRawCommand(
     method: string,
-    params?: Record<string, any>,
+    params?: Record<string, unknown>,
   ): Promise<CDPRawResult> {
     // Base CDP message format: { id, method, params, sessionId? }
     // In production, this sends over the WebSocket.
@@ -192,15 +189,9 @@ export class CDPClient implements CDPContext {
     return { result: { method, params: params ?? {} } };
   }
 
-  private buildEndpoint(config: CDPConfig): string {
-    const host = config.host ?? '127.0.0.1';
-    const port = config.port ?? 9222;
-    return `ws://${host}:${port}/devtools/browser/`;
-  }
-
   // Intentional no-op: Playwright MCP handles CDP connection lifecycle.
   // The browser is already reachable when this is called (electron_launch discovers the port).
-  private async waitForConnection(_endpoint: string, _timeout: number): Promise<void> {
+  private async waitForConnection(): Promise<void> {
     return;
   }
 
@@ -222,11 +213,11 @@ export class CDPClient implements CDPContext {
  */
 export class CDPSession {
   readonly info: CDPSessionInfo;
-  private readonly sendRaw: (method: string, params?: Record<string, any>) => Promise<CDPRawResult>;
+  private readonly sendRaw: (method: string, params?: Record<string, unknown>) => Promise<CDPRawResult>;
 
   constructor(
     info: CDPSessionInfo,
-    sendRaw: (method: string, params?: Record<string, any>) => Promise<CDPRawResult>,
+    sendRaw: (method: string, params?: Record<string, unknown>) => Promise<CDPRawResult>,
   ) {
     this.info = info;
     this.sendRaw = sendRaw;
@@ -245,7 +236,7 @@ export class CDPSession {
   /**
    * Send a CDP command within this session.
    */
-  async sendCommand(method: string, params?: Record<string, any>): Promise<CDPRawResult> {
+  async sendCommand(method: string, params?: Record<string, unknown>): Promise<CDPRawResult> {
     return this.sendRaw(method, { ...params, _sessionId: this.info.sessionId });
   }
 }
@@ -259,18 +250,18 @@ export class CDPSession {
 export abstract class CDPTool implements Tool {
   abstract readonly name: string;
   abstract readonly description: string;
-  abstract readonly schema: z.ZodSchema<any>;
+  abstract readonly schema: z.ZodSchema<unknown>;
 
   constructor(protected readonly client: CDPContext) {}
 
-  abstract invoke(params: any): Promise<ToolResult>;
+  abstract invoke(params: Record<string, unknown>): Promise<ToolResult>;
 
   /**
    * Helper: send a CDP command and wrap the result as a ToolResult.
    */
   protected async sendCDP(
     method: string,
-    params?: Record<string, any>,
+    params?: Record<string, unknown>,
     sessionId?: string,
   ): Promise<ToolResult> {
     const raw = await this.client.sendCommand(method, params, sessionId);
@@ -289,7 +280,7 @@ export abstract class CDPTool implements Tool {
 const cdpBrowserSnapshotSchema = z.object({
   format: z.enum(['aria', 'screenshot']).optional(),
   sessionId: z.string().optional(),
-  options: z.record(z.any()).optional(),
+  options: z.record(z.unknown()).optional(),
 });
 
 const cdpBrowserClickSchema = z.object({
@@ -298,7 +289,7 @@ const cdpBrowserClickSchema = z.object({
   clickCount: z.number().int().min(1).max(3).optional().default(1),
   timeout: z.number().int().positive().optional(),
   sessionId: z.string().optional(),
-  options: z.record(z.any()).optional(),
+  options: z.record(z.unknown()).optional(),
 });
 
 const cdpBrowserTypeSchema = z.object({
@@ -307,7 +298,7 @@ const cdpBrowserTypeSchema = z.object({
   clear: z.boolean().optional().default(false),
   delay: z.number().nonnegative().optional(),
   sessionId: z.string().optional(),
-  options: z.record(z.any()).optional(),
+  options: z.record(z.unknown()).optional(),
 });
 
 const cdpBrowserNavigateSchema = z.object({
@@ -315,21 +306,21 @@ const cdpBrowserNavigateSchema = z.object({
   waitUntil: z.enum(['load', 'domcontentloaded', 'networkidle']).optional().default('load'),
   timeout: z.number().int().positive().optional(),
   sessionId: z.string().optional(),
-  options: z.record(z.any()).optional(),
+  options: z.record(z.unknown()).optional(),
 });
 
 const cdpBrowserPressKeySchema = z.object({
   key: z.string().min(1),
   selector: z.string().optional(),
   sessionId: z.string().optional(),
-  options: z.record(z.any()).optional(),
+  options: z.record(z.unknown()).optional(),
 });
 
 const cdpBrowserHoverSchema = z.object({
   selector: z.string().min(1),
   timeout: z.number().int().positive().optional(),
   sessionId: z.string().optional(),
-  options: z.record(z.any()).optional(),
+  options: z.record(z.unknown()).optional(),
 });
 
 const cdpBrowserDragSchema = z.object({
@@ -337,7 +328,7 @@ const cdpBrowserDragSchema = z.object({
   targetSelector: z.string().min(1),
   timeout: z.number().int().positive().optional(),
   sessionId: z.string().optional(),
-  options: z.record(z.any()).optional(),
+  options: z.record(z.unknown()).optional(),
 });
 
 const cdpLaunchSchema = z.object({
@@ -346,30 +337,30 @@ const cdpLaunchSchema = z.object({
   env: z.record(z.string(), z.string()).optional(),
   cdpPort: z.number().int().positive().optional().default(9222),
   sessionId: z.string().optional(),
-  options: z.record(z.any()).optional(),
+  options: z.record(z.unknown()).optional(),
 });
 
 const cdpCloseSchema = z.object({
   force: z.boolean().optional().default(false),
   timeout: z.number().int().positive().optional(),
   sessionId: z.string().optional(),
-  options: z.record(z.any()).optional(),
+  options: z.record(z.unknown()).optional(),
 });
 
 const cdpExecuteMainSchema = z.object({
   code: z.string().min(1),
   timeout: z.number().int().positive().optional(),
   sessionId: z.string().optional(),
-  options: z.record(z.any()).optional(),
+  options: z.record(z.unknown()).optional(),
 });
 
 const cdpTriggerIpcSchema = z.object({
   channel: z.string().min(1),
-  payload: z.any().optional(),
+  payload: z.unknown().optional(),
   expectResponse: z.boolean().optional().default(false),
   timeout: z.number().int().positive().optional(),
   sessionId: z.string().optional(),
-  options: z.record(z.any()).optional(),
+  options: z.record(z.unknown()).optional(),
 });
 
 const cdpMockDialogSchema = z.object({
@@ -377,7 +368,7 @@ const cdpMockDialogSchema = z.object({
   response: z.union([z.string(), z.boolean()]).optional(),
   dismiss: z.boolean().optional().default(false),
   sessionId: z.string().optional(),
-  options: z.record(z.any()).optional(),
+  options: z.record(z.unknown()).optional(),
 });
 
 // ─── Browser CDP tools (7) ──────────────────────────────────────────────
@@ -575,7 +566,7 @@ export class CDPCloseTool extends CDPTool {
     'Close a running Electron application and disconnect CDP';
   readonly schema = cdpCloseSchema;
 
-  async invoke(params: CDPCloseParams): Promise<ToolResult> {
+  async invoke(_params: CDPCloseParams): Promise<ToolResult> {
     try {
       await this.client.disconnect();
       return { success: true, data: { closed: true } };

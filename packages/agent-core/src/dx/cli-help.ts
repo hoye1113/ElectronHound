@@ -598,7 +598,6 @@ complete -F _eata_completions eata
 
   private generateZshCompletion(): string {
     const commands = this.getCommandNames();
-    const commandList = commands.map((cmd) => `"${cmd}"`).join(' ');
     return `#compdef eata
 
 _eata() {
@@ -611,12 +610,12 @@ _eata() {
     '1:command:->commands' \\
     '*::arg:->args'
 
-  case \$state in
+  case $state in
     commands)
       _describe 'command' commands
       ;;
     args)
-      case \$words[1] in
+      case $words[1] in
         run)
           _arguments \\
             '--goal[Test goal]' \\

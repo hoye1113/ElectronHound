@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { LLMProvider } from '../types.js';
 import type { LLMProviderConfig } from '../../llm-types.js';
 
 // ── Mock createOpenAIProvider ─────────────────────────────────────────────────

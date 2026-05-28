@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   ProgressBar,
   Spinner,
@@ -11,12 +11,6 @@ import {
 
 describe('Progress System', () => {
   describe('ProgressBar', () => {
-    let mockStream: { write: ReturnType<typeof vi.fn> };
-
-    beforeEach(() => {
-      mockStream = { write: vi.fn() };
-    });
-
     it('should create progress bar with options', () => {
       const bar = new ProgressBar({
         total: 100,

@@ -281,7 +281,7 @@ describe('SessionManager (SQLite)', () => {
       content: 'Please test the login page',
       type: 'user',
     });
-    const entryId2 = sm.addEntry(sessionId, {
+    sm.addEntry(sessionId, {
       role: 'assistant',
       content: 'I will observe the login page now.',
       type: 'assistant',

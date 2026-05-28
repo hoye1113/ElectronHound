@@ -2,7 +2,7 @@ import { WorkerPoolManager } from '../services/workerPool/manager.js';
 import type { PoolTask, TaskExecutor } from '../services/workerPool/types.js';
 import { WorkerManager, type Logger } from '../services/workerManager.js';
 import { sseHub } from '../streams/sseHub.js';
-import { getBatchService, type BatchService } from '../services/batchService.js';
+import { getBatchService } from '../services/batchService.js';
 import type Database from 'better-sqlite3';
 
 // ── Hoisted prepared statements ────────────────────────────────────────
@@ -47,7 +47,7 @@ class ProcessTaskExecutor implements TaskExecutor {
         providerId: task.providerId,
       });
       process.stderr.write(`[ProcessTaskExecutor] Worker spawned for task ${task.id}\n`);
-    } catch (err) {
+    } catch (err: unknown) {
       process.stderr.write(`[ProcessTaskExecutor] Spawn failed for task ${task.id}: ${err instanceof Error ? err.message : String(err)}\n`);
       onComplete(task.id, 'failed', err instanceof Error ? err.message : String(err));
       return;
