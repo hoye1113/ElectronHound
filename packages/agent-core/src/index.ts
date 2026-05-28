@@ -53,9 +53,34 @@ export {
   getActiveProviderConfig,
 } from './config-manager.js';
 
-// Provider factory (v0.3)
-export { createProviderInstance } from './provider-factory.js';
-export { getGenerateObjectForProvider } from './llm.js';
+// LLM Provider (native-fetch, replaces Vercel AI SDK)
+export {
+  createOpenAIProvider,
+  createLLMProviderAdapter,
+  createLLMProviderAdapterForProvider,
+  createProviderInstance,
+  testProviderConnection,
+  getGenerateObjectForProvider,
+  createProvider,
+  OpenAIProvider,
+  createOpenAI,
+  AnthropicProvider,
+  createAnthropic,
+  GoogleProvider,
+  createGoogle,
+  OllamaProvider,
+  createOllama,
+} from './llm/index.js';
+export type {
+  GenerateObjectOptions,
+  GenerateTextOptions,
+  CustomLLMProvider,
+  LLMProvider,
+  GenerateOptions,
+  UnifiedGenerateObjectOptions,
+  ProviderConfig,
+  ProviderType,
+} from './llm/index.js';
 
 // Provider types
 export type { LLMProviderConfig, ProvidersConfig, LLMProviderType } from './llm-types.js';

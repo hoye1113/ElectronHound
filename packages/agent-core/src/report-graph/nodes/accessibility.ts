@@ -4,7 +4,7 @@ import { AccessibilityReportSchema } from '@eata/shared-types';
 
 export interface AccessibilityNodeOptions {
   generateObject?: (params: {
-    model: ReturnType<typeof import('@ai-sdk/openai').openai>;
+    model: unknown;
     schema: typeof AccessibilityReportSchema;
     prompt: string;
     system: string;
@@ -38,7 +38,7 @@ export function createAccessibilityNode(
 
     if (options.generateObject) {
       const result = await options.generateObject({
-        model: {} as ReturnType<typeof import('@ai-sdk/openai').openai>,
+        model: {} as unknown,
         schema: AccessibilityReportSchema,
         prompt,
         system: 'Analyze the test execution for accessibility concerns. Check for missing ARIA labels, color contrast issues, keyboard navigation problems, and WCAG compliance. If no snapshots were collected, return empty issues and wcagLevel "none".',

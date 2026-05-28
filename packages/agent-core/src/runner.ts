@@ -1,7 +1,7 @@
 import { createTestGraph } from './graph.js';
 import { createCheckpointer } from './checkpoint.js';
 import { getMCPClient } from './mcp/client.js';
-import { getGenerateObject, getGenerateObjectForProvider } from './llm.js';
+import { createLLMProviderAdapter, getGenerateObjectForProvider } from './llm/adapter.js';
 import { loadProvidersConfig } from './config-manager.js';
 import type { TestState } from './state.js';
 
@@ -31,7 +31,26 @@ export async function runTest(
     generateObject = getGenerateObjectForProvider(provider);
   } else {
     // Fall back to env-based or default provider
-    generateObject = getGenerateObject({ model: options.llmModel });
+    const llmProvider = createLLMProviderAdapter({ model: options.llmModel });
+    if (llmProvider) {
+      // Wrap the new LLMProvider.generateObject() to match the old signature
+      // expected by plan.ts and verify.ts nodes:
+      //   generateObject({ model, schema, prompt, system }) => Promise<{ object }>
+      generateObject = async (opts: {
+        model: unknown;
+        schema: { parse: (value: unknown) => unknown };
+        prompt: string;
+        system: string;
+      }): Promise<{ object: unknown }> => {
+        return llmProvider.generateObject({
+          schema: opts.schema,
+          prompt: opts.prompt,
+          system: opts.system,
+        });
+      };
+    }
+    // If llmProvider is null (no API key), generateObject stays undefined
+    // and nodes will use their deterministic fallbacks
   }
 
   const graphOptions = generateObject

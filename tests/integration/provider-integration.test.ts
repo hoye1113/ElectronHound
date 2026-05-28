@@ -6,7 +6,7 @@ import {
   setActiveProvider,
   deleteProvider,
 } from '../../packages/agent-core/src/config-manager.js';
-import { createProviderInstance } from '../../packages/agent-core/src/provider-factory.js';
+import { createProviderInstance } from '../../packages/agent-core/src/llm/adapter.js';
 import { runTest } from '../../packages/agent-core/src/runner.js';
 import { existsSync, readFileSync, writeFileSync, mkdtempSync, rmSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -98,12 +98,10 @@ describe.skipIf(!process.env.OPENAI_API_KEY)('Integration: Provider Factory with
       enabled: true,
     };
 
-    const model = createProviderInstance(config);
-    expect(model).toBeDefined();
+    const provider = createProviderInstance(config);
+    expect(provider).toBeDefined();
 
-    const { generateText } = await import('ai');
-    const result = await generateText({
-      model,
+    const result = await provider.generateText({
       prompt: 'Say "hello" in one word.',
       maxTokens: 10,
     });
@@ -128,12 +126,10 @@ describe.skipIf(!process.env.OPENAI_API_KEY)('Integration: Provider Factory with
       enabled: true,
     };
 
-    const model = createProviderInstance(config);
-    expect(model).toBeDefined();
+    const provider = createProviderInstance(config);
+    expect(provider).toBeDefined();
 
-    const { generateText } = await import('ai');
-    const result = await generateText({
-      model,
+    const result = await provider.generateText({
       prompt: 'Say "hello" in one word.',
       maxTokens: 10,
     });

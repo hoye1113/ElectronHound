@@ -34,7 +34,10 @@ vi.mock('@eata/agent-core', async (importOriginal) => {
       mockProviders.activeId = id;
       return mockProviders;
     },
-    createProviderInstance: () => ({ model: {} as any }),
+    createProviderInstance: () => ({
+      generateObject: vi.fn().mockResolvedValue({ object: {} }),
+      generateText: vi.fn().mockResolvedValue({ text: 'OK' }),
+    }),
   };
 });
 

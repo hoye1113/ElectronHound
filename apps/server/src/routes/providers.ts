@@ -84,12 +84,10 @@ export async function providersRoutes(server: FastifyInstance) {
     if (!provider) return reply.status(404).send({ error: 'Provider not found' });
 
     try {
-      const model = createProviderInstance(provider);
-      const { generateText } = await import('ai');
-      await generateText({
-        model,
+      const llmProvider = createProviderInstance(provider);
+      await llmProvider.generateText({
         prompt: 'Say "OK" to confirm connection',
-        maxOutputTokens: 10,
+        maxTokens: 10,
       });
       return { success: true, message: 'Connection successful' };
     } catch (error) {
