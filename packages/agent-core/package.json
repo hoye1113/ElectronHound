@@ -1,7 +1,7 @@
 {
   "name": "@eata/agent-core",
   "version": "0.1.0",
-  "description": "ElectronHound agent core - LangGraph AI agent implementation",
+  "description": "ElectronHound agent core - Pure TypeScript agent loop implementation",
   "type": "module",
   "main": "src/index.ts",
   "repository": {
@@ -25,9 +25,6 @@
   },
   "dependencies": {
     "@eata/shared-types": "workspace:*",
-    "@langchain/core": "^0.3.0",
-    "@langchain/langgraph": "^0.3.0",
-    "@langchain/langgraph-checkpoint-sqlite": "^0.1.0",
     "better-sqlite3": "^11.0.0"
   },
   "devDependencies": {
