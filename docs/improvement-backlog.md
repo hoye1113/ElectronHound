@@ -80,31 +80,29 @@ grep -rn "console\.error" packages/agent-core/src apps/server/src --include="*.t
 
 ## Wave 2 — 测试覆盖提升（4-6 轮）
 
-### 2.1 electron-helper 测试补充
-- **目标文件：** `packages/electron-helper/src/index.ts` (36% 覆盖)
-- **测试要点：** IPC 通道注册、消息发送/接收、错误处理
-- **参考模式：** `packages/agent-core/src/tools/__tests__/electron.test.ts`
+### 2.1 electron-helper 测试补充 ✅
+- **目标文件：** `packages/electron-helper/src/index.ts` (36% → 高覆盖)
+- **结果：** 16→99 测试，覆盖 helper/operation-handler/ipc-channel
 
-### 2.2 electron-bridge-mcp 测试补充
-- **目标文件：** `packages/electron-bridge-mcp/src/server.ts` (60% 覆盖)
-- **测试要点：** MCP server 生命周期、工具注册、请求处理
+### 2.2 electron-bridge-mcp 测试补充 ✅
+- **目标文件：** `packages/electron-bridge-mcp/src/server.ts` (60% → 高覆盖)
+- **结果：** 42→69 测试，覆盖 bridge-client/server tools
 
-### 2.3 路由测试 — feedback + templates
+### 2.3 路由测试 — feedback + templates ✅
 - **目标文件：** `apps/server/src/routes/feedback.ts`, `templates.ts`
-- **测试要点：** CRUD 操作、验证、错误处理
-- **参考模式：** `apps/server/src/__tests__/routes.test.ts`
+- **结果：** 47 新测试，CRUD + 验证 + 错误处理
 
-### 2.4 路由测试 — health + exports + stream
+### 2.4 路由测试 — health + exports + stream ✅
 - **目标文件：** `health.ts`, `exports.ts`, `stream.ts`
-- **测试要点：** 健康检查、JSON/CSV/HTML 导出、SSE 连接
+- **结果：** 64 新测试，健康检查/JSON/CSV/HTML 导出/SSE hub
 
-### 2.5 路由测试 — report-templates + providers + batches
+### 2.5 路由测试 — report-templates + providers + batches ✅
 - **目标文件：** `report-templates.ts`, `providers.ts`, `batches.ts`
-- **测试要点：** 模板 CRUD、provider 管理、批次操作
+- **结果：** 97 新测试，模板 CRUD/provider 管理/批次操作
 
-### 2.6 workerPool 队列测试
+### 2.6 workerPool 队列测试 ✅
 - **目标文件：** `apps/server/src/services/workerPool/queue.ts`
-- **测试要点：** FIFO 顺序、优先级、并发控制
+- **结果：** 59 新测试，FIFO/优先级/并发/边界条件
 
 ---
 
@@ -214,6 +212,9 @@ grep -rn "console\.error" packages/agent-core/src apps/server/src --include="*.t
 | Phase 3 | - | ESLint 110→0 + 类型安全 | `59adec6` | 2026-05-28 |
 | Phase 4 | - | catch 块 `: unknown` + 阈值提升 | `97ef456` | 2026-05-28 |
 | Wave 1.1-1.3 | W1 | catch 块清理 (bridge/helper/launcher) | `c630603` | 2026-05-28 |
+| Wave 1.5 | W1 | dashboard catch 块清理 (发现扫描) | `08a6db3` | 2026-05-28 |
+| Wave 2.1-2.3 | W2 | 测试补充 (helper/bridge/routes) +126 | `a1f4464` | 2026-05-28 |
+| Wave 2.4-2.6 | W2 | 测试补充 (routes/queue) +220 | `5ae58b3` | 2026-05-28 |
 
 ---
 
@@ -222,7 +223,7 @@ grep -rn "console\.error" packages/agent-core/src apps/server/src --include="*.t
 | 指标 | 基线 (Phase 2 前) | 当前 | 目标 |
 |------|-------------------|------|------|
 | ESLint 错误 | 110 | 0 | 0 |
-| 测试数量 | 1280 | 1364 | 持续增长 |
+| 测试数量 | 1280 | 1710 | 持续增长 |
 | 覆盖率 (stmts) | ~68% | 72.44% | 80% |
 | 裸 catch 块 | 73+ | 0 (全包) | 0 (全包) |
 | TODO/FIXME | 1 | 0 | 0 |
