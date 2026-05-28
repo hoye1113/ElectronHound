@@ -236,44 +236,30 @@ grep -rn "console\.error" packages/agent-core/src apps/server/src --include="*.t
 
 ---
 
-## Wave 8 — 覆盖率 + 日志统一（2-3 轮）
+## Wave 8 — 覆盖率 + 日志统一 ✅
 
 > 发现扫描：4 个文件覆盖率 < 80%，18 个 process.stderr.write 残留
 
-### 8.1 batchService.ts 测试补充
+### 8.1 batchService.ts 测试补充 ✅
 
-- **当前：** 77.52% stmts
-- **目标：** 85%+
-- **文件：** `apps/server/src/services/batchService.ts`
-- **范围：** 未覆盖行 L196-251, L280-281
+- **结果：** 77% → 高覆盖 (+17 测试)
 
-### 8.2 runner.ts 测试补充
+### 8.2 runner.ts 测试补充 ✅
 
-- **当前：** 72.44% stmts
-- **目标：** 85%+
-- **文件：** `apps/server/src/tasks/runner.ts`
-- **范围：** 未覆盖行 L148-155, L163-169
+- **结果：** 72% → 高覆盖 (+15 测试)
 
-### 8.3 server.ts 测试补充
+### 8.3 server.ts 测试补充 ✅
 
-- **当前：** 70.8% stmts
-- **目标：** 85%+
-- **文件：** `packages/electron-bridge-mcp/src/server.ts` (main 函数)
-- **范围：** 未覆盖行 L153-155, L167-189
+- **结果：** 70% → 96% (+4 测试, 导出 main())
 
-### 8.4 worker-entry.ts 测试补充
+### 8.4 worker-entry.ts 测试补充 ✅
 
-- **当前：** 76.84% stmts
-- **目标：** 85%+
-- **文件：** `packages/agent-core/src/worker-entry.ts`
-- **范围：** 未覆盖行 L80-84, L125-130
+- **结果：** 76% → 93% (+7 测试, 信号处理覆盖)
 
-### 8.5 process.stderr.write → Logger 统一
+### 8.5 process.stderr.write → Logger 统一 ✅
 
-- **当前：** 18 个残留 (不含 logger.ts)
-- **目标：** 0
-- **文件：** server routes/services, agent-core cli.ts
-- **模式：** `process.stderr.write(...)` → `logger.info/warn/error(...)`
+- **结果：** 18 → 0 (全部迁移至 Logger)
+- **新增：** 日志级别前缀 [INFO]/[WARN]/[ERROR]
 
 ---
 
@@ -295,6 +281,7 @@ grep -rn "console\.error" packages/agent-core/src apps/server/src --include="*.t
 | Wave 5.1+5.4 | W5 | 测试性能 + bundle 优化 | `82b0b01` | 2026-05-29 |
 | Wave 6 | W6 | 安全加固 (CVE 修复 + 验证) | `931745d` | 2026-05-29 |
 | Wave 7.1-7.7 | W7 | 覆盖率提升 (7 文件 36-61% → 92-100%) | `bd3290a` | 2026-05-29 |
+| Wave 8.1-8.5 | W8 | 覆盖率 + 日志统一 (4 文件 + stderr→Logger) | `da6e71c` | 2026-05-29 |
 
 ---
 
@@ -303,8 +290,8 @@ grep -rn "console\.error" packages/agent-core/src apps/server/src --include="*.t
 | 指标 | 基线 (Phase 2 前) | 当前 | 目标 |
 |------|-------------------|------|------|
 | ESLint 错误 | 110 | 0 | 0 |
-| 测试数量 | 1280 | 1947 | 持续增长 |
-| 覆盖率 (stmts) | ~68% | 71.59% | 80% |
+| 测试数量 | 1280 | 1986 | 持续增长 |
+| 覆盖率 (stmts) | ~68% | 72%+ | 80% |
 | 裸 catch 块 | 73+ | 0 (全包) | 0 (全包) |
 | TODO/FIXME | 1 | 0 | 0 |
 | 测试运行时间 | ~50s | ~51s | < 30s |
