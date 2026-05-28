@@ -8,6 +8,7 @@ import { readFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
 import type Database from 'better-sqlite3';
 import type { Task, StepRecord } from '@eata/shared-types';
+import { toErrorMessage } from '@eata/agent-core/utils/error';
 import { dbRowToTask, dbRowToStep } from '../utils/dbMappers.js';
 import { validatePath } from './fileSecurity.js';
 
@@ -252,7 +253,7 @@ export class ExportService {
       reportData = JSON.parse(await readFile(manifestPath, 'utf-8'));
     } catch (err: unknown) {
       // No filesystem report; use DB data only
-      process.stderr.write(`[exportService] filesystem report read failed for ${reportId}: ${err instanceof Error ? err.message : String(err)}\n`);
+      process.stderr.write(`[exportService] filesystem report read failed for ${reportId}: ${toErrorMessage(err)}\n`);
     }
 
     const logRows = this.db

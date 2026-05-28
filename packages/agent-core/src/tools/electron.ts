@@ -8,6 +8,7 @@
  */
 
 import { z } from 'zod';
+import { toErrorMessage } from '../utils/error.js';
 import type {
   Tool,
   ToolResult,
@@ -85,7 +86,7 @@ export class LaunchElectronTool extends ElectronTool<LaunchParams> {
         data: { launched: true, appPath: params.appPath, ...data },
       };
     } catch (err: unknown) {
-      return { success: false, error: `Launch failed: ${errMsg(err)}` };
+      return { success: false, error: `Launch failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -100,7 +101,7 @@ export class CloseElectronTool extends ElectronTool<CloseParams> {
       await this.context.close(params);
       return { success: true, data: { closed: true } };
     } catch (err: unknown) {
-      return { success: false, error: `Close failed: ${errMsg(err)}` };
+      return { success: false, error: `Close failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -115,7 +116,7 @@ export class ExecuteMainTool extends ElectronTool<ExecuteMainParams> {
       const data = await this.context.executeMain(params.code, params.timeout);
       return { success: true, data };
     } catch (err: unknown) {
-      return { success: false, error: `ExecuteMain failed: ${errMsg(err)}` };
+      return { success: false, error: `ExecuteMain failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -136,7 +137,7 @@ export class TriggerIpcTool extends ElectronTool<TriggerIpcParams> {
         data: { channel: params.channel, ...data },
       };
     } catch (err: unknown) {
-      return { success: false, error: `TriggerIPC failed: ${errMsg(err)}` };
+      return { success: false, error: `TriggerIPC failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -157,7 +158,7 @@ export class MockDialogTool extends ElectronTool<MockDialogParams> {
         data: { mocked: true, type: params.type, response: params.response },
       };
     } catch (err: unknown) {
-      return { success: false, error: `MockDialog failed: ${errMsg(err)}` };
+      return { success: false, error: `MockDialog failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -177,8 +178,3 @@ export function createElectronTools(context: ElectronContext): Tool[] {
   ] as Tool[];
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────────
-
-function errMsg(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}

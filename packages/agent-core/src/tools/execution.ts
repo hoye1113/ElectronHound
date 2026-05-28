@@ -12,6 +12,7 @@ import type {
   ExecutionContext,
   ExecuteCodeParams,
 } from './types.js';
+import { toErrorMessage } from '../utils/error.js';
 
 // ─── Zod schema ─────────────────────────────────────────────────────────
 
@@ -50,7 +51,7 @@ export class ExecuteCodeTool implements Tool<ExecuteCodeParams> {
     } catch (err: unknown) {
       return {
         success: false,
-        error: `ExecuteCode failed: ${err instanceof Error ? err.message : String(err)}`,
+        error: `ExecuteCode failed: ${toErrorMessage(err)}`,
       };
     }
   }

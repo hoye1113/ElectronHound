@@ -24,6 +24,8 @@ import type {
   AgentRunResult,
 } from './types.js';
 import { fingerprintObservation } from './stuckDetection.js';
+import { toErrorMessage } from '../utils/error.js';
+import { createStderrLogger } from '../utils/logger.js';
 
 // ── Defaults ──────────────────────────────────────────────────────────────
 
@@ -188,6 +190,7 @@ export class AgentLoop {
   private readonly mcp: MCPClient | undefined;
   private readonly maxSteps: number;
   private readonly stuckThreshold: number;
+  private readonly logger = createStderrLogger('agentLoop');
 
   constructor(config: AgentLoopConfig) {
     this.llm = config.llmProvider;
@@ -228,7 +231,7 @@ export class AgentLoop {
     try {
       while (state.stepCount < this.maxSteps) {
         // ── 1. Observe ──────────────────────────────────────────────
-        process.stderr.write(`[agentLoop] Step ${state.stepCount + 1}: Observing...\n`);
+        this.logger.info(`Step ${state.stepCount + 1}: Observing...`);
         const observation = await this.observe(state);
         state.currentObservation = observation;
 
@@ -266,8 +269,8 @@ export class AgentLoop {
         }
 
         // ── 2. Plan ─────────────────────────────────────────────────
-        process.stderr.write(`[agentLoop] Observation: ${observation.summary.substring(0, 100)}\n`);
-        process.stderr.write(`[agentLoop] Planning...\n`);
+        this.logger.info(`Observation: ${observation.summary.substring(0, 100)}`);
+        this.logger.info('Planning...');
         const plan = await this.plan(observation);
         state.lastPlan = plan;
 
@@ -278,8 +281,8 @@ export class AgentLoop {
         });
 
         // ── 3. Execute ──────────────────────────────────────────────
-        process.stderr.write(`[agentLoop] Plan: ${plan.action} (tool: ${plan.toolName})\n`);
-        process.stderr.write(`[agentLoop] Executing ${plan.toolName}...\n`);
+        this.logger.info(`Plan: ${plan.action} (tool: ${plan.toolName})`);
+        this.logger.info(`Executing ${plan.toolName}...`);
         const execution = await this.execute(plan);
         state.lastExecution = execution;
         state.stepCount++;
@@ -291,8 +294,8 @@ export class AgentLoop {
         });
 
         // ── 4. Verify ───────────────────────────────────────────────
-        process.stderr.write(`[agentLoop] Execution result: success=${execution.success}, error=${execution.error ?? 'none'}\n`);
-        process.stderr.write(`[agentLoop] Verifying...\n`);
+        this.logger.info(`Execution result: success=${execution.success}, error=${execution.error ?? 'none'}`);
+        this.logger.info('Verifying...');
         const verdict = await this.verify(execution, plan);
 
         this.session.addEntry(sessionId, {
@@ -328,7 +331,7 @@ export class AgentLoop {
       // Disconnect all MCP servers
       if (this.mcp) {
         await this.mcp.disconnect().catch((err: unknown) => {
-          process.stderr.write(`[agentLoop] MCP disconnect error: ${err instanceof Error ? err.message : String(err)}\n`);
+          this.logger.error(`MCP disconnect error: ${toErrorMessage(err)}`);
         });
       }
     }
@@ -425,7 +428,7 @@ export class AgentLoop {
         result: toolResult.result,
       };
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
+      const errorMessage = toErrorMessage(err);
       return {
         success: false,
         result: null,

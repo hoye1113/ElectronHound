@@ -12,6 +12,7 @@ import { CONFIG_DIR, PROVIDERS_FILE } from '../config-paths.js';
 import type { LLMProviderConfig, ProvidersConfig } from '../llm-types.js';
 import { Spinner } from './progress.js';
 import { getLogger } from './logger.js';
+import { toErrorMessage } from '../utils/error.js';
 
 // ─── Types ─────────────────────────────────────────────────────────────
 
@@ -170,7 +171,7 @@ export class ConfigWizard {
       };
     } catch (err: unknown) {
       spinner.fail('Configuration wizard failed');
-      const message = err instanceof Error ? err.message : String(err);
+      const message = toErrorMessage(err);
       this.logger.error('Wizard failed', err instanceof Error ? err : new Error(message));
       return { success: false, error: message };
     } finally {
@@ -217,7 +218,7 @@ export class ConfigWizard {
     } catch (err: unknown) {
       return {
         success: false,
-        error: err instanceof Error ? err.message : String(err),
+        error: toErrorMessage(err),
       };
     }
   }

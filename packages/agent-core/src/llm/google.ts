@@ -1,4 +1,8 @@
 import type { GenerateOptions, GenerateObjectOptions, LLMProvider } from './provider.js';
+import { toErrorMessage } from '../utils/error.js';
+import { createStderrLogger } from '../utils/logger.js';
+
+const logger = createStderrLogger('llm/google');
 
 /**
  * Google AI provider (Gemini Pro, Gemini Ultra, Gemini 1.5, etc.)
@@ -131,8 +135,8 @@ export class GoogleProvider implements LLMProvider {
       if (description) return { type: 'object', description };
       return { type: 'object' };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      process.stderr.write(`[llm/google] zodToGeminiSchema fallback: ${msg}\n`);
+      const msg = toErrorMessage(err);
+      logger.warn(`zodToGeminiSchema fallback: ${msg}`);
       return { type: 'object' };
     }
   }

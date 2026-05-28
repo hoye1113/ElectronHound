@@ -2,6 +2,10 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';
 import { CONFIG_DIR, PROVIDERS_FILE } from './config-paths.js';
 import type { LLMProviderConfig, ProvidersConfig } from './llm-types.js';
+import { toErrorMessage } from './utils/error.js';
+import { createStderrLogger } from './utils/logger.js';
+
+const logger = createStderrLogger('config-manager');
 
 const ENCRYPTION_ALGO = 'aes-256-cbc';
 const ENCRYPTION_KEY = scryptSync('eata-provider-key', 'eata-salt', 32);
@@ -87,7 +91,7 @@ export function loadProvidersConfig(): ProvidersConfig {
     const raw = JSON.parse(content) as ProvidersConfig;
     return decryptConfig(raw);
   } catch (err: unknown) {
-    console.warn(`Failed to parse providers.json: ${err instanceof Error ? err.message : String(err)}. Using defaults.`);
+    logger.warn(`Failed to parse providers.json: ${toErrorMessage(err)}. Using defaults.`);
     return DEFAULT_PROVIDERS;
   }
 }

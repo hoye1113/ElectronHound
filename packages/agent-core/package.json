@@ -16,7 +16,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./dx": "./src/dx/index.ts",
-    "./dx/*": "./src/dx/*.ts"
+    "./dx/*": "./src/dx/*.ts",
+    "./utils/error": "./src/utils/error.ts"
   },
   "scripts": {
     "start": "tsx src/runner.ts",

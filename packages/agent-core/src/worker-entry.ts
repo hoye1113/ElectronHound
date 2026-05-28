@@ -1,5 +1,9 @@
 import { createInterface, type Interface } from 'readline';
 import { runTest } from './runner.js';
+import { toErrorMessage } from './utils/error.js';
+import { createStderrLogger } from './utils/logger.js';
+
+const logger = createStderrLogger('worker-entry');
 
 // ── JSON-RPC 输出 ────────────────────────────────────────
 
@@ -67,7 +71,7 @@ export async function workerMain(argv: string[] = process.argv): Promise<number>
         process.exit(0);
       }
     } catch (err: unknown) {
-      process.stderr.write(`[worker-entry] Error: ${err instanceof Error ? err.message : String(err)}\n`);
+      logger.error(`Error: ${toErrorMessage(err)}`);
     }
   });
 
@@ -96,7 +100,7 @@ export async function workerMain(argv: string[] = process.argv): Promise<number>
     emit('task_end', { taskId: args.taskId, success: result.status === 'completed', status: result.status, stepCount: result.stepCount });
     exitCode = 0;
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = toErrorMessage(error);
     emit('error', { taskId: args.taskId, message });
     emit('task_end', { taskId: args.taskId, success: false, status: 'failed', message });
     exitCode = 1;

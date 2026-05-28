@@ -14,6 +14,7 @@
 import type { LLMProvider } from './types.js';
 import { createOpenAIProvider } from './openai-provider.js';
 import type { LLMProviderConfig } from '../llm-types.js';
+import { toErrorMessage } from '../utils/error.js';
 
 /**
  * Create an LLMProvider from an env-based or default provider configuration.
@@ -73,7 +74,7 @@ export async function testProviderConnection(config: LLMProviderConfig): Promise
     await provider.generateText({ prompt: 'Say "OK" to confirm connection', maxTokens: 10 });
     return { success: true, message: 'Connection successful', latencyMs: Date.now() - t0 };
   } catch (err: unknown) {
-    return { success: false, message: err instanceof Error ? err.message : String(err), latencyMs: Date.now() - t0 };
+    return { success: false, message: toErrorMessage(err), latencyMs: Date.now() - t0 };
   }
 }
 

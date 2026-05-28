@@ -6,6 +6,7 @@ import { generateHTMLReport } from '../services/htmlReport.js';
 import { validatePath } from '../services/fileSecurity.js';
 import { dbRowToTask, dbRowToStep } from '../utils/dbMappers.js';
 import { UuidParam } from '../utils/validation.js';
+import { toErrorMessage } from '@eata/agent-core/utils/error';
 const StepParam = z.object({
   id: z.string().uuid(),
   stepIndex: z.string().regex(/^\d+$/).refine((val) => {
@@ -27,7 +28,7 @@ export async function reportRoutes(server: FastifyInstance) {
     try {
       reportDir = validatePath(join('data', 'reports'), id);
     } catch (err: unknown) {
-      process.stderr.write(`[reports] path validation failed: ${err instanceof Error ? err.message : String(err)}\n`);
+      process.stderr.write(`[reports] path validation failed: ${toErrorMessage(err)}\n`);
       reply.code(400);
       return { error: 'Invalid report path' };
     }

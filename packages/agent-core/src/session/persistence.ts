@@ -8,7 +8,12 @@
  * Tables: sessions, entries, compactions
  */
 
+import { toErrorMessage } from '../utils/error.js';
+import { createStderrLogger } from '../utils/logger.js';
+
 import Database from 'better-sqlite3';
+
+const logger = createStderrLogger('persistence');
 import { mkdirSync, existsSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { homedir } from 'node:os';
@@ -166,7 +171,7 @@ function rowToCompaction(row: CompactionRow): CompactionEntry {
   try {
     branchSummaries = JSON.parse(row.branch_summaries) as BranchSummaryEntry[];
   } catch (err: unknown) {
-    process.stderr.write(`[persistence] Warning: ${err instanceof Error ? err.message : String(err)}\n`);
+    logger.warn(`Warning: ${toErrorMessage(err)}`);
     branchSummaries = [];
   }
   return {

@@ -19,6 +19,7 @@ import {
 import { generateTemplatedHTMLReport } from '../services/htmlReport.js';
 import { dbRowToTask, dbRowToStep } from '../utils/dbMappers.js';
 import { UuidParam } from '../utils/validation.js';
+import { toErrorMessage } from '@eata/agent-core/utils/error';
 
 export async function reportTemplateRoutes(server: FastifyInstance) {
   // GET /report-templates — list all templates
@@ -83,7 +84,7 @@ export async function reportTemplateRoutes(server: FastifyInstance) {
       }
       return template;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Update failed';
+      const message = toErrorMessage(err);
       reply.code(409);
       return { error: message };
     }
@@ -108,7 +109,7 @@ export async function reportTemplateRoutes(server: FastifyInstance) {
       reply.code(204);
       return;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Delete failed';
+      const message = toErrorMessage(err);
       reply.code(409);
       return { error: message };
     }

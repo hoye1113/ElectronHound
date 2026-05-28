@@ -14,6 +14,7 @@ import type {
   CDPContext,
 } from './types.js';
 import { createCDPTools } from './cdp.js';
+import { toErrorMessage } from '../utils/error.js';
 
 /**
  * Default ToolRegistry implementation.
@@ -99,7 +100,7 @@ export class ToolRegistry implements ToolRegistryType {
       const result = await tool.invoke(parseResult.data as ToolParams);
       return result;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = toErrorMessage(err);
       return {
         success: false,
         error: `Tool "${name}" threw: ${message}`,
@@ -152,7 +153,7 @@ export class ToolRegistry implements ToolRegistryType {
       const result = await tool.invoke(parseResult.data as ToolParams);
       yield { type: 'done', result };
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = toErrorMessage(err);
       yield {
         type: 'error',
         error: `Tool "${name}" threw: ${message}`,

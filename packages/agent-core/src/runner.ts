@@ -6,6 +6,10 @@ import { SessionManager } from './session/sessionManager.js';
 import { entriesToStepRecords, extractLastStep } from './session/entryConverter.js';
 import { runAuditChain } from './sub-agents/audit-chain.js';
 import type { RunTestResult } from './runner-types.js';
+import { toErrorMessage } from './utils/error.js';
+import { createStderrLogger } from './utils/logger.js';
+
+const logger = createStderrLogger('runner');
 
 export interface RunTestOptions {
   goal: string;
@@ -85,7 +89,7 @@ export async function runTest(
       context: { history, stepCount: result.report?.stepCount ?? 0 },
     });
   } catch (err: unknown) {
-    process.stderr.write(`[runner] Audit chain failed: ${err instanceof Error ? err.message : String(err)}\n`);
+    logger.warn(`Audit chain failed: ${toErrorMessage(err)}`);
   }
 
   // Convert AgentLoop result to RunTestResult (backward-compatible with worker-entry.ts)

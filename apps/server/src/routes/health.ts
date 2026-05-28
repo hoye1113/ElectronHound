@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { toErrorMessage } from '@eata/agent-core/utils/error';
 
 export async function healthRoutes(server: FastifyInstance) {
   server.get('/health', async () => {
@@ -14,7 +15,7 @@ export async function healthRoutes(server: FastifyInstance) {
     } catch (err: unknown) {
       checks.database = {
         status: 'error',
-        message: err instanceof Error ? err.message : 'Database unavailable',
+        message: toErrorMessage(err),
       };
     }
 
@@ -30,7 +31,7 @@ export async function healthRoutes(server: FastifyInstance) {
         };
       }
     } catch (err: unknown) {
-      process.stderr.write(`[health] worker pool check failed: ${err instanceof Error ? err.message : String(err)}\n`);
+      process.stderr.write(`[health] worker pool check failed: ${toErrorMessage(err)}\n`);
       checks.workerPool = { status: 'error', message: 'Worker pool unavailable' };
     }
 

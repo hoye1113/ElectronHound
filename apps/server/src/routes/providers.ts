@@ -9,6 +9,7 @@ import {
   createProviderInstance,
 } from '@eata/agent-core';
 import { ProviderIdParam } from '../utils/validation.js';
+import { toErrorMessage } from '@eata/agent-core/utils/error';
 
 const CreateProviderSchema = z.object({
   id: z.string().min(1),
@@ -93,7 +94,7 @@ export async function providersRoutes(server: FastifyInstance) {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: toErrorMessage(error),
       };
     }
   });

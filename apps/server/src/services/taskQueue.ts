@@ -1,4 +1,5 @@
 import { WorkerManager, type WorkerOptions } from './workerManager.js';
+import { toErrorMessage } from '@eata/agent-core/utils/error';
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -74,7 +75,7 @@ export class TaskQueue {
     } catch (err: unknown) {
       next.status = 'failed';
       next.completedAt = new Date();
-      process.stderr.write(`[taskQueue] Failed to spawn worker for ${next.taskId}: ${err instanceof Error ? err.message : String(err)}\n`);
+      process.stderr.write(`[taskQueue] Failed to spawn worker for ${next.taskId}: ${toErrorMessage(err)}\n`);
       this.current = null;
       // Try next task
       this.dequeue();

@@ -4,6 +4,7 @@ import { WorkerManager, type Logger } from '../services/workerManager.js';
 import { sseHub } from '../streams/sseHub.js';
 import { getBatchService } from '../services/batchService.js';
 import type Database from 'better-sqlite3';
+import { toErrorMessage } from '@eata/agent-core/utils/error';
 
 // ── Hoisted prepared statements ────────────────────────────────────────
 
@@ -48,8 +49,8 @@ class ProcessTaskExecutor implements TaskExecutor {
       });
       process.stderr.write(`[ProcessTaskExecutor] Worker spawned for task ${task.id}\n`);
     } catch (err: unknown) {
-      process.stderr.write(`[ProcessTaskExecutor] Spawn failed for task ${task.id}: ${err instanceof Error ? err.message : String(err)}\n`);
-      onComplete(task.id, 'failed', err instanceof Error ? err.message : String(err));
+      process.stderr.write(`[ProcessTaskExecutor] Spawn failed for task ${task.id}: ${toErrorMessage(err)}\n`);
+      onComplete(task.id, 'failed', toErrorMessage(err));
       return;
     }
 

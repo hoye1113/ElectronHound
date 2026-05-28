@@ -38,6 +38,7 @@ import type {
   CDPTriggerIpcParams,
   CDPMockDialogParams,
 } from './types.js';
+import { toErrorMessage } from '../utils/error.js';
 
 // ─── CDPClient ──────────────────────────────────────────────────────────
 
@@ -386,7 +387,7 @@ export class BrowserSnapshotTool extends CDPTool<CDPBrowserSnapshotParams> {
     try {
       return await this.sendCDP(method, { format: params.format }, params.sessionId);
     } catch (err: unknown) {
-      return { success: false, error: `browser_snapshot failed: ${errMsg(err)}` };
+      return { success: false, error: `browser_snapshot failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -411,7 +412,7 @@ export class BrowserClickTool extends CDPTool<CDPBrowserClickParams> {
       }
       return result;
     } catch (err: unknown) {
-      return { success: false, error: `browser_click failed: ${errMsg(err)}` };
+      return { success: false, error: `browser_click failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -435,7 +436,7 @@ export class BrowserTypeTool extends CDPTool<CDPBrowserTypeParams> {
       }
       return result;
     } catch (err: unknown) {
-      return { success: false, error: `browser_type failed: ${errMsg(err)}` };
+      return { success: false, error: `browser_type failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -457,7 +458,7 @@ export class BrowserNavigateTool extends CDPTool<CDPBrowserNavigateParams> {
       }
       return result;
     } catch (err: unknown) {
-      return { success: false, error: `browser_navigate failed: ${errMsg(err)}` };
+      return { success: false, error: `browser_navigate failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -479,7 +480,7 @@ export class BrowserPressKeyTool extends CDPTool<CDPBrowserPressKeyParams> {
       }
       return result;
     } catch (err: unknown) {
-      return { success: false, error: `browser_press_key failed: ${errMsg(err)}` };
+      return { success: false, error: `browser_press_key failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -502,7 +503,7 @@ export class BrowserHoverTool extends CDPTool<CDPBrowserHoverParams> {
       }
       return result;
     } catch (err: unknown) {
-      return { success: false, error: `browser_hover failed: ${errMsg(err)}` };
+      return { success: false, error: `browser_hover failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -530,7 +531,7 @@ export class BrowserDragTool extends CDPTool<CDPBrowserDragParams> {
       }
       return result;
     } catch (err: unknown) {
-      return { success: false, error: `browser_drag failed: ${errMsg(err)}` };
+      return { success: false, error: `browser_drag failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -557,7 +558,7 @@ export class CDPLaunchTool extends CDPTool<CDPLaunchParams> {
         data: { launched: true, appPath: params.appPath, sessionId: sessionInfo.sessionId },
       };
     } catch (err: unknown) {
-      return { success: false, error: `cdp_launch failed: ${errMsg(err)}` };
+      return { success: false, error: `cdp_launch failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -573,7 +574,7 @@ export class CDPCloseTool extends CDPTool<CDPCloseParams> {
       await this.client.disconnect();
       return { success: true, data: { closed: true } };
     } catch (err: unknown) {
-      return { success: false, error: `cdp_close failed: ${errMsg(err)}` };
+      return { success: false, error: `cdp_close failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -593,7 +594,7 @@ export class CDPExecuteMainTool extends CDPTool<CDPExecuteMainParams> {
       }, params.sessionId);
       return result;
     } catch (err: unknown) {
-      return { success: false, error: `cdp_execute_main failed: ${errMsg(err)}` };
+      return { success: false, error: `cdp_execute_main failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -627,7 +628,7 @@ export class CDPTriggerIpcTool extends CDPTool<CDPTriggerIpcParams> {
       }
       return result;
     } catch (err: unknown) {
-      return { success: false, error: `cdp_trigger_ipc failed: ${errMsg(err)}` };
+      return { success: false, error: `cdp_trigger_ipc failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -653,7 +654,7 @@ export class CDPMockDialogTool extends CDPTool<CDPMockDialogParams> {
       }
       return result;
     } catch (err: unknown) {
-      return { success: false, error: `cdp_mock_dialog failed: ${errMsg(err)}` };
+      return { success: false, error: `cdp_mock_dialog failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -682,8 +683,3 @@ export function createCDPTools(client: CDPContext): Tool[] {
   ] as Tool[];
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────────
-
-function errMsg(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}

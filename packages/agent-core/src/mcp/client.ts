@@ -5,6 +5,10 @@ import {
 } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { toErrorMessage } from '../utils/error.js';
+import { createStderrLogger } from '../utils/logger.js';
+
+const logger = createStderrLogger('MCPClient');
 
 export interface MCPToolCall {
   server: 'playwright' | 'electron';
@@ -166,12 +170,12 @@ export class MCPClient {
     try {
       const data = JSON.parse(text) as { webSocketUrl?: string };
       if (data.webSocketUrl) {
-        process.stderr.write(`[MCPClient] electron_launch returned webSocketUrl: ${data.webSocketUrl}, spawning Playwright...\n`);
+        logger.info(`electron_launch returned webSocketUrl: ${data.webSocketUrl}, spawning Playwright...`);
         await this.spawnPlaywright(data.webSocketUrl);
       }
     } catch (err: unknown) {
       // Playwright spawn failure or JSON parse error shouldn't break electron_launch
-      process.stderr.write(`[MCPClient] Failed to auto-connect Playwright: ${err instanceof Error ? err.message : String(err)}\n`);
+      logger.error(`Failed to auto-connect Playwright: ${toErrorMessage(err)}`);
     }
   }
 
@@ -180,7 +184,7 @@ export class MCPClient {
    */
   private async handleElectronClose(): Promise<void> {
     if (this.connections.has('playwright')) {
-      process.stderr.write(`[MCPClient] electron_close called, disconnecting Playwright...\n`);
+      logger.info(`electron_close called, disconnecting Playwright...`);
       await this.disconnectServer('playwright');
     }
   }
@@ -240,8 +244,7 @@ export class MCPClient {
 
       return toolResult;
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = toErrorMessage(error);
       return {
         success: false,
         result: `Tool call failed: ${errorMessage}`,

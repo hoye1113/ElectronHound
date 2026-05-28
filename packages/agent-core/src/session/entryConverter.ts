@@ -15,6 +15,10 @@ import type { SessionEntry } from './types.js';
 import type { StepRecord } from '@eata/shared-types';
 import type { Observation, Plan, ExecutionResult } from '../runtime/types.js';
 import { fingerprintObservation } from '../runtime/stuckDetection.js';
+import { toErrorMessage } from '../utils/error.js';
+import { createStderrLogger } from '../utils/logger.js';
+
+const logger = createStderrLogger('entryConverter');
 
 // ── Verdict → StepStatus mapping ────────────────────────────────────────────
 
@@ -151,7 +155,7 @@ export function extractLastStep(steps: StepRecord[]): {
       }
     } catch (err: unknown) {
       // JSON parse failure — leave observation as null
-      process.stderr.write(`[entryConverter] extractLastStep observation parse: ${err instanceof Error ? err.message : String(err)}\n`);
+      logger.warn(`extractLastStep observation parse: ${toErrorMessage(err)}`);
     }
   }
 
@@ -222,7 +226,7 @@ function buildStepRecord(
     }
   } catch (err: unknown) {
     // JSON parse failure — observe entry is not valid JSON, continue with nulls
-    process.stderr.write(`[entryConverter] observe entry parse: ${err instanceof Error ? err.message : String(err)}\n`);
+    logger.warn(`observe entry parse: ${toErrorMessage(err)}`);
   }
 
   try {
@@ -232,7 +236,7 @@ function buildStepRecord(
     }
   } catch (err: unknown) {
     // JSON parse failure — plan entry is not valid JSON
-    process.stderr.write(`[entryConverter] plan entry parse: ${err instanceof Error ? err.message : String(err)}\n`);
+    logger.warn(`plan entry parse: ${toErrorMessage(err)}`);
   }
 
   try {
@@ -242,7 +246,7 @@ function buildStepRecord(
     }
   } catch (err: unknown) {
     // JSON parse failure — execute entry is not valid JSON
-    process.stderr.write(`[entryConverter] execute entry parse: ${err instanceof Error ? err.message : String(err)}\n`);
+    logger.warn(`execute entry parse: ${toErrorMessage(err)}`);
   }
 
   try {
@@ -257,7 +261,7 @@ function buildStepRecord(
     }
   } catch (err: unknown) {
     // JSON parse failure — verify entry is not valid JSON
-    process.stderr.write(`[entryConverter] verify entry parse: ${err instanceof Error ? err.message : String(err)}\n`);
+    logger.warn(`verify entry parse: ${toErrorMessage(err)}`);
   }
 
   // If we couldn't parse any data, still create a minimal record

@@ -3,12 +3,16 @@ import { TestPlanner } from './test-planner.js';
 import { ExecutionAnalyst } from './execution-analyst.js';
 import { SecurityReviewer } from './security-reviewer.js';
 import { ReportSynthesizer } from './report-synthesizer.js';
+import { toErrorMessage } from '../utils/error.js';
+import { createStderrLogger } from '../utils/logger.js';
+
+const logger = createStderrLogger('audit-chain');
 
 /**
  * Create a failure output placeholder for a sub-agent that threw an exception.
  */
 function makeFailureOutput(role: SubAgentRole, error: unknown): SubAgentOutput {
-  const message = error instanceof Error ? error.message : String(error);
+  const message = toErrorMessage(error);
   return {
     role,
     auditReport: {
@@ -51,7 +55,7 @@ export async function runAuditChain(input: SubAgentInput): Promise<AuditChainRes
   try {
     testPlannerOutput = await planner.run(input);
   } catch (err: unknown) {
-    process.stderr.write(`[audit-chain] test-planner failed: ${err instanceof Error ? err.message : String(err)}\n`);
+    logger.error(`test-planner failed: ${toErrorMessage(err)}`);
     return {
       goal: input.goal,
       testPlanner: makeFailureOutput('test-planner', err),
@@ -76,7 +80,7 @@ export async function runAuditChain(input: SubAgentInput): Promise<AuditChainRes
   try {
     executionAnalystOutput = await analyst.run(executionInput);
   } catch (err: unknown) {
-    process.stderr.write(`[audit-chain] execution-analyst failed: ${err instanceof Error ? err.message : String(err)}\n`);
+    logger.error(`execution-analyst failed: ${toErrorMessage(err)}`);
     return {
       goal: input.goal,
       testPlanner: testPlannerOutput,
@@ -102,7 +106,7 @@ export async function runAuditChain(input: SubAgentInput): Promise<AuditChainRes
   try {
     securityReviewerOutput = await security.run(securityInput);
   } catch (err: unknown) {
-    process.stderr.write(`[audit-chain] security-reviewer failed: ${err instanceof Error ? err.message : String(err)}\n`);
+    logger.error(`security-reviewer failed: ${toErrorMessage(err)}`);
     return {
       goal: input.goal,
       testPlanner: testPlannerOutput,
@@ -129,7 +133,7 @@ export async function runAuditChain(input: SubAgentInput): Promise<AuditChainRes
   try {
     reportSynthesizerOutput = await synthesizer.run(synthesizerInput);
   } catch (err: unknown) {
-    process.stderr.write(`[audit-chain] report-synthesizer failed: ${err instanceof Error ? err.message : String(err)}\n`);
+    logger.error(`report-synthesizer failed: ${toErrorMessage(err)}`);
     return {
       goal: input.goal,
       testPlanner: testPlannerOutput,

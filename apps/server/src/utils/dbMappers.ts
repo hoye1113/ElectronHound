@@ -5,6 +5,7 @@
  * conversions used by both task and report route handlers.
  */
 import { TaskStatusEnum, type Task, type StepRecord } from '@eata/shared-types';
+import { toErrorMessage } from '@eata/agent-core/utils/error';
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
@@ -17,7 +18,7 @@ export function safeJsonParse(value: unknown): unknown {
   try {
     return JSON.parse(value as string);
   } catch (err: unknown) {
-    process.stderr.write(`[dbMappers] safeJsonParse failed: ${err instanceof Error ? err.message : String(err)}\n`);
+    process.stderr.write(`[dbMappers] safeJsonParse failed: ${toErrorMessage(err)}\n`);
     return undefined;
   }
 }

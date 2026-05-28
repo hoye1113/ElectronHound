@@ -8,6 +8,7 @@
  */
 
 import { z } from 'zod';
+import { toErrorMessage } from '../utils/error.js';
 import type {
   Tool,
   ToolResult,
@@ -94,7 +95,7 @@ export class SnapshotTool extends BrowserTool<SnapshotParams> {
       const data = await this.context.snapshot(params.format);
       return { success: true, data };
     } catch (err: unknown) {
-      return { success: false, error: `Snapshot failed: ${errMsg(err)}` };
+      return { success: false, error: `Snapshot failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -113,7 +114,7 @@ export class ClickTool extends BrowserTool<ClickParams> {
       });
       return { success: true, data: { clicked: true, selector: params.selector } };
     } catch (err: unknown) {
-      return { success: false, error: `Click failed: ${errMsg(err)}` };
+      return { success: false, error: `Click failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -131,7 +132,7 @@ export class TypeTool extends BrowserTool<TypeParams> {
       });
       return { success: true, data: { typed: true, selector: params.selector, text: params.text } };
     } catch (err: unknown) {
-      return { success: false, error: `Type failed: ${errMsg(err)}` };
+      return { success: false, error: `Type failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -149,7 +150,7 @@ export class NavigateTool extends BrowserTool<NavigateParams> {
       });
       return { success: true, data: { navigated: true, url: params.url } };
     } catch (err: unknown) {
-      return { success: false, error: `Navigate failed: ${errMsg(err)}` };
+      return { success: false, error: `Navigate failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -164,7 +165,7 @@ export class PressKeyTool extends BrowserTool<PressKeyParams> {
       await this.context.pressKey(params.key, params.selector);
       return { success: true, data: { keyPressed: params.key } };
     } catch (err: unknown) {
-      return { success: false, error: `PressKey failed: ${errMsg(err)}` };
+      return { success: false, error: `PressKey failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -179,7 +180,7 @@ export class HoverTool extends BrowserTool<HoverParams> {
       await this.context.hover(params.selector, { timeout: params.timeout });
       return { success: true, data: { hovered: true, selector: params.selector } };
     } catch (err: unknown) {
-      return { success: false, error: `Hover failed: ${errMsg(err)}` };
+      return { success: false, error: `Hover failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -199,7 +200,7 @@ export class DragTool extends BrowserTool<DragParams> {
         data: { dragged: true, from: params.sourceSelector, to: params.targetSelector },
       };
     } catch (err: unknown) {
-      return { success: false, error: `Drag failed: ${errMsg(err)}` };
+      return { success: false, error: `Drag failed: ${toErrorMessage(err)}` };
     }
   }
 }
@@ -221,8 +222,3 @@ export function createBrowserTools(context: BrowserContext): Tool[] {
   ] as Tool[];
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────────
-
-function errMsg(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}

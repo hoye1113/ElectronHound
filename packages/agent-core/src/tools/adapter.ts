@@ -11,6 +11,7 @@
 
 import type { ToolRegistry } from './types.js';
 import type { ExecutionResult } from '../runtime/types.js';
+import { toErrorMessage } from '../utils/error.js';
 
 /**
  * ToolRegistry adapter interface for AgentLoop.
@@ -36,7 +37,7 @@ export function createToolRegistryAdapter(registry: ToolRegistry): ToolRegistryA
         return {
           success: false,
           result: null,
-          error: error instanceof Error ? error.message : String(error),
+          error: toErrorMessage(error),
         };
       }
     },
