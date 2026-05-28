@@ -183,18 +183,21 @@ grep -rn "console\.error" packages/agent-core/src apps/server/src --include="*.t
 
 ## Wave 6 — 安全加固（2-3 轮）
 
-### 6.1 依赖安全审计
-- **命令：** `pnpm audit`
-- **修复：** 已知漏洞的依赖升级
+### 6.1 依赖安全审计 ✅
+- **结果：** 18 CVE (全在 dev/test 依赖)
+- **修复：** electron ^35→^39.8.5 (17 CVE)
 
-### 6.2 输入验证加固
-- **检查：** 所有 API 路由是否有 Zod schema 验证
-- **检查：** 文件路径是否有路径遍历防护
-- **检查：** 用户输入是否有 XSS 防护
+### 6.2 输入验证加固 ✅
+- **Zod 验证:** 所有路由已覆盖
+- **路径遍历:** fileSecurity.ts 已防护
+- **XSS:** escapeHtml() 已覆盖
+- **修复:** stream.ts 添加 UuidParam 验证
 
-### 6.3 敏感信息检查
-- **检查：** 硬编码的 API key 或密码
-- **检查：** `.env` 文件是否被正确 gitignore
+### 6.3 敏感信息检查 ✅
+- **API key:** 全部通过环境变量
+- **.env:** 正确 gitignore
+- **日志:** authorization 已 redact
+- **测试:** 使用假占位符
 - **检查：** 日志中是否泄露敏感信息
 
 ---
@@ -215,6 +218,7 @@ grep -rn "console\.error" packages/agent-core/src apps/server/src --include="*.t
 | Wave 3.3-3.5 | W3 | 覆盖率阈值 + error 工具 + logger | `b43c1ed` | 2026-05-29 |
 | Wave 4 | W4 | e2e 测试重写 + CI 强化 | `085e481` | 2026-05-29 |
 | Wave 5.1+5.4 | W5 | 测试性能 + bundle 优化 | `82b0b01` | 2026-05-29 |
+| Wave 6 | W6 | 安全加固 (CVE 修复 + 验证) | `931745d` | 2026-05-29 |
 
 ---
 
@@ -234,3 +238,5 @@ grep -rn "console\.error" packages/agent-core/src apps/server/src --include="*.t
 | 日志系统 | stderr.write | Logger 接口 | - |
 | CI 覆盖率门禁 | 无 | 已启用 | - |
 | Dashboard bundle | ~540KB | ~475KB | - |
+| 安全 CVE | 18 | 1 (dev) | 0 |
+| 输入验证 | 部分 | 全覆盖 | 全覆盖 |
