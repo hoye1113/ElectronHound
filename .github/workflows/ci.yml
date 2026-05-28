@@ -3,8 +3,20 @@ name: CI
 on:
   push:
     branches: [master]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.changeset/**'
   pull_request:
     branches: [master]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.changeset/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
@@ -38,8 +50,8 @@ jobs:
       - name: Run lint
         run: pnpm run lint
 
-      - name: Run tests with coverage
-        run: npx vitest run --coverage --coverage.reporter=text --coverage.reporter=lcov --reporter=default --reporter=junit --outputFile.junit=./test-results/junit.xml
+      - name: Run tests with coverage (enforces coverage thresholds from vitest.config.ts)
+        run: pnpm test -- --coverage --coverage.reporter=text --coverage.reporter=lcov
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
