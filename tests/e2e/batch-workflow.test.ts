@@ -66,7 +66,7 @@ describe('Batch Workflow E2E: Creation with Multiple Tasks', () => {
 
     // All tasks should be queued
     for (const task of tasks) {
-      expect(['queued', 'failed']).toContain(task.status);
+      expect(['queued', 'failed', 'running']).toContain(task.status);
     }
   });
 

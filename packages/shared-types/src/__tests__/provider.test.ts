@@ -130,7 +130,10 @@ describe('UpdateProviderSchema', () => {
 
   it('accepts empty object (no updates)', () => {
     const result = UpdateProviderSchema.parse({});
-    expect(Object.keys(result)).toHaveLength(0);
+    // 'enabled' has a default of true in the base schema, so it appears even when not provided
+    expect(result.enabled).toBe(true);
+    expect(result.name).toBeUndefined();
+    expect(result.apiKey).toBeUndefined();
   });
 
   it('accepts apiKey update', () => {

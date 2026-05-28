@@ -24,7 +24,7 @@ describe('test-electron-app fixture', () => {
 
     it('depends on electron v30+', () => {
       const pkg = JSON.parse(readFileSync(join(fixtureDir, 'package.json'), 'utf-8'));
-      const electronVersion = pkg.dependencies?.electron;
+      const electronVersion = pkg.dependencies?.electron ?? pkg.optionalDependencies?.electron;
       expect(electronVersion).toBeDefined();
       // Extract major version from semver range like "^35.0.0"
       const major = parseInt(electronVersion.replace(/[^0-9]/g, '').slice(0, 2), 10);

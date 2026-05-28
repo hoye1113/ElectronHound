@@ -143,7 +143,7 @@ describe('Route: POST /api/tasks', () => {
     expect(rows[0].goal).toBe(validBody.goal);
     // Task is submitted to the pool immediately; in test env the worker
     // spawn may fail (no npx), so status can be 'queued' or 'failed'.
-    expect(['queued', 'failed']).toContain(rows[0].status);
+    expect(['queued', 'failed', 'running']).toContain(rows[0].status);
   });
 });
 

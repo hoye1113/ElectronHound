@@ -124,7 +124,7 @@ describe('MCPClient', () => {
         command: 'npx',
         args: ['@playwright/mcp', '--headless'],
       });
-      expect(mockTransportInstances[0]!.start).toHaveBeenCalled();
+      expect(mockClientInstances[0]!.connect).toHaveBeenCalled();
     });
 
     it('connect({ electron: { appPath: "/path/to/app" } }) spawns Electron process', async () => {
@@ -133,10 +133,12 @@ describe('MCPClient', () => {
       expect(client.isMockMode()).toBe(false);
 
       expect(mockTransportInstances.length).toBe(1);
-      expect(mockTransportInstances[0]!.params).toEqual({
-        command: 'npx',
-        args: ['@eata/electron-bridge-mcp', '/path/to/app'],
-      });
+      expect(mockTransportInstances[0]!.params).toEqual(
+        expect.objectContaining({
+          command: 'npx',
+          args: ['tsx', expect.stringContaining('server.ts'), '/path/to/app'],
+        }),
+      );
     });
 
     it('connect({ electron: { appPath, helperPath } }) includes helper path', async () => {
@@ -144,10 +146,12 @@ describe('MCPClient', () => {
         electron: { appPath: '/app', helperPath: '/helper' },
       });
 
-      expect(mockTransportInstances[0]!.params).toEqual({
-        command: 'npx',
-        args: ['@eata/electron-bridge-mcp', '/app', '--helper', '/helper'],
-      });
+      expect(mockTransportInstances[0]!.params).toEqual(
+        expect.objectContaining({
+          command: 'npx',
+          args: ['tsx', expect.stringContaining('server.ts'), '/app', '--helper', '/helper'],
+        }),
+      );
     });
 
     it('connect with both playwright and electron spawns both', async () => {
@@ -163,10 +167,12 @@ describe('MCPClient', () => {
         args: ['@playwright/mcp', '--headless'],
       });
       // Electron second
-      expect(mockTransportInstances[1]!.params).toEqual({
-        command: 'npx',
-        args: ['@eata/electron-bridge-mcp', '/app'],
-      });
+      expect(mockTransportInstances[1]!.params).toEqual(
+        expect.objectContaining({
+          command: 'npx',
+          args: ['tsx', expect.stringContaining('server.ts'), '/app'],
+        }),
+      );
     });
 
     it('callTool sends request via MCP client in real mode', async () => {
