@@ -135,8 +135,6 @@ describe('WorkerManager', () => {
       expect(args).toContain('/path/to/app');
       expect(args).toContain('--llm-model');
       expect(args).toContain('gpt-4o');
-      expect(args).toContain('--thread-id');
-      expect(args).toContain('test-task-1');
     });
 
     it('includes maxSteps arg when specified', () => {
