@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { buildServer } from '../../apps/server/src/server.js';
-import { createTestGraph } from '../../packages/agent-core/src/graph.js';
 import { setMCPClient, MCPClient } from '../../packages/agent-core/src/mcp/client.js';
 import {
   loadProvidersConfig,
@@ -191,8 +190,9 @@ describe('E2E: Provider Selection', () => {
       ).rejects.toThrow("Provider 'nonexistent-provider' not found");
     });
 
-    it('uses env-based provider when providerId is not specified', async () => {
+    it.skipIf(!process.env.OPENAI_API_KEY)('uses env-based provider when providerId is not specified', async () => {
       // Without providerId, should fall back to env-based path
+      // Requires OPENAI_API_KEY to be set
       const result = await runTest({
         goal: 'Test default provider path',
         targetAppPath: '/test/app',

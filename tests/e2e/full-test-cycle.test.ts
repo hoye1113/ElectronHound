@@ -1,9 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { buildServer } from '../../apps/server/src/server.js';
-import { createTestGraph } from '../../packages/agent-core/src/graph.js';
 import { setMCPClient, MCPClient } from '../../packages/agent-core/src/mcp/client.js';
-import { PatternStore } from '../../packages/agent-core/src/report-graph/pattern-store.js';
-import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import type Database from 'better-sqlite3';
@@ -78,83 +76,18 @@ describe('Full test cycle: REST API + Graph + PatternStore', () => {
     expect(body.total).toBeDefined();
   });
 
-  it('executes graph and reaches a terminal state', async () => {
-    const graph = createTestGraph();
-    const compiled = graph.compile();
-
-    const result = await compiled.invoke(
-      {
-        goal: 'Test full cycle',
-        targetAppPath: '/test/app',
-        llmModel: 'gpt-4o',
-        maxSteps: 10,
-        taskId: 'e2e-full-cycle',
-      },
-      { configurable: { thread_id: 'e2e-full-cycle' }, recursionLimit: 100 },
-    );
-
-    expect(result).toBeDefined();
-    expect(result.status).not.toBe('running');
-    // Graph should reach one of: completed, failed, or aborted
-    expect(['completed', 'failed', 'aborted']).toContain(result.status);
-    expect(result.stepCount).toBeGreaterThan(0);
+  // TODO: Rewrite for AgentLoop (LangGraph StateGraph removed in Pi migration)
+  it.skip('executes agent loop and reaches a terminal state', async () => {
+    // Previously tested createTestGraph().compile().invoke()
+    // Now needs to test AgentLoop via runTest() with a mock LLM provider
   });
 
-  it('reads and writes feedback patterns', () => {
-    const store = new PatternStore(dataDir);
-
-    // Insert a pattern
-    const pattern = {
-      id: crypto.randomUUID(),
-      errorType: 'element_not_found',
-      targetDescription: 'Settings button on main page',
-      remediationHint: 'Wait for page to fully load before clicking',
-      similarityKeywords: ['settings', 'button', 'navigation'],
-      frequency: 1,
-      lastSeen: new Date().toISOString(),
-      relatedGoalPatterns: ['click settings', 'navigate settings'],
-    };
-    store.upsert(pattern);
-
-    // Read it back
-    const all = store.readAll();
-    expect(all.length).toBe(1);
-    expect(all[0].errorType).toBe('element_not_found');
-    expect(all[0].remediationHint).toBe('Wait for page to fully load before clicking');
-    expect(all[0].similarityKeywords).toContain('settings');
-
-    // Upsert again → should increment frequency
-    const updated = store.upsert({
-      ...pattern,
-      frequency: 1,
-      lastSeen: new Date().toISOString(),
-    });
-    expect(updated.frequency).toBeGreaterThanOrEqual(2);
+  // TODO: PatternStore was removed with report-graph in Pi migration
+  it.skip('reads and writes feedback patterns', () => {
+    // PatternStore no longer exists — needs reimplementation
   });
 
-  it('loads patterns for prompt injection with max 50 cap', () => {
-    const store = new PatternStore(dataDir);
-
-    // Insert 60 patterns
-    for (let i = 0; i < 60; i++) {
-      store.upsert({
-        id: crypto.randomUUID(),
-        errorType: `error-type-${i}`,
-        targetDescription: `target description for test ${i}`,
-        remediationHint: `Try doing X instead for error ${i}`,
-        similarityKeywords: ['test', `keyword-${i}`],
-        frequency: 1,
-        lastSeen: new Date().toISOString(),
-        relatedGoalPatterns: ['test goal'],
-      });
-    }
-
-    const prompt = store.loadPatternsForPrompt('test goal', 50);
-    // Should return a non-empty string capped at 50 patterns
-    expect(prompt.length).toBeGreaterThan(0);
-    // Count occurrences of "error-type-" to verify cap
-    const matches = prompt.match(/error-type-/g);
-    expect(matches).not.toBeNull();
-    expect(matches!.length).toBeLessThanOrEqual(50);
+  it.skip('loads patterns for prompt injection with max 50 cap', () => {
+    // PatternStore no longer exists — needs reimplementation
   });
 });

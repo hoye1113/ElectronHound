@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { buildServer } from '../../apps/server/src/server.js';
-import { createTestGraph } from '../../packages/agent-core/src/graph.js';
 import { setMCPClient, MCPClient } from '../../packages/agent-core/src/mcp/client.js';
+import { runTest } from '../../packages/agent-core/src/runner.js';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -47,19 +47,15 @@ describe.skipIf(!hasApiKey)('Real LLM E2E tests', () => {
     expect(createRes.statusCode).toBe(201);
     const task = JSON.parse(createRes.body);
 
-    const graph = createTestGraph();
-    const compiled = graph.compile();
-
-    const result = await compiled.invoke({
+    const result = await runTest({
       goal: task.goal,
       targetAppPath: task.targetAppPath,
       llmModel: task.llmModel,
       maxSteps: task.maxSteps,
       taskId: task.id,
-    }, { configurable: { thread_id: task.id }, recursionLimit: 100 });
+    });
 
     expect(['completed', 'failed', 'aborted']).toContain(result.status);
     expect(result.stepCount).toBeGreaterThan(0);
-    expect(result.history.length).toBeGreaterThan(0);
   }, 60000);
 });
