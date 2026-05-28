@@ -60,12 +60,14 @@ describe('CreateTaskForm', () => {
     fireEvent.click(screen.getByText('Create Task'));
 
     await waitFor(() => {
-      expect(mockCreateTask).toHaveBeenCalledWith({
-        goal: 'Test the checkout flow',
-        targetAppPath: '/apps/checkout',
-        llmModel: 'gpt-4o',
-        maxSteps: 50,
-      });
+      expect(mockCreateTask).toHaveBeenCalledWith(
+        expect.objectContaining({
+          goal: 'Test the checkout flow',
+          targetAppPath: '/apps/checkout',
+          llmModel: 'gpt-4o',
+          maxSteps: 50,
+        }),
+      );
     });
   });
 

@@ -9,6 +9,8 @@ export const TaskStatusEnum = z.enum([
   'aborted',
 ]);
 
+export const TaskPriorityEnum = z.enum(['low', 'medium', 'high']);
+
 export const CreateTaskRequestSchema = z.object({
   goal: z.string().min(1),
   targetAppPath: z.string().min(1),
@@ -16,6 +18,7 @@ export const CreateTaskRequestSchema = z.object({
   maxSteps: z.number().int().positive().default(50).optional(),
   contextInjection: z.string().optional(),
   providerId: z.string().optional(),
+  priority: TaskPriorityEnum.default('medium').optional(),
 });
 
 export const TaskSchema = z.object({
@@ -28,6 +31,7 @@ export const TaskSchema = z.object({
   providerId: z.string().optional(),
   contextInjection: z.string().optional(),
   stepCount: z.number().int(),
+  priority: TaskPriorityEnum.default('medium').optional(),
   resultSummary: z
     .object({
       success: z.boolean(),

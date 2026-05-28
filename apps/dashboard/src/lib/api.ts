@@ -53,6 +53,19 @@ export interface ProvidersConfig {
 
 export type TemplateCategory = 'login' | 'crud' | 'form' | 'navigation' | 'file' | 'settings' | 'custom';
 
+export interface FewShotStep {
+  action: string;
+  observation: string;
+}
+
+export interface FewShotExample {
+  id: string;
+  goal: string;
+  steps: FewShotStep[];
+  expectedResult: string;
+  metadata: { tags: string[]; domain: string; difficulty: string };
+}
+
 export interface Template {
   id: string;
   name: string;
@@ -203,6 +216,35 @@ export const api = {
     },
     cancel(batchId: string): Promise<{ success: boolean; batchId: string }> {
       return fetchJson(`${API_BASE}/api/tasks/batch/${batchId}/cancel`, { method: 'POST' });
+    },
+  },
+  fewShot: {
+    _key: 'eata-few-shot-examples',
+    list(): FewShotExample[] {
+      try {
+        return JSON.parse(localStorage.getItem('eata-few-shot-examples') ?? '[]');
+      } catch {
+        return [];
+      }
+    },
+    add(data: Omit<FewShotExample, 'id'>): FewShotExample {
+      const examples = api.fewShot.list();
+      const example: FewShotExample = { ...data, id: `fs-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` };
+      examples.push(example);
+      localStorage.setItem('eata-few-shot-examples', JSON.stringify(examples));
+      return example;
+    },
+    update(id: string, data: Omit<FewShotExample, 'id'>): void {
+      const examples = api.fewShot.list();
+      const idx = examples.findIndex(e => e.id === id);
+      if (idx >= 0) {
+        examples[idx] = { ...data, id };
+        localStorage.setItem('eata-few-shot-examples', JSON.stringify(examples));
+      }
+    },
+    remove(id: string): void {
+      const examples = api.fewShot.list().filter(e => e.id !== id);
+      localStorage.setItem('eata-few-shot-examples', JSON.stringify(examples));
     },
   },
 };
