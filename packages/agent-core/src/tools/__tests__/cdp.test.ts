@@ -355,7 +355,7 @@ describe('CDP Electron tools', () => {
 
       expect(result.success).toBe(true);
       expect(result.data).toMatchObject({ launched: true, appPath: '/path/to/app' });
-      expect(result.data.sessionId).toBeTruthy();
+      expect((result.data as { sessionId: string }).sessionId).toBeTruthy();
       expect(client.isConnected()).toBe(true);
     });
 
@@ -408,7 +408,7 @@ describe('CDP Electron tools', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.channel).toBe('test-channel');
+      expect((result.data as { channel: string }).channel).toBe('test-channel');
     });
 
     it('sends without response by default', async () => {
@@ -447,7 +447,7 @@ describe('CDP Electron tools', () => {
       const result = await t.invoke({ type: 'confirm', dismiss: true });
 
       expect(result.success).toBe(true);
-      expect(result.data.type).toBe('confirm');
+      expect((result.data as { type: string }).type).toBe('confirm');
     });
   });
 });

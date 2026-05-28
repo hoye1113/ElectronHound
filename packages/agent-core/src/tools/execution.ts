@@ -27,7 +27,7 @@ const executeCodeSchema = z.object({
 /**
  * Execute code in a sandboxed runtime (Node.js or browser).
  */
-export class ExecuteCodeTool implements Tool {
+export class ExecuteCodeTool implements Tool<ExecuteCodeParams> {
   readonly name = 'execute_code';
   readonly description =
     'Execute arbitrary code in a Node.js or browser sandbox';

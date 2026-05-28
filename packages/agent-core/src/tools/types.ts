@@ -17,13 +17,14 @@ export type ToolParams = Record<string, unknown>;
 
 /**
  * A single tool that can be invoked by the agent.
+ * @template P - The parameter type for this tool (defaults to ToolParams).
  */
-export interface Tool {
+export interface Tool<P = ToolParams> {
   readonly name: string;
   readonly description: string;
   readonly schema: ZodSchema<unknown>;
 
-  invoke(params: ToolParams): Promise<ToolResult>;
+  invoke(params: P): Promise<ToolResult>;
 }
 
 /**

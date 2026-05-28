@@ -17,7 +17,7 @@ describe('emit', () => {
   let spy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    spy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    spy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true) as unknown as typeof spy;
   });
 
   afterEach(() => {
@@ -156,9 +156,9 @@ describe('workerMain', () => {
 
   beforeEach(() => {
     mockRunTest.mockReset();
-    stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
-    exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+    stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true) as unknown as typeof stdoutSpy;
+    stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true) as unknown as typeof stderrSpy;
+    exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never) as unknown as typeof exitSpy;
     vi.useFakeTimers();
   });
 

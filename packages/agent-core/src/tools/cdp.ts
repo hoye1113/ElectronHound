@@ -24,6 +24,7 @@ import type {
   CDPConfig,
   CDPSessionInfo,
   CDPRawResult,
+  CDPToolParams,
   CDPBrowserSnapshotParams,
   CDPBrowserClickParams,
   CDPBrowserTypeParams,
@@ -246,15 +247,16 @@ export class CDPSession {
 /**
  * Abstract base class for all CDP tools.
  * Holds a reference to the CDPContext for direct CDP protocol access.
+ * @template P - The CDP-specific parameter type (defaults to CDPToolParams).
  */
-export abstract class CDPTool implements Tool {
+export abstract class CDPTool<P = CDPToolParams> implements Tool<P> {
   abstract readonly name: string;
   abstract readonly description: string;
   abstract readonly schema: z.ZodSchema<unknown>;
 
   constructor(protected readonly client: CDPContext) {}
 
-  abstract invoke(params: Record<string, unknown>): Promise<ToolResult>;
+  abstract invoke(params: P): Promise<ToolResult>;
 
   /**
    * Helper: send a CDP command and wrap the result as a ToolResult.
@@ -373,7 +375,7 @@ const cdpMockDialogSchema = z.object({
 
 // ─── Browser CDP tools (7) ──────────────────────────────────────────────
 
-export class BrowserSnapshotTool extends CDPTool {
+export class BrowserSnapshotTool extends CDPTool<CDPBrowserSnapshotParams> {
   readonly name = 'browser_snapshot';
   readonly description =
     'Take an accessibility snapshot or screenshot via CDP (Accessibility.getFullAXTree or Page.captureSnapshot)';
@@ -389,7 +391,7 @@ export class BrowserSnapshotTool extends CDPTool {
   }
 }
 
-export class BrowserClickTool extends CDPTool {
+export class BrowserClickTool extends CDPTool<CDPBrowserClickParams> {
   readonly name = 'browser_click';
   readonly description =
     'Click an element via CDP (DOM.querySelector + Input.dispatchMouseEvent)';
@@ -414,7 +416,7 @@ export class BrowserClickTool extends CDPTool {
   }
 }
 
-export class BrowserTypeTool extends CDPTool {
+export class BrowserTypeTool extends CDPTool<CDPBrowserTypeParams> {
   readonly name = 'browser_type';
   readonly description =
     'Type text into an element via CDP (Input.insertText / Input.dispatchKeyEvent)';
@@ -438,7 +440,7 @@ export class BrowserTypeTool extends CDPTool {
   }
 }
 
-export class BrowserNavigateTool extends CDPTool {
+export class BrowserNavigateTool extends CDPTool<CDPBrowserNavigateParams> {
   readonly name = 'browser_navigate';
   readonly description = 'Navigate to a URL via CDP (Page.navigate)';
   readonly schema = cdpBrowserNavigateSchema;
@@ -460,7 +462,7 @@ export class BrowserNavigateTool extends CDPTool {
   }
 }
 
-export class BrowserPressKeyTool extends CDPTool {
+export class BrowserPressKeyTool extends CDPTool<CDPBrowserPressKeyParams> {
   readonly name = 'browser_press_key';
   readonly description = 'Press a keyboard key via CDP (Input.dispatchKeyEvent)';
   readonly schema = cdpBrowserPressKeySchema;
@@ -482,7 +484,7 @@ export class BrowserPressKeyTool extends CDPTool {
   }
 }
 
-export class BrowserHoverTool extends CDPTool {
+export class BrowserHoverTool extends CDPTool<CDPBrowserHoverParams> {
   readonly name = 'browser_hover';
   readonly description =
     'Hover over an element via CDP (Input.dispatchMouseEvent mouseMoved)';
@@ -505,7 +507,7 @@ export class BrowserHoverTool extends CDPTool {
   }
 }
 
-export class BrowserDragTool extends CDPTool {
+export class BrowserDragTool extends CDPTool<CDPBrowserDragParams> {
   readonly name = 'browser_drag';
   readonly description =
     'Drag an element from source to target via CDP (Input.dispatchMouseEvent sequence)';
@@ -535,7 +537,7 @@ export class BrowserDragTool extends CDPTool {
 
 // ─── Electron CDP tools (5) ─────────────────────────────────────────────
 
-export class CDPLaunchTool extends CDPTool {
+export class CDPLaunchTool extends CDPTool<CDPLaunchParams> {
   readonly name = 'cdp_launch';
   readonly description =
     'Launch an Electron application and establish a CDP connection';
@@ -548,7 +550,7 @@ export class CDPLaunchTool extends CDPTool {
       const sessionInfo = await this.client.connect({
         port,
         targetType: 'electron',
-        timeout: params.options?.timeout,
+        timeout: params.options?.timeout as number | undefined,
       });
       return {
         success: true,
@@ -560,7 +562,7 @@ export class CDPLaunchTool extends CDPTool {
   }
 }
 
-export class CDPCloseTool extends CDPTool {
+export class CDPCloseTool extends CDPTool<CDPCloseParams> {
   readonly name = 'cdp_close';
   readonly description =
     'Close a running Electron application and disconnect CDP';
@@ -576,7 +578,7 @@ export class CDPCloseTool extends CDPTool {
   }
 }
 
-export class CDPExecuteMainTool extends CDPTool {
+export class CDPExecuteMainTool extends CDPTool<CDPExecuteMainParams> {
   readonly name = 'cdp_execute_main';
   readonly description =
     'Execute JavaScript code in the Electron main process via CDP (Runtime.evaluate)';
@@ -596,7 +598,7 @@ export class CDPExecuteMainTool extends CDPTool {
   }
 }
 
-export class CDPTriggerIpcTool extends CDPTool {
+export class CDPTriggerIpcTool extends CDPTool<CDPTriggerIpcParams> {
   readonly name = 'cdp_trigger_ipc';
   readonly description =
     'Trigger an IPC event on a channel via CDP (Runtime.evaluate IPC call)';
@@ -630,7 +632,7 @@ export class CDPTriggerIpcTool extends CDPTool {
   }
 }
 
-export class CDPMockDialogTool extends CDPTool {
+export class CDPMockDialogTool extends CDPTool<CDPMockDialogParams> {
   readonly name = 'cdp_mock_dialog';
   readonly description =
     'Mock a native dialog via CDP (Page.handleJavaScriptDialog)';
@@ -661,7 +663,7 @@ export class CDPMockDialogTool extends CDPTool {
 /**
  * Create all 12 CDP tools for the given CDP client.
  */
-export function createCDPTools(client: CDPContext): CDPTool[] {
+export function createCDPTools(client: CDPContext): Tool[] {
   return [
     // Browser tools (7)
     new BrowserSnapshotTool(client),
@@ -677,7 +679,7 @@ export function createCDPTools(client: CDPContext): CDPTool[] {
     new CDPExecuteMainTool(client),
     new CDPTriggerIpcTool(client),
     new CDPMockDialogTool(client),
-  ];
+  ] as Tool[];
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────
