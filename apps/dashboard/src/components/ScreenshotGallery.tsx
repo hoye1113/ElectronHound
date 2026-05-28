@@ -38,7 +38,7 @@ export default function ScreenshotGallery({ screenshots }: ScreenshotGalleryProp
           >
             <img
               src={screenshot.url}
-              alt={`Step ${screenshot.stepIndex + 1} - ${screenshot.phase}`}
+              alt={t('screenshotGallery.viewScreenshot', { step: screenshot.stepIndex + 1, phase: screenshot.phase })}
               className="size-full object-cover transition-opacity group-hover:opacity-80"
               loading="lazy"
             />
@@ -73,7 +73,7 @@ export default function ScreenshotGallery({ screenshots }: ScreenshotGalleryProp
                 <>
                   <img
                     src={selectedScreenshot.url}
-                    alt={`Full size screenshot - Step ${selectedScreenshot.stepIndex + 1}`}
+                    alt={t('screenshotGallery.fullSizeScreenshot', { step: selectedScreenshot.stepIndex + 1 })}
                     className="max-h-[85vh] max-w-[85vw] rounded-xl object-contain"
                   />
                   <div className="flex items-center gap-3 px-4 py-3">

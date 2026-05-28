@@ -64,7 +64,8 @@
     "empty": "No screenshots available",
     "previewTitle": "Screenshot Preview",
     "closeViewer": "Close screenshot viewer",
-    "viewScreenshot": "View screenshot from step {{step}} ({{phase}} phase)"
+    "viewScreenshot": "View screenshot from step {{step}} ({{phase}} phase)",
+    "fullSizeScreenshot": "Full size screenshot - Step {{step}}"
   },
   "stepTimeline": {
     "phase_observe": "Observe",
@@ -100,7 +101,7 @@
     "goalPlaceholder": "What should the AI agent accomplish?",
     "targetAppLabel": "Target App Path",
     "targetAppPlaceholder": "/path/to/electron/app",
-    "modelLabel": "LLM Model",
+    "modelLabel": "LLM Model:",
     "providerLabel": "LLM Provider",
     "providerPlaceholder": "Select provider (default: active)",
     "submitError": "Failed to create task. Please try again.",
@@ -145,11 +146,11 @@
     "templatePlaceholder": "Choose a template (optional)",
     "nameLabel": "Name",
     "nameRequired": "Name is required",
-    "baseUrlLabel": "Base URL",
+    "baseUrlLabel": "Base URL:",
     "baseUrlRequired": "Base URL is required",
-    "modelLabel": "Model",
+    "modelLabel": "Model:",
     "modelRequired": "Model is required",
-    "apiKeyLabel": "API Key",
+    "apiKeyLabel": "API Key:",
     "apiKeyRequired": "API Key is required",
     "hideApiKey": "Hide API key",
     "showApiKey": "Show API key",
@@ -243,6 +244,7 @@
     "export": "Export",
     "exportJson": "Export JSON",
     "exportCsv": "Export CSV",
-    "exportHtml": "Export HTML"
+    "exportHtml": "Export HTML",
+    "loadError": "Failed to load task details"
   }
 }

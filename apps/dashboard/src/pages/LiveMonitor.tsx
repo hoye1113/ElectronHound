@@ -131,7 +131,7 @@ export default function LiveMonitor() {
               {task && (
                 <>
                   <span>·</span>
-                  <span>{task.stepCount} steps</span>
+                  <span>{task.stepCount} {t('common.steps')}</span>
                   <span>·</span>
                   <span>{task.llmModel}</span>
                 </>

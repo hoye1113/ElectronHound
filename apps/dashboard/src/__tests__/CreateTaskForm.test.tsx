@@ -38,7 +38,7 @@ describe('CreateTaskForm', () => {
     render(<CreateTaskForm {...defaultProps} />);
     expect(screen.getByLabelText('Goal')).toBeInTheDocument();
     expect(screen.getByLabelText('Target App Path')).toBeInTheDocument();
-    expect(screen.getByText('LLM Model')).toBeInTheDocument();
+    expect(screen.getByText('LLM Model:')).toBeInTheDocument();
   });
 
   it('does not render when closed', () => {
