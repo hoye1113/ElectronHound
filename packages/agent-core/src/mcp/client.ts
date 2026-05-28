@@ -3,6 +3,8 @@ import {
   StdioClientTransport,
   type StdioServerParameters,
 } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export interface MCPToolCall {
   server: 'playwright' | 'electron';
@@ -90,7 +92,6 @@ export class MCPClient {
       version: '0.1.0',
     });
 
-    await transport.start();
     await client.connect(transport);
 
     this.connections.set('playwright', { transport, client });
@@ -108,9 +109,15 @@ export class MCPClient {
       args.push('--helper', options.helperPath);
     }
 
+    const __dirname = dirname(fileURLToPath(import.meta.url));
+    const serverScript = resolve(__dirname, '..', '..', '..', 'electron-bridge-mcp', 'src', 'server.ts');
+
+    const cleanEnv = { ...process.env };
+    delete cleanEnv.ELECTRON_RUN_AS_NODE;
     const params: StdioServerParameters = {
       command: 'npx',
-      args: ['@eata/electron-bridge-mcp', ...args],
+      args: ['tsx', serverScript, ...args],
+      env: cleanEnv as Record<string, string>,
     };
 
     const transport = new StdioClientTransport(params);
@@ -119,7 +126,6 @@ export class MCPClient {
       version: '0.1.0',
     });
 
-    await transport.start();
     await client.connect(transport);
 
     this.connections.set('electron', { transport, client });

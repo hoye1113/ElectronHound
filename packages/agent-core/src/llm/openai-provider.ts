@@ -31,6 +31,7 @@ export function createOpenAIProvider(config: LLMProviderConfig): LLMProvider {
           model: config.model,
           messages,
           response_format: { type: 'json_object' },
+          max_tokens: opts.maxTokens ?? 2000,
         }),
       });
 
@@ -42,10 +43,17 @@ export function createOpenAIProvider(config: LLMProviderConfig): LLMProvider {
       }
 
       const data = (await response.json()) as {
-        choices: Array<{ message: { content: string } }>;
+        choices: Array<{ message: { content: string; reasoning_content?: string } }>;
       };
       const raw = data.choices?.[0]?.message?.content ?? '{}';
-      const parsed = JSON.parse(raw) as T;
+      // Strip <think>...</think> reasoning tags (used by DeepSeek, MiniMax, etc.)
+      let cleaned = raw.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+      // Strip ```json ... ``` markdown code fences
+      const fenceMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (fenceMatch) {
+        cleaned = fenceMatch[1].trim();
+      }
+      const parsed = JSON.parse(cleaned || '{}') as T;
 
       // Validate with Zod schema if provided
       if (opts.schema && typeof (opts.schema as Record<string, unknown>).parse === 'function') {
@@ -82,9 +90,17 @@ export function createOpenAIProvider(config: LLMProviderConfig): LLMProvider {
       }
 
       const data = (await response.json()) as {
-        choices: Array<{ message: { content: string } }>;
+        choices: Array<{ message: { content: string; reasoning_content?: string } }>;
       };
-      return { text: data.choices?.[0]?.message?.content ?? '' };
+      const raw = data.choices?.[0]?.message?.content ?? '';
+      // Strip <think>...</think> reasoning tags (used by DeepSeek, MiniMax, etc.)
+      let text = raw.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+      // Strip ```json ... ``` markdown code fences
+      const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (fenceMatch) {
+        text = fenceMatch[1].trim();
+      }
+      return { text };
     },
   };
 }

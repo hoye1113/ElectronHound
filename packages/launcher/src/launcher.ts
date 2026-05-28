@@ -21,32 +21,23 @@ const DEFAULT_TIMEOUT = 30_000;
 
 /**
  * Resolve the Electron binary path.
- * Tries require.resolve first, falls back to 'electron' from PATH.
+ * Uses require('electron') which returns the path to the electron binary
+ * (not require.resolve which returns index.js).
+ * Falls back to 'electron' from PATH if not found.
  */
 async function resolveElectronPath(): Promise<string> {
   try {
-    const resolved = await requireResolve('electron');
-    if (resolved) {
-      return resolved;
+    const { createRequire } = await import('node:module');
+    const require = createRequire(import.meta.url);
+    // require('electron') returns the binary path string, not the module
+    const electronPath = require('electron') as string;
+    if (typeof electronPath === 'string' && electronPath.length > 0) {
+      return electronPath;
     }
   } catch {
     // Fall through to PATH lookup
   }
   return 'electron';
-}
-
-/**
- * ESM-compatible require.resolve wrapper.
- */
-async function requireResolve(id: string): Promise<string | null> {
-  // Use createRequire for ESM compatibility
-  const { createRequire } = await import('node:module');
-  const require = createRequire(import.meta.url);
-  try {
-    return require.resolve(id);
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -75,9 +66,14 @@ export async function spawnElectron(options: SpawnOptions): Promise<ElectronProc
     args.push('--require', helperPath);
   }
 
-  const childEnv = env
+  const childEnv: Record<string, string | undefined> = env
     ? { ...process.env, ...env }
-    : process.env;
+    : { ...process.env };
+
+  // ELECTRON_RUN_AS_NODE=1 (set by VS Code, CI, etc.) makes the electron binary
+  // run as plain Node.js instead of Electron. Always unset it so the app loads
+  // with the full Electron API (app, BrowserWindow, ipcMain, …).
+  delete childEnv.ELECTRON_RUN_AS_NODE;
 
   const child = spawn(electronPath, args, {
     env: childEnv as NodeJS.ProcessEnv,

@@ -49,6 +49,17 @@ const PLAN_SYSTEM = [
   '  - "toolArgs": an object with the arguments for the tool',
   '  - "expectedOutcome": what you expect to happen after executing this action',
   'Choose the action that makes the most progress toward the goal.',
+  '',
+  'Available tools:',
+  '  - electron_launch: Launch an Electron app. Args: { targetAppPath: string, debuggingPort?: number }',
+  '  - electron_close: Close a running Electron app. Args: { pid: number }',
+  '  - execute_main: Execute JS code in Electron main process. Args: { code: string, timeout?: number }',
+  '  - trigger_ipc: Send IPC message to Electron app. Args: { channel: string, data?: unknown }',
+  '  - mock_dialog: Mock native dialog. Args: { type: "open"|"save"|"message", response: unknown }',
+  '  - browser_snapshot: Get page accessibility tree. Args: {}',
+  '  - browser_click: Click an element. Args: { ref: string }',
+  '  - browser_type: Type text. Args: { ref: string, text: string }',
+  '  - browser_navigate: Navigate to URL. Args: { url: string }',
 ].join('\n');
 
 const VERIFY_SYSTEM = [
@@ -200,6 +211,7 @@ export class AgentLoop {
 
     while (state.stepCount < this.maxSteps) {
       // ── 1. Observe ──────────────────────────────────────────────
+      process.stderr.write(`[agentLoop] Step ${state.stepCount + 1}: Observing...\n`);
       const observation = await this.observe(state);
       state.currentObservation = observation;
 
@@ -237,6 +249,8 @@ export class AgentLoop {
       }
 
       // ── 2. Plan ─────────────────────────────────────────────────
+      process.stderr.write(`[agentLoop] Observation: ${observation.summary.substring(0, 100)}\n`);
+      process.stderr.write(`[agentLoop] Planning...\n`);
       const plan = await this.plan(observation);
       state.lastPlan = plan;
 
@@ -247,6 +261,8 @@ export class AgentLoop {
       });
 
       // ── 3. Execute ──────────────────────────────────────────────
+      process.stderr.write(`[agentLoop] Plan: ${plan.action} (tool: ${plan.toolName})\n`);
+      process.stderr.write(`[agentLoop] Executing ${plan.toolName}...\n`);
       const execution = await this.execute(plan);
       state.lastExecution = execution;
       state.stepCount++;
@@ -258,6 +274,8 @@ export class AgentLoop {
       });
 
       // ── 4. Verify ───────────────────────────────────────────────
+      process.stderr.write(`[agentLoop] Execution result: success=${execution.success}, error=${execution.error ?? 'none'}\n`);
+      process.stderr.write(`[agentLoop] Verifying...\n`);
       const verdict = await this.verify(execution, plan);
 
       this.session.addEntry(sessionId, {

@@ -1,4 +1,4 @@
-import { getMCPClient } from './mcp/client.js';
+import { MCPClient } from './mcp/client.js';
 import { createLLMProviderAdapter, createLLMProviderAdapterForProvider } from './llm/adapter.js';
 import { loadProvidersConfig } from './config-manager.js';
 import { AgentLoop } from './runtime/agentLoop.js';
@@ -43,8 +43,14 @@ export async function runTest(
   // Resolve MCP client (for tool execution)
   let mcpClient;
   if (options.cdpUrl) {
-    const mcp = getMCPClient();
+    // Legacy: connect to an already-running CDP endpoint
+    const mcp = new MCPClient();
     await mcp.connect({ playwrightCdpUrl: options.cdpUrl });
+    mcpClient = mcp;
+  } else if (options.targetAppPath) {
+    // Launch the Electron app via electron-bridge-mcp
+    const mcp = new MCPClient();
+    await mcp.connect({ electron: { appPath: options.targetAppPath } });
     mcpClient = mcp;
   }
 

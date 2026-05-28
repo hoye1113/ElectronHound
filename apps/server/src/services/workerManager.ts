@@ -1,4 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { JsonRpcNotification, JsonRpcControl } from '@eata/shared-types';
 
 // ── Types ───────────────────────────────────────────────────────────
@@ -36,7 +38,9 @@ export interface WorkerEvent {
 
 // ── Constants ───────────────────────────────────────────────────────
 
-const RUNNER_SCRIPT = 'packages/agent-core/src/worker-entry.ts';
+// Resolve runner script path relative to project root (apps/server → ../../packages/...)
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const RUNNER_SCRIPT = resolve(__dirname, '..', '..', '..', '..', 'packages', 'agent-core', 'src', 'worker-entry.ts');
 const HEARTBEAT_TIMEOUT = 10_000;
 const HEARTBEAT_CHECK_INTERVAL = 2_000;
 const CANCEL_TIMEOUT = 5_000;
@@ -89,6 +93,7 @@ export class WorkerManager {
     const child = spawn('npx', ['tsx', RUNNER_SCRIPT, ...args], {
       stdio: ['pipe', 'pipe', 'pipe'],
       env: this.buildEnv(options),
+      shell: true,
     });
 
     const handle: WorkerHandle = {
@@ -116,6 +121,7 @@ export class WorkerManager {
 
     // Process exit
     child.on('exit', (code, signal) => {
+      console.error(`[WorkerManager] Worker ${options.taskId} exited with code=${code}, signal=${signal}`);
       this.handleExit(options.taskId, code, signal);
     });
 
