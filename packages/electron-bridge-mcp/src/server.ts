@@ -155,8 +155,9 @@ export function createServer(options?: {
 
 /**
  * Auto-start the MCP server with stdio transport when run directly.
+ * Exported for testability.
  */
-async function main(): Promise<void> {
+export async function main(): Promise<void> {
   const { server } = createServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);

@@ -417,7 +417,7 @@ describe('persistence', () => {
       // Verify a warning was written to stderr
       expect(stderrSpy).toHaveBeenCalledOnce();
       const written = stderrSpy.mock.calls[0][0] as string;
-      expect(written).toContain('[persistence] Warning:');
+      expect(written).toContain('[persistence] [WARN] Warning:');
 
       stderrSpy.mockRestore();
     });

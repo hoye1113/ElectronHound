@@ -9,8 +9,11 @@ import { join } from 'node:path';
 import type Database from 'better-sqlite3';
 import type { Task, StepRecord } from '@eata/shared-types';
 import { toErrorMessage } from '@eata/agent-core/utils/error';
+import { createStderrLogger } from '../utils/logger.js';
 import { dbRowToTask, dbRowToStep } from '../utils/dbMappers.js';
 import { validatePath } from './fileSecurity.js';
+
+const logger = createStderrLogger('exportService');
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -253,7 +256,7 @@ export class ExportService {
       reportData = JSON.parse(await readFile(manifestPath, 'utf-8'));
     } catch (err: unknown) {
       // No filesystem report; use DB data only
-      process.stderr.write(`[exportService] filesystem report read failed for ${reportId}: ${toErrorMessage(err)}\n`);
+      logger.warn(`filesystem report read failed for ${reportId}: ${toErrorMessage(err)}`);
     }
 
     const logRows = this.db

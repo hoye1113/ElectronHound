@@ -6,6 +6,9 @@
  */
 import { TaskStatusEnum, type Task, type StepRecord } from '@eata/shared-types';
 import { toErrorMessage } from '@eata/agent-core/utils/error';
+import { createStderrLogger } from '../utils/logger.js';
+
+const logger = createStderrLogger('dbMappers');
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
@@ -18,7 +21,7 @@ export function safeJsonParse(value: unknown): unknown {
   try {
     return JSON.parse(value as string);
   } catch (err: unknown) {
-    process.stderr.write(`[dbMappers] safeJsonParse failed: ${toErrorMessage(err)}\n`);
+    logger.warn(`safeJsonParse failed: ${toErrorMessage(err)}`);
     return undefined;
   }
 }

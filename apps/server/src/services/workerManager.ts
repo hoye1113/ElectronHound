@@ -2,6 +2,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { JsonRpcNotification, JsonRpcControl } from '@eata/shared-types';
+import { createStderrLogger } from '../utils/logger.js';
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -53,10 +54,12 @@ export interface Logger {
   error: (obj: Record<string, unknown>, msg?: string) => void;
 }
 
+const stderrLogger = createStderrLogger('WorkerManager');
+
 const fallbackLogger: Logger = {
-  info: (obj, msg) => process.stderr.write(JSON.stringify({ level: 'info', ...obj, msg }) + '\n'),
-  warn: (obj, msg) => process.stderr.write(JSON.stringify({ level: 'warn', ...obj, msg }) + '\n'),
-  error: (obj, msg) => process.stderr.write(JSON.stringify({ level: 'error', ...obj, msg }) + '\n'),
+  info: (obj, msg) => stderrLogger.info(`${JSON.stringify(obj)}${msg ? ` ${msg}` : ''}`),
+  warn: (obj, msg) => stderrLogger.warn(`${JSON.stringify(obj)}${msg ? ` ${msg}` : ''}`),
+  error: (obj, msg) => stderrLogger.error(`${JSON.stringify(obj)}${msg ? ` ${msg}` : ''}`),
 };
 
 // ── WorkerManager ───────────────────────────────────────────────────
@@ -121,7 +124,11 @@ export class WorkerManager {
 
     // Process exit
     child.on('exit', (code, signal) => {
-      process.stderr.write(`[WorkerManager] Worker ${options.taskId} exited with code=${code}, signal=${signal}\n`);
+      if (code === 0 && signal === null) {
+        this.log.info({ workerId: options.taskId }, 'exited successfully');
+      } else {
+        this.log.error({ workerId: options.taskId }, `exited with code=${code}, signal=${signal}`);
+      }
       this.handleExit(options.taskId, code, signal);
     });
 

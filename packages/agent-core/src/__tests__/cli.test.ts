@@ -1,13 +1,27 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type MockInstance } from 'vitest';
 
 // ─── Mock runner BEFORE imports (hoisted by vitest) ──────
-const { mockRunTest } = vi.hoisted(() => ({
+const { mockRunTest, mockLogger } = vi.hoisted(() => ({
   mockRunTest: vi.fn(),
+  mockLogger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
 }));
 
 vi.mock('../runner.js', () => ({
   runTest: mockRunTest,
 }));
+
+vi.mock('../dx/index.js', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    getLogger: vi.fn(() => mockLogger),
+  };
+});
 
 // ─── Imports ──────────────────────────────────────────────
 import {
@@ -493,9 +507,9 @@ describe('cliMain', () => {
     });
 
     expect(code).toBe(1);
-    expect(stderrSpy).toHaveBeenCalled();
-    const stderrCalls = stderrSpy.mock.calls.map((c) => c[0]).join('');
-    expect(stderrCalls).toContain('Validation failed');
+    expect(mockLogger.error).toHaveBeenCalled();
+    const errorCalls = mockLogger.error.mock.calls.map((c: unknown[]) => String(c[0])).join('');
+    expect(errorCalls).toContain('Validation failed');
   });
 
   it('returns 1 on validation failure (invalid model)', async () => {
@@ -578,10 +592,10 @@ describe('cliMain', () => {
     });
 
     expect(code).toBe(1);
-    const stderrOutput = stderrSpy.mock.calls
-      .map((c) => c[0])
-      .join('');
-    expect(stderrOutput).toContain('Connection failed');
+    expect(mockLogger.error).toHaveBeenCalled();
+    // The error is logged as the second argument
+    const errorArg = mockLogger.error.mock.calls[0]?.[1];
+    expect(String(errorArg)).toContain('Connection failed');
   });
 
   it('returns 1 for failed test result', async () => {

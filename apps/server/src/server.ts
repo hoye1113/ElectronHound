@@ -183,7 +183,6 @@ if (isDirectRun) {
     const eataError = wrapError(err, ErrorCode.SYSTEM_NETWORK_ERROR);
     const logger = getLogger({ source: 'server' });
     logger.error('Server startup failed', eataError);
-    process.stderr.write(eataError.format() + '\n');
     process.exit(1);
   }
 }

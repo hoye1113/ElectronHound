@@ -17,7 +17,8 @@
     ".": "./src/index.ts",
     "./dx": "./src/dx/index.ts",
     "./dx/*": "./src/dx/*.ts",
-    "./utils/error": "./src/utils/error.ts"
+    "./utils/error": "./src/utils/error.ts",
+    "./utils/logger": "./src/utils/logger.ts"
   },
   "scripts": {
     "start": "tsx src/runner.ts",

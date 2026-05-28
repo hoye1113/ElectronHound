@@ -1,5 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { toErrorMessage } from '@eata/agent-core/utils/error';
+import { createStderrLogger } from '../utils/logger.js';
+
+const logger = createStderrLogger('health');
 
 export async function healthRoutes(server: FastifyInstance) {
   server.get('/health', async () => {
@@ -31,7 +34,7 @@ export async function healthRoutes(server: FastifyInstance) {
         };
       }
     } catch (err: unknown) {
-      process.stderr.write(`[health] worker pool check failed: ${toErrorMessage(err)}\n`);
+      logger.error(`worker pool check failed: ${toErrorMessage(err)}`);
       checks.workerPool = { status: 'error', message: 'Worker pool unavailable' };
     }
 

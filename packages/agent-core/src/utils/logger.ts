@@ -20,12 +20,12 @@ export interface Logger {
  */
 export function createStderrLogger(tag: string): Logger {
   const write = (message: string): void => {
-    process.stderr.write(`[${tag}] ${message}\n`);
+    process.stderr.write(`${message}\n`);
   };
 
   return {
-    info: write,
-    warn: write,
-    error: write,
+    info: (msg) => write(`[${tag}] [INFO] ${msg}`),
+    warn: (msg) => write(`[${tag}] [WARN] ${msg}`),
+    error: (msg) => write(`[${tag}] [ERROR] ${msg}`),
   };
 }

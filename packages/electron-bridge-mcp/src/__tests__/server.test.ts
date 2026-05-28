@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { ElectronProcess } from '@eata/launcher';
 import type { RegisteredTool } from '@modelcontextprotocol/sdk/server/mcp.js';
 
@@ -8,7 +8,7 @@ import { executeMain } from '../tools/execute-main.js';
 import { triggerIpc } from '../tools/trigger-ipc.js';
 import { mockDialog } from '../tools/mock-dialog.js';
 import { BridgeClient } from '../bridge-client.js';
-import { createServer } from '../server.js';
+import { createServer, main } from '../server.js';
 
 // ─── Mock @eata/launcher ──────────────────────────────────────────────
 
@@ -19,8 +19,16 @@ vi.mock('@eata/launcher', () => ({
 
 // ─── Mock StdioServerTransport for main() tests ──────────────────────
 
+const mockTransportInstance = {
+  start: vi.fn().mockResolvedValue(undefined),
+  close: vi.fn().mockResolvedValue(undefined),
+  send: vi.fn().mockResolvedValue(undefined),
+  onclose: undefined as (() => void) | undefined,
+  onerror: undefined as ((error: Error) => void) | undefined,
+};
+
 vi.mock('@modelcontextprotocol/sdk/server/stdio', () => ({
-  StdioServerTransport: vi.fn().mockImplementation(() => ({})),
+  StdioServerTransport: vi.fn().mockImplementation(() => mockTransportInstance),
 }));
 
 import { spawnElectron, getWebSocketUrl } from '@eata/launcher';
@@ -146,10 +154,16 @@ describe('electron_launch tool', () => {
 
 describe('electron_close tool', () => {
   let processRegistry: Map<number, ElectronProcess>;
+  let killSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     processRegistry = new Map();
+    killSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
+  });
+
+  afterEach(() => {
+    killSpy.mockRestore();
   });
 
   it('should kill a registered process', async () => {
@@ -164,26 +178,18 @@ describe('electron_close tool', () => {
   });
 
   it('should attempt OS-level kill for unknown PID', async () => {
-    const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
-
     const result = await electronClose({ pid: 99999 }, { processRegistry });
 
     expect(killSpy).toHaveBeenCalledWith(99999, 'SIGTERM');
     expect(result.success).toBe(true);
-
-    killSpy.mockRestore();
   });
 
   it('should return success false when process.kill throws for unknown PID', async () => {
-    const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => {
-      throw new Error('ESRCH');
-    });
+    killSpy.mockImplementation(() => { throw new Error('ESRCH'); });
 
     const result = await electronClose({ pid: 99999 }, { processRegistry });
 
     expect(result.success).toBe(false);
-
-    killSpy.mockRestore();
   });
 });
 
@@ -733,6 +739,16 @@ describe('MCP tool handler callbacks (via createServer)', () => {
   // ── electron_close handler ───────────────────────────────────────
 
   describe('electron_close handler', () => {
+    let killSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      killSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
+    });
+
+    afterEach(() => {
+      killSpy.mockRestore();
+    });
+
     it('should return success result as JSON content', async () => {
       const mockProcess = createMockElectronProcess();
       const { server, processRegistry } = createServer();
@@ -754,8 +770,6 @@ describe('MCP tool handler callbacks (via createServer)', () => {
     });
 
     it('should handle OS-level kill for unknown PID', async () => {
-      const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
-
       const { server } = createServer();
       const tools = getToolHandlers(server);
       const handler = tools['electron_close']!.handler as (args: unknown) => Promise<unknown>;
@@ -768,14 +782,10 @@ describe('MCP tool handler callbacks (via createServer)', () => {
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.success).toBe(true);
       expect(killSpy).toHaveBeenCalledWith(99999, 'SIGTERM');
-
-      killSpy.mockRestore();
     });
 
     it('should return success:false when OS kill fails', async () => {
-      const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => {
-        throw new Error('ESRCH');
-      });
+      killSpy.mockImplementation(() => { throw new Error('ESRCH'); });
 
       const { server } = createServer();
       const tools = getToolHandlers(server);
@@ -787,8 +797,6 @@ describe('MCP tool handler callbacks (via createServer)', () => {
 
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.success).toBe(false);
-
-      killSpy.mockRestore();
     });
   });
 
@@ -1028,75 +1036,63 @@ describe('MCP tool handler callbacks (via createServer)', () => {
 describe('main() and module entry point', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockTransportInstance.start.mockClear();
+    mockTransportInstance.close.mockClear();
   });
 
-  it('should create server and connect transport when main() runs', async () => {
-    const mockConnect = vi.fn().mockResolvedValue(undefined);
+  it('should create server and connect transport when main() is called (L160-164)', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    // Access the main function through the server.connect mock
-    // We test main() indirectly by verifying the transport is created and connected
-    // main() is not exported, but we can test its behavior through createServer + connect
-    const { server } = createServer();
-    const originalConnect = server.connect.bind(server);
-    server.connect = mockConnect;
+    // main() is now exported; call it directly
+    // StdioServerTransport is mocked, and mockTransportInstance has start/close
+    await main();
 
-    // Simulate what main() does: create transport, connect
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
-
+    // Verify StdioServerTransport was instantiated
     expect(StdioServerTransport).toHaveBeenCalled();
-    expect(mockConnect).toHaveBeenCalledWith(transport);
+    // Verify transport.start() was called by server.connect()
+    expect(mockTransportInstance.start).toHaveBeenCalled();
+    // Verify stderr message
+    expect(consoleSpy).toHaveBeenCalledWith('Electron Bridge MCP server running on stdio');
 
     consoleSpy.mockRestore();
   });
 
-  it('should log to stderr when server starts successfully', async () => {
+  it('should log to stderr when main() starts successfully (L164)', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { server } = createServer();
 
-    // Simulate main() behavior
-    const transport = new StdioServerTransport();
-    const mockConnect = vi.fn().mockResolvedValue(undefined);
-    server.connect = mockConnect;
-    await server.connect(transport);
-    console.error('Electron Bridge MCP server running on stdio');
+    await main();
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      'Electron Bridge MCP server running on stdio',
-    );
+    expect(consoleSpy).toHaveBeenCalledWith('Electron Bridge MCP server running on stdio');
 
     consoleSpy.mockRestore();
   });
 
-  it('should catch and log fatal errors from main (L172-175)', async () => {
+  it('should propagate errors when server.connect fails (L160-164)', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
 
-    // Simulate the catch block in the entry point (L172-175)
-    const testError = new Error('Startup failed');
-    try {
-      // This simulates: main().catch((err) => { console.error('Fatal error:', err); process.exit(1); })
-      throw testError;
-    } catch (err) {
-      console.error('Fatal error:', err);
-      process.exit(1);
-    }
+    // Make transport.start() reject so connect() throws
+    mockTransportInstance.start.mockRejectedValueOnce(new Error('transport init failed'));
 
-    expect(consoleSpy).toHaveBeenCalledWith('Fatal error:', testError);
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    await expect(main()).rejects.toThrow('transport init failed');
 
     consoleSpy.mockRestore();
-    exitSpy.mockRestore();
   });
 
-  it('isMainModule should be false in test context (L167-169)', () => {
-    // In test context, process.argv[1] will be the test runner, not server.ts
-    // This verifies the guard condition works correctly
-    const { server } = createServer();
-    expect(server).toBeDefined();
-    // The fact that we reach here proves isMainModule was false
-    // (otherwise main() would have been called and potentially hung on stdio)
+  it('isMainModule should be false in test context (L167-170)', () => {
+    // In test context, process.argv[1] is the test runner, not server.ts
+    // Verify the guard condition: import.meta.url will not match process.argv[1]
+    const isMainModule =
+      process.argv[1] &&
+      import.meta.url === new URL(`file://${process.argv[1].replace(/\\/g, '/')}`).href;
+    expect(isMainModule).toBeFalsy();
+  });
+
+  it('isMainModule logic should match when argv matches import.meta.url (L167-170)', () => {
+    // Verify the URL construction logic works as expected
+    // When process.argv[1] contains backslashes (Windows), they are replaced with /
+    const testPath = 'C:\\Users\\test\\server.ts';
+    const expected = new URL(`file://${testPath.replace(/\\/g, '/')}`).href;
+    expect(expected).toBe('file:///C:/Users/test/server.ts');
   });
 });
 

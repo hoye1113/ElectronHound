@@ -5,6 +5,9 @@ import { sseHub } from '../streams/sseHub.js';
 import { getBatchService } from '../services/batchService.js';
 import type Database from 'better-sqlite3';
 import { toErrorMessage } from '@eata/agent-core/utils/error';
+import { createStderrLogger } from '../utils/logger.js';
+
+const log = createStderrLogger('runner');
 
 // ── Hoisted prepared statements ────────────────────────────────────────
 
@@ -27,6 +30,7 @@ function initStatements(db: Database.Database): void {
  */
 class ProcessTaskExecutor implements TaskExecutor {
   private workerManager: WorkerManager;
+  private logger = createStderrLogger('ProcessTaskExecutor');
 
   constructor(workerManager: WorkerManager) {
     this.workerManager = workerManager;
@@ -36,7 +40,7 @@ class ProcessTaskExecutor implements TaskExecutor {
     task: PoolTask,
     onComplete: (taskId: string, result: 'completed' | 'failed', error?: string) => void,
   ): void {
-    process.stderr.write(`[ProcessTaskExecutor] Spawning worker for task ${task.id}, goal: ${task.goal.substring(0, 50)}\n`);
+    this.logger.info(`Spawning worker for task ${task.id}, goal: ${task.goal.substring(0, 50)}`);
     try {
       this.workerManager.spawnWorker({
         taskId: task.id,
@@ -47,16 +51,16 @@ class ProcessTaskExecutor implements TaskExecutor {
         contextInjection: task.contextInjection,
         providerId: task.providerId,
       });
-      process.stderr.write(`[ProcessTaskExecutor] Worker spawned for task ${task.id}\n`);
+      this.logger.info(`Worker spawned for task ${task.id}`);
     } catch (err: unknown) {
-      process.stderr.write(`[ProcessTaskExecutor] Spawn failed for task ${task.id}: ${toErrorMessage(err)}\n`);
+      this.logger.error(`Spawn failed for task ${task.id}: ${toErrorMessage(err)}`);
       onComplete(task.id, 'failed', toErrorMessage(err));
       return;
     }
 
     const listener = (event: { taskId: string; type: 'started' | 'completed' | 'failed' | 'cancelled'; error?: string }) => {
       if (event.taskId !== task.id) return;
-      process.stderr.write(`[ProcessTaskExecutor] Event for task ${task.id}: ${event.type}${event.error ? ` - ${event.error}` : ''}\n`);
+      this.logger.info(`Event for task ${task.id}: ${event.type}${event.error ? ` - ${event.error}` : ''}`);
       if (event.type === 'completed' || event.type === 'failed') {
         this.workerManager.removeListener(listener);
         onComplete(task.id, event.type, event.error);
@@ -95,7 +99,7 @@ export function getWorkerPool(options?: { maxConcurrency?: number; logger?: Logg
     );
     currentConcurrency = concurrency;
   } else if (options?.maxConcurrency !== undefined && options.maxConcurrency !== currentConcurrency) {
-    console.warn(`WorkerPool already initialized with concurrency ${currentConcurrency}`);
+    log.warn(`WorkerPool already initialized with concurrency ${currentConcurrency}`);
   }
   return pool;
 }

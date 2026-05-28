@@ -298,7 +298,6 @@ export async function cliMain(
       { context: { issues: validation.error } },
     );
     logger.error('Validation failed', eataError);
-    process.stderr.write(eataError.format() + '\n');
     return 1;
   }
 
@@ -414,7 +413,6 @@ export async function cliMain(
 
     const eataError = wrapError(err, ErrorCode.TASK_EXECUTION_FAILED);
     logger.error('Test execution failed', eataError);
-    process.stderr.write(eataError.format() + '\n');
 
     // Save partial report on failure if taskId was generated
     if (taskId) {
@@ -429,7 +427,7 @@ export async function cliMain(
           }, null, 2),
         );
       } catch (reportErr: unknown) {
-        process.stderr.write(`[cli] Error: ${reportErr instanceof Error ? reportErr.message : String(reportErr)}\n`);
+        logger.error(`Failed to save error report: ${reportErr instanceof Error ? reportErr.message : String(reportErr)}`);
       }
     }
 
@@ -448,10 +446,11 @@ const isDirectExecution =
     process.argv[1].endsWith('cli.js'));
 
 if (isDirectExecution) {
+  const cliLogger = getLogger({ source: 'cli' });
   cliMain().then((code) => {
     process.exit(code);
   }).catch((err: unknown) => {
-    process.stderr.write(`Fatal: ${String(err)}\n`);
+    cliLogger.error(`Fatal: ${String(err)}`);
     process.exit(1);
   });
 }

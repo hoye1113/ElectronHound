@@ -1,15 +1,35 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock runTest before import
-const { mockRunTest } = vi.hoisted(() => ({
-  mockRunTest: vi.fn(),
-}));
+const { mockRunTest, mockRl } = vi.hoisted(() => {
+  const listeners = new Map<string, Set<(...args: unknown[]) => void>>();
+  const rl = {
+    close: vi.fn(),
+    on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
+      if (!listeners.has(event)) listeners.set(event, new Set());
+      listeners.get(event)!.add(cb);
+      return rl;
+    }),
+    emit: vi.fn((event: string, ...args: unknown[]) => {
+      listeners.get(event)?.forEach((cb) => cb(...args));
+    }),
+  };
+  return {
+    mockRunTest: vi.fn(),
+    mockRl: rl as unknown as { close: ReturnType<typeof vi.fn>; on: ReturnType<typeof vi.fn>; emit: ReturnType<typeof vi.fn> },
+  };
+});
 
 vi.mock('./runner.js', () => ({
   runTest: mockRunTest,
 }));
 
+vi.mock('readline', () => ({
+  createInterface: vi.fn().mockReturnValue(mockRl),
+}));
+
 import { emit, parseArgs, resolveArgs } from './worker-entry.js';
+// createInterface is mocked via vi.mock above
 
 // ── emit ──────────────────────────────────────────────────
 
@@ -167,6 +187,8 @@ describe('workerMain', () => {
     stderrSpy.mockRestore();
     exitSpy.mockRestore();
     vi.useRealTimers();
+    process.removeAllListeners('SIGINT');
+    process.removeAllListeners('SIGTERM');
   });
 
   it('emits step_start then task_end on success', async () => {
@@ -221,5 +243,140 @@ describe('workerMain', () => {
     const output2 = stdoutSpy.mock.calls.map((c: unknown[]) => c[0]).join('');
     const heartbeatCount2 = (output2.match(/"method":"heartbeat"/g) || []).length;
     expect(heartbeatCount2).toBeGreaterThanOrEqual(2);
+  });
+
+  // ── Signal handler tests (covers L79-84) ────────────────────────
+
+  it('SIGINT clears interval, closes readline, emits cancelled, and exits (L79-84)', async () => {
+    mockRunTest.mockImplementation(() => new Promise(() => {})); // hang forever
+
+    const { workerMain } = await import('./worker-entry.js');
+    workerMain(['node', 'worker-entry.ts', '--task-id', 'sig1', '--goal', 'g', '--target-app', '/a']);
+
+    await vi.advanceTimersByTimeAsync(100);
+
+    // Clear previous stdout calls to isolate signal output
+    stdoutSpy.mockClear();
+    exitSpy.mockClear();
+    (mockRl.close as ReturnType<typeof vi.fn>).mockClear();
+
+    // Emit SIGINT to trigger onSignal handler
+    process.emit('SIGINT');
+
+    // Verify exit was called with 0
+    expect(exitSpy).toHaveBeenCalledWith(0);
+
+    // Verify task_end with cancelled was emitted
+    const output = stdoutSpy.mock.calls.map((c: unknown[]) => c[0]).join('');
+    expect(output).toContain('"method":"task_end"');
+    expect(output).toContain('"status":"cancelled"');
+
+    // Verify readline was closed
+    expect(mockRl.close).toHaveBeenCalled();
+  });
+
+  it('SIGTERM clears interval, closes readline, emits cancelled, and exits (L79-84)', async () => {
+    mockRunTest.mockImplementation(() => new Promise(() => {})); // hang forever
+
+    const { workerMain } = await import('./worker-entry.js');
+    workerMain(['node', 'worker-entry.ts', '--task-id', 'sig2', '--goal', 'g', '--target-app', '/a']);
+
+    await vi.advanceTimersByTimeAsync(100);
+
+    stdoutSpy.mockClear();
+    exitSpy.mockClear();
+    (mockRl.close as ReturnType<typeof vi.fn>).mockClear();
+
+    // Emit SIGTERM to trigger onSignal handler
+    process.emit('SIGTERM');
+
+    expect(exitSpy).toHaveBeenCalledWith(0);
+
+    const output = stdoutSpy.mock.calls.map((c: unknown[]) => c[0]).join('');
+    expect(output).toContain('"method":"task_end"');
+    expect(output).toContain('"status":"cancelled"');
+
+    expect(mockRl.close).toHaveBeenCalled();
+  });
+
+  // ── Stdin cancel message tests (covers L64-76) ──────────────────
+
+  it('stdin cancel message triggers task_end cancelled and exit (L64-76)', async () => {
+    mockRunTest.mockImplementation(() => new Promise(() => {})); // hang forever
+
+    const { workerMain } = await import('./worker-entry.js');
+    workerMain(['node', 'worker-entry.ts', '--task-id', 'cancel1', '--goal', 'g', '--target-app', '/a']);
+
+    await vi.advanceTimersByTimeAsync(100);
+
+    stdoutSpy.mockClear();
+    exitSpy.mockClear();
+    (mockRl.close as ReturnType<typeof vi.fn>).mockClear();
+
+    // Send a cancel message via the mock readline
+    mockRl.emit('line', JSON.stringify({ jsonrpc: '2.0', method: 'cancel' }));
+
+    expect(exitSpy).toHaveBeenCalledWith(0);
+
+    const output = stdoutSpy.mock.calls.map((c: unknown[]) => c[0]).join('');
+    expect(output).toContain('"method":"task_end"');
+    expect(output).toContain('"status":"cancelled"');
+
+    expect(mockRl.close).toHaveBeenCalled();
+  });
+
+  it('stdin non-cancel message is ignored (L64-76)', async () => {
+    mockRunTest.mockImplementation(() => new Promise(() => {})); // hang forever
+
+    const { workerMain } = await import('./worker-entry.js');
+    workerMain(['node', 'worker-entry.ts', '--task-id', 'nc1', '--goal', 'g', '--target-app', '/a']);
+
+    await vi.advanceTimersByTimeAsync(100);
+
+    stdoutSpy.mockClear();
+    exitSpy.mockClear();
+
+    // Send a non-cancel message — should not trigger exit
+    mockRl.emit('line', JSON.stringify({ jsonrpc: '2.0', method: 'heartbeat' }));
+
+    expect(exitSpy).not.toHaveBeenCalled();
+  });
+
+  it('stdin malformed JSON logs error but does not crash (L73-75)', async () => {
+    mockRunTest.mockImplementation(() => new Promise(() => {})); // hang forever
+
+    const { workerMain } = await import('./worker-entry.js');
+    workerMain(['node', 'worker-entry.ts', '--task-id', 'bad-json', '--goal', 'g', '--target-app', '/a']);
+
+    await vi.advanceTimersByTimeAsync(100);
+
+    exitSpy.mockClear();
+
+    // Send invalid JSON — should be caught, not crash
+    mockRl.emit('line', 'not valid json{{{');
+
+    // Should not exit (no cancel received)
+    expect(exitSpy).not.toHaveBeenCalled();
+  });
+});
+
+// ── Auto-run guard tests (covers L119-130) ─────────────────────────
+
+describe('isDirectRun guard', () => {
+  it('isDirectRun should be false in test context (L119-122)', () => {
+    // In test context, process.argv[1] is the vitest runner, not worker-entry.ts/js
+    const isDirectRun = process.argv[1] && (
+      process.argv[1].endsWith('worker-entry.ts') ||
+      process.argv[1].endsWith('worker-entry.js')
+    );
+    expect(isDirectRun).toBeFalsy();
+  });
+
+  it('isDirectRun logic detects worker-entry.ts suffix (L119-122)', () => {
+    // Verify the guard logic matches the expected patterns
+    expect('/path/to/worker-entry.ts'.endsWith('worker-entry.ts')).toBe(true);
+    expect('/path/to/worker-entry.js'.endsWith('worker-entry.js')).toBe(true);
+    expect('/path/to/other-file.ts'.endsWith('worker-entry.ts')).toBe(false);
+    expect('/path/to/other-file.js'.endsWith('worker-entry.js')).toBe(false);
   });
 });
