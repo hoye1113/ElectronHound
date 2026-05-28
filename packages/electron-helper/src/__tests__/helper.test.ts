@@ -70,8 +70,8 @@ describe('CDP port setting (mocked Electron)', () => {
     const mockElectron = { app: mockApp };
 
     // Mock require('electron')
-    const originalEval = globalThis.eval;
-    const mockRequire = (mod: string) => {
+    const _originalEval = globalThis.eval;
+    const _mockRequire = (mod: string) => {
       if (mod === 'electron') return mockElectron;
       throw new Error(`Cannot find module '${mod}'`);
     };

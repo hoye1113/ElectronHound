@@ -39,7 +39,7 @@ export async function mockDialog(
     });
 
     return { success: true };
-  } catch (err) {
+  } catch (err: unknown) {
     return {
       success: false,
       error: err instanceof Error ? err.message : String(err),

@@ -31,7 +31,7 @@ function createMockChildProcess(): EventEmitter & {
     off: ReturnType<typeof vi.fn>;
   };
 } {
-  const { EventEmitter } = require('node:events');
+  const { EventEmitter } = require('node:events'); // eslint-disable-line @typescript-eslint/no-require-imports
   const mockStderr = new EventEmitter() as EventEmitter & {
     on: ReturnType<typeof vi.fn>;
     off: ReturnType<typeof vi.fn>;

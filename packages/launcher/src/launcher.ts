@@ -1,5 +1,4 @@
 import { spawn, type ChildProcess } from 'node:child_process';
-import { resolve } from 'node:path';
 
 export interface SpawnOptions {
   targetAppPath: string;
@@ -34,7 +33,7 @@ async function resolveElectronPath(): Promise<string> {
     if (typeof electronPath === 'string' && electronPath.length > 0) {
       return electronPath;
     }
-  } catch (err) {
+  } catch (err: unknown) {
     process.stderr.write(`[launcher] resolveElectronPath: ${err instanceof Error ? err.message : String(err)}\n`);
   }
   return 'electron';

@@ -30,7 +30,7 @@ export async function discoverCDPPort(
         webSocketUrl: result.webSocketDebuggerUrl,
         browserVersion: result.Browser,
       };
-    } catch (err) {
+    } catch (err: unknown) {
       process.stderr.write(`[launcher] CDP discovery retry: ${err instanceof Error ? err.message : String(err)}\n`);
       await sleep(POLL_INTERVAL);
     }

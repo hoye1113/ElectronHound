@@ -178,7 +178,7 @@ export class BridgeClient {
         for (const handler of this.handlers) {
           handler(message);
         }
-      } catch (err) {
+      } catch (err: unknown) {
         // Skip malformed messages
         process.stderr.write(`[bridge-client] malformed message: ${err instanceof Error ? err.message : String(err)}\n`);
       }

@@ -57,7 +57,7 @@ export class OperationHandler {
       }
       this.electron = mod as typeof import('electron');
       return this.electron;
-    } catch (err) {
+    } catch (err: unknown) {
       process.stderr.write(`[electron-helper] getElectron: ${err instanceof Error ? err.message : String(err)}\n`);
       this.electron = null;
       return null;
@@ -132,7 +132,7 @@ export class OperationHandler {
       ]);
 
       return { success: true, data: { result } };
-    } catch (err) {
+    } catch (err: unknown) {
       return {
         success: false,
         error: err instanceof Error ? err.message : String(err),
@@ -163,7 +163,7 @@ export class OperationHandler {
 
       windows[0].webContents.send(channel, ...args);
       return { success: true, data: { sent: true, channel, argCount: args.length } };
-    } catch (err) {
+    } catch (err: unknown) {
       return {
         success: false,
         error: err instanceof Error ? err.message : String(err),
@@ -197,7 +197,7 @@ export class OperationHandler {
         success: true,
         data: { mocked: true, dialogType, activeMockCount: this.dialogMocks.size },
       };
-    } catch (err) {
+    } catch (err: unknown) {
       return {
         success: false,
         error: err instanceof Error ? err.message : String(err),
@@ -219,7 +219,7 @@ export class OperationHandler {
 
       const items = this.flattenMenuItems(menu.items);
       return { success: true, data: { items } };
-    } catch (err) {
+    } catch (err: unknown) {
       return {
         success: false,
         error: err instanceof Error ? err.message : String(err),

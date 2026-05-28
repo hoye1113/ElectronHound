@@ -52,7 +52,7 @@ export async function executeMain(
       success: true,
       result: response,
     };
-  } catch (err) {
+  } catch (err: unknown) {
     return {
       success: false,
       result: null,

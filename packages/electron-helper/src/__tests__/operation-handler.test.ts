@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { OperationHandler } from '../operation-handler.js';
-import type { Operation, OperationResult } from '../operation-handler.js';
+import type { Operation } from '../operation-handler.js';
 
 describe('OperationHandler', () => {
   let handler: OperationHandler;

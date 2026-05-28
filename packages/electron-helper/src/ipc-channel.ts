@@ -75,7 +75,7 @@ export class IpcChannel {
         });
 
         this.connectSocket();
-      } catch (err) {
+      } catch (err: unknown) {
         clearTimeout(timer);
         reject(err);
       }
@@ -178,7 +178,7 @@ export class IpcChannel {
         for (const handler of this.handlers) {
           handler(message);
         }
-      } catch (err) {
+      } catch (err: unknown) {
         // Skip malformed messages
         process.stderr.write(`[ipc-channel] malformed message: ${err instanceof Error ? err.message : String(err)}\n`);
       }

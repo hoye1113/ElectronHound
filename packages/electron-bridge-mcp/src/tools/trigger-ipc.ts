@@ -51,7 +51,7 @@ export async function triggerIpc(
       success: true,
       response: response,
     };
-  } catch (err) {
+  } catch (err: unknown) {
     return {
       success: false,
       response: null,
