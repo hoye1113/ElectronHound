@@ -1,4 +1,39 @@
-import { describe, it, expect } from 'vitest';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
+
+// ── Hoisted mocks for sub-agent classes ──────────────────────────────────────
+const {
+  mockTestPlannerRun,
+  mockExecutionAnalystRun,
+  mockSecurityReviewerRun,
+  mockReportSynthesizerRun,
+} = vi.hoisted(() => ({
+  mockTestPlannerRun: vi.fn(),
+  mockExecutionAnalystRun: vi.fn(),
+  mockSecurityReviewerRun: vi.fn(),
+  mockReportSynthesizerRun: vi.fn(),
+}));
+
+vi.mock('../test-planner.js', () => ({
+  TestPlanner: vi.fn().mockImplementation(() => ({
+    run: mockTestPlannerRun,
+  })),
+}));
+vi.mock('../execution-analyst.js', () => ({
+  ExecutionAnalyst: vi.fn().mockImplementation(() => ({
+    run: mockExecutionAnalystRun,
+  })),
+}));
+vi.mock('../security-reviewer.js', () => ({
+  SecurityReviewer: vi.fn().mockImplementation(() => ({
+    run: mockSecurityReviewerRun,
+  })),
+}));
+vi.mock('../report-synthesizer.js', () => ({
+  ReportSynthesizer: vi.fn().mockImplementation(() => ({
+    run: mockReportSynthesizerRun,
+  })),
+}));
+
 import type { SubAgentInput, SubAgentOutput } from '../types.js';
 import { TestPlanner } from '../test-planner.js';
 import { ExecutionAnalyst } from '../execution-analyst.js';
@@ -16,6 +51,22 @@ function makeInput(overrides: Partial<SubAgentInput> = {}): SubAgentInput {
   };
 }
 
+/** Factory: create a valid SubAgentOutput for a given role. */
+function makeOutput(role: SubAgentOutput['role'], overrides: Partial<SubAgentOutput> = {}): SubAgentOutput {
+  return {
+    role,
+    auditReport: {
+      severity: 'pass',
+      summary: `${role} summary`,
+      findings: [],
+      timestamp: new Date().toISOString(),
+    },
+    analysis: `${role} analysis`,
+    recommendations: [],
+    ...overrides,
+  };
+}
+
 /** Assert that a value satisfies the SubAgentOutput contract. */
 function expectSubAgentOutput(output: SubAgentOutput, role: SubAgentOutput['role']): void {
   expect(output.role).toBe(role);
@@ -28,7 +79,36 @@ function expectSubAgentOutput(output: SubAgentOutput, role: SubAgentOutput['role
   expect(output.auditReport.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
 }
 
+/** Assert that a failure placeholder satisfies the SubAgentOutput contract with fail severity. */
+function expectFailurePlaceholder(output: SubAgentOutput, role: SubAgentOutput['role']): void {
+  expectSubAgentOutput(output, role);
+  expect(output.auditReport.severity).toBe('fail');
+  expect(output.auditReport.summary).toContain(`Agent '${role}' threw:`);
+  expect(output.auditReport.findings).toEqual([]);
+  expect(output.recommendations).toEqual([]);
+}
+
 describe('sub-agent audit chain', () => {
+  // Wire mocked run methods to use real implementations by default.
+  beforeEach(async () => {
+    vi.clearAllMocks();
+
+    const { TestPlanner: RealPlanner } = await vi.importActual<typeof import('../test-planner.js')>('../test-planner.js');
+    const { ExecutionAnalyst: RealAnalyst } = await vi.importActual<typeof import('../execution-analyst.js')>('../execution-analyst.js');
+    const { SecurityReviewer: RealSecurity } = await vi.importActual<typeof import('../security-reviewer.js')>('../security-reviewer.js');
+    const { ReportSynthesizer: RealSynthesizer } = await vi.importActual<typeof import('../report-synthesizer.js')>('../report-synthesizer.js');
+
+    const realPlanner = new RealPlanner();
+    const realAnalyst = new RealAnalyst();
+    const realSecurity = new RealSecurity();
+    const realSynthesizer = new RealSynthesizer();
+
+    mockTestPlannerRun.mockImplementation((input: SubAgentInput) => realPlanner.run(input));
+    mockExecutionAnalystRun.mockImplementation((input: SubAgentInput) => realAnalyst.run(input));
+    mockSecurityReviewerRun.mockImplementation((input: SubAgentInput) => realSecurity.run(input));
+    mockReportSynthesizerRun.mockImplementation((input: SubAgentInput) => realSynthesizer.run(input));
+  });
+
   describe('TestPlanner', () => {
     it('returns valid SubAgentOutput with test-planner role', async () => {
       const planner = new TestPlanner();
@@ -200,39 +280,23 @@ describe('sub-agent audit chain', () => {
     it('picks worst severity across upstream outputs', async () => {
       const synth = new ReportSynthesizer();
       // Build a context where one upstream is "warn" and another is "fail".
-      const warnOutput: SubAgentOutput = {
-        role: 'test-planner',
+      const warnOutput: SubAgentOutput = makeOutput('test-planner', {
         auditReport: {
           severity: 'warn',
           summary: 'warnings only',
           findings: [],
           timestamp: new Date().toISOString(),
         },
-        analysis: 'warn analysis',
-        recommendations: [],
-      };
-      const failOutput: SubAgentOutput = {
-        role: 'execution-analyst',
+      });
+      const failOutput: SubAgentOutput = makeOutput('execution-analyst', {
         auditReport: {
           severity: 'fail',
           summary: 'failure detected',
           findings: [],
           timestamp: new Date().toISOString(),
         },
-        analysis: 'fail analysis',
-        recommendations: [],
-      };
-      const passOutput: SubAgentOutput = {
-        role: 'security-reviewer',
-        auditReport: {
-          severity: 'pass',
-          summary: 'all clear',
-          findings: [],
-          timestamp: new Date().toISOString(),
-        },
-        analysis: 'pass analysis',
-        recommendations: [],
-      };
+      });
+      const passOutput: SubAgentOutput = makeOutput('security-reviewer');
 
       const output = await synth.run(
         makeInput({
@@ -284,6 +348,226 @@ describe('sub-agent audit chain', () => {
       const goal = 'End-to-end: login → navigate → verify settings page';
       const result = await runAuditChain(makeInput({ goal }));
       expect(result.goal).toBe(goal);
+    });
+
+    // ── Error handling: test-planner failure (L57-69) ─────────────────────────
+
+    it('returns partial result with 4 failure placeholders when test-planner throws', async () => {
+      const errorMsg = 'planner exploded';
+      mockTestPlannerRun.mockRejectedValueOnce(new Error(errorMsg));
+
+      const result = await runAuditChain(makeInput({ goal: 'trigger planner error' }));
+
+      expect(result.goal).toBe('trigger planner error');
+      expect(result.chainOrder).toEqual([
+        'test-planner',
+        'execution-analyst',
+        'security-reviewer',
+        'report-synthesizer',
+      ]);
+      expect(result.durationMs).toBeGreaterThanOrEqual(0);
+      expect(result.completedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+
+      // test-planner: failure placeholder with the actual error
+      expectFailurePlaceholder(result.testPlanner, 'test-planner');
+      expect(result.testPlanner.auditReport.summary).toContain(errorMsg);
+
+      // downstream roles: skip placeholders
+      expectFailurePlaceholder(result.executionAnalyst, 'execution-analyst');
+      expect(result.executionAnalyst.auditReport.summary).toContain('Skipped: test-planner failed');
+
+      expectFailurePlaceholder(result.securityReviewer, 'security-reviewer');
+      expect(result.securityReviewer.auditReport.summary).toContain('Skipped: test-planner failed');
+
+      expectFailurePlaceholder(result.reportSynthesizer, 'report-synthesizer');
+      expect(result.reportSynthesizer.auditReport.summary).toContain('Skipped: test-planner failed');
+
+      // Downstream agents should NOT have been called.
+      expect(mockExecutionAnalystRun).not.toHaveBeenCalled();
+      expect(mockSecurityReviewerRun).not.toHaveBeenCalled();
+      expect(mockReportSynthesizerRun).not.toHaveBeenCalled();
+    });
+
+    // ── Error handling: execution-analyst failure (L80-93) ────────────────────
+
+    it('returns partial result when execution-analyst throws', async () => {
+      const errorMsg = 'analyst crashed';
+      mockExecutionAnalystRun.mockRejectedValueOnce(new Error(errorMsg));
+
+      const result = await runAuditChain(makeInput({ goal: 'trigger analyst error' }));
+
+      expect(result.goal).toBe('trigger analyst error');
+
+      // test-planner: succeeded (real output)
+      expectSubAgentOutput(result.testPlanner, 'test-planner');
+
+      // execution-analyst: failure placeholder
+      expectFailurePlaceholder(result.executionAnalyst, 'execution-analyst');
+      expect(result.executionAnalyst.auditReport.summary).toContain(errorMsg);
+
+      // downstream: skip placeholders
+      expectFailurePlaceholder(result.securityReviewer, 'security-reviewer');
+      expect(result.securityReviewer.auditReport.summary).toContain(
+        'Skipped: execution-analyst failed',
+      );
+      expectFailurePlaceholder(result.reportSynthesizer, 'report-synthesizer');
+      expect(result.reportSynthesizer.auditReport.summary).toContain(
+        'Skipped: execution-analyst failed',
+      );
+
+      // security-reviewer and report-synthesizer should NOT have been called.
+      expect(mockSecurityReviewerRun).not.toHaveBeenCalled();
+      expect(mockReportSynthesizerRun).not.toHaveBeenCalled();
+    });
+
+    // ── Error handling: security-reviewer failure (L109-120) ──────────────────
+
+    it('returns partial result when security-reviewer throws', async () => {
+      const errorMsg = 'security scan panicked';
+      mockSecurityReviewerRun.mockRejectedValueOnce(new Error(errorMsg));
+
+      const result = await runAuditChain(makeInput({ goal: 'trigger security error' }));
+
+      expect(result.goal).toBe('trigger security error');
+
+      // test-planner and execution-analyst: succeeded
+      expectSubAgentOutput(result.testPlanner, 'test-planner');
+      expectSubAgentOutput(result.executionAnalyst, 'execution-analyst');
+
+      // security-reviewer: failure placeholder
+      expectFailurePlaceholder(result.securityReviewer, 'security-reviewer');
+      expect(result.securityReviewer.auditReport.summary).toContain(errorMsg);
+
+      // report-synthesizer: skip placeholder
+      expectFailurePlaceholder(result.reportSynthesizer, 'report-synthesizer');
+      expect(result.reportSynthesizer.auditReport.summary).toContain(
+        'Skipped: security-reviewer failed',
+      );
+
+      // report-synthesizer should NOT have been called.
+      expect(mockReportSynthesizerRun).not.toHaveBeenCalled();
+    });
+
+    // ── Error handling: report-synthesizer failure (L136-147) ─────────────────
+
+    it('returns partial result when report-synthesizer throws', async () => {
+      const errorMsg = 'synthesis broke';
+      mockReportSynthesizerRun.mockRejectedValueOnce(new Error(errorMsg));
+
+      const result = await runAuditChain(makeInput({ goal: 'trigger synthesizer error' }));
+
+      expect(result.goal).toBe('trigger synthesizer error');
+
+      // All three upstream agents: succeeded
+      expectSubAgentOutput(result.testPlanner, 'test-planner');
+      expectSubAgentOutput(result.executionAnalyst, 'execution-analyst');
+      expectSubAgentOutput(result.securityReviewer, 'security-reviewer');
+
+      // report-synthesizer: failure placeholder
+      expectFailurePlaceholder(result.reportSynthesizer, 'report-synthesizer');
+      expect(result.reportSynthesizer.auditReport.summary).toContain(errorMsg);
+
+      // Metadata should still be valid.
+      expect(result.chainOrder).toEqual([
+        'test-planner',
+        'execution-analyst',
+        'security-reviewer',
+        'report-synthesizer',
+      ]);
+      expect(result.durationMs).toBeGreaterThanOrEqual(0);
+      expect(result.completedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    });
+
+    // ── Error handling: non-Error throws (string, etc.) ──────────────────────
+
+    it('handles non-Error thrown values via toErrorMessage', async () => {
+      mockTestPlannerRun.mockRejectedValueOnce('raw string error');
+
+      const result = await runAuditChain(makeInput());
+
+      expectFailurePlaceholder(result.testPlanner, 'test-planner');
+      expect(result.testPlanner.auditReport.summary).toContain('raw string error');
+      expect(result.testPlanner.analysis).toContain('raw string error');
+    });
+
+    it('handles numeric thrown values', async () => {
+      mockSecurityReviewerRun.mockRejectedValueOnce(42);
+
+      const result = await runAuditChain(makeInput());
+
+      expectSubAgentOutput(result.testPlanner, 'test-planner');
+      expectSubAgentOutput(result.executionAnalyst, 'execution-analyst');
+      expectFailurePlaceholder(result.securityReviewer, 'security-reviewer');
+      expect(result.securityReviewer.auditReport.summary).toContain('42');
+      expectFailurePlaceholder(result.reportSynthesizer, 'report-synthesizer');
+    });
+
+    // ── Edge cases ───────────────────────────────────────────────────────────
+
+    it('passes context.testPlannerOutput to execution-analyst', async () => {
+      let capturedInput: SubAgentInput | undefined;
+      mockExecutionAnalystRun.mockImplementation(async (input: SubAgentInput) => {
+        capturedInput = input;
+        return makeOutput('execution-analyst');
+      });
+
+      await runAuditChain(makeInput({ goal: 'context check' }));
+
+      expect(capturedInput).toBeDefined();
+      expect(capturedInput!.context).toHaveProperty('testPlannerOutput');
+      expect((capturedInput!.context['testPlannerOutput'] as SubAgentOutput).role).toBe(
+        'test-planner',
+      );
+    });
+
+    it('passes planner + analyst outputs to security-reviewer', async () => {
+      let capturedInput: SubAgentInput | undefined;
+      mockSecurityReviewerRun.mockImplementation(async (input: SubAgentInput) => {
+        capturedInput = input;
+        return makeOutput('security-reviewer');
+      });
+
+      await runAuditChain(makeInput());
+
+      expect(capturedInput).toBeDefined();
+      expect(capturedInput!.context).toHaveProperty('testPlannerOutput');
+      expect(capturedInput!.context).toHaveProperty('executionAnalystOutput');
+    });
+
+    it('passes all three upstream outputs to report-synthesizer', async () => {
+      let capturedInput: SubAgentInput | undefined;
+      mockReportSynthesizerRun.mockImplementation(async (input: SubAgentInput) => {
+        capturedInput = input;
+        return makeOutput('report-synthesizer');
+      });
+
+      await runAuditChain(makeInput());
+
+      expect(capturedInput).toBeDefined();
+      expect(capturedInput!.context).toHaveProperty('testPlannerOutput');
+      expect(capturedInput!.context).toHaveProperty('executionAnalystOutput');
+      expect(capturedInput!.context).toHaveProperty('securityReviewerOutput');
+    });
+
+    it('preserves original input.context across the chain', async () => {
+      let capturedInput: SubAgentInput | undefined;
+      mockReportSynthesizerRun.mockImplementation(async (input: SubAgentInput) => {
+        capturedInput = input;
+        return makeOutput('report-synthesizer');
+      });
+
+      await runAuditChain(makeInput({ context: { customKey: 'customValue' } }));
+
+      expect(capturedInput!.context['customKey']).toBe('customValue');
+    });
+
+    it('produces failure placeholder with correct analysis field', async () => {
+      mockExecutionAnalystRun.mockRejectedValueOnce(new Error('boom'));
+
+      const result = await runAuditChain(makeInput());
+
+      expect(result.executionAnalyst.analysis).toContain('Execution of execution-analyst failed');
+      expect(result.executionAnalyst.analysis).toContain('boom');
     });
   });
 });

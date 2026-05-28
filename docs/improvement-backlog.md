@@ -202,6 +202,40 @@ grep -rn "console\.error" packages/agent-core/src apps/server/src --include="*.t
 
 ---
 
+## Wave 7 — 覆盖率提升（3-5 轮）✅
+
+> 发现扫描：7 个文件覆盖率 < 70%，目标提升至 75%+
+
+### 7.1 electron-helper index.ts 测试补充 ✅
+
+- **结果：** 36.23% → 100% stmts (+31 测试)
+
+### 7.2 electron-helper operation-handler.ts 测试补充 ✅
+
+- **结果：** 61.36% → 93.18% stmts (+13 测试)
+
+### 7.3 electron-bridge-mcp server.ts 测试补充 ✅
+
+- **结果：** 59.72% → 92.36% stmts (+28 测试)
+
+### 7.4 agent-core audit-chain.ts 测试补充 ✅
+
+- **结果：** 50.79% → 100% stmts (+10 测试)
+
+### 7.5 agent-core config-wizard.ts 测试补充 ✅
+
+- **结果：** 59.2% → 98.55% stmts (+49 测试)
+
+### 7.6 dashboard api.ts 测试补充 ✅
+
+- **结果：** 43.27% → 高覆盖 (+56 测试)
+
+### 7.7 dashboard taskStore.ts 测试补充 ✅
+
+- **结果：** 59.3% → 高覆盖 (+33 测试)
+
+---
+
 ## 完成记录
 
 | 轮次 | Wave | 任务 | Commit | 日期 |
@@ -219,6 +253,7 @@ grep -rn "console\.error" packages/agent-core/src apps/server/src --include="*.t
 | Wave 4 | W4 | e2e 测试重写 + CI 强化 | `085e481` | 2026-05-29 |
 | Wave 5.1+5.4 | W5 | 测试性能 + bundle 优化 | `82b0b01` | 2026-05-29 |
 | Wave 6 | W6 | 安全加固 (CVE 修复 + 验证) | `931745d` | 2026-05-29 |
+| Wave 7.1-7.7 | W7 | 覆盖率提升 (7 文件 36-61% → 92-100%) | `pending` | 2026-05-29 |
 
 ---
 
@@ -227,8 +262,8 @@ grep -rn "console\.error" packages/agent-core/src apps/server/src --include="*.t
 | 指标 | 基线 (Phase 2 前) | 当前 | 目标 |
 |------|-------------------|------|------|
 | ESLint 错误 | 110 | 0 | 0 |
-| 测试数量 | 1280 | 1722 | 持续增长 |
-| 覆盖率 (stmts) | ~68% | 73.56% | 80% |
+| 测试数量 | 1280 | 1947 | 持续增长 |
+| 覆盖率 (stmts) | ~68% | 71.59% | 80% |
 | 裸 catch 块 | 73+ | 0 (全包) | 0 (全包) |
 | TODO/FIXME | 1 | 0 | 0 |
 | 测试运行时间 | ~50s | ~51s | < 30s |
