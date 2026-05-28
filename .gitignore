@@ -24,6 +24,7 @@ Thumbs.db
 
 # Test artifacts
 data/reports/
+packages/*/data/
 
 # TypeScript compilation output
 *.js
