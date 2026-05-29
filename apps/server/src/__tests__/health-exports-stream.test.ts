@@ -14,7 +14,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mkdtempSync, rmSync } from 'node:fs';
 import type Database from 'better-sqlite3';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply } from 'fastify';
 import { SSEHub } from '../streams/sseHub.js';
 
 function createTempDbPath(): { dbPath: string; cleanupDir: string } {
@@ -929,7 +929,7 @@ describe('SSEHub: Connection management', () => {
     const written: string[] = [];
     const headers: Record<string, string> = {};
     const listeners: Record<string, (...args: unknown[]) => void> = {};
-    const mockReply: Record<string, unknown> = {
+    const mockReply = {
       header: (key: string, value: string) => { headers[key] = value; return mockReply; },
       raw: {
         flushHeaders: vi.fn(),
@@ -941,7 +941,7 @@ describe('SSEHub: Connection management', () => {
       _headers: headers,
       _listeners: listeners,
     };
-    return mockReply;
+    return mockReply as unknown as FastifyReply & { _written: string[]; _headers: Record<string, string>; _listeners: Record<string, (...args: unknown[]) => void> };
   }
 
   it('adds a client and returns true', () => {
