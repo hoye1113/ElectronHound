@@ -13,6 +13,7 @@ import { sseHub } from './streams/sseHub.js';
 import { configSchema, type ServerConfig } from './types/config.js';
 import { getWorkerPool, closeWorkerPool, attachPoolEventListeners } from './tasks/runner.js';
 import { httpRequestsTotal } from './routes/metrics.js';
+import { ScheduleService } from './services/scheduleService.js';
 import type Database from 'better-sqlite3';
 
 // DX imports
@@ -146,6 +147,13 @@ export async function buildServer(config?: Partial<ServerConfig>): Promise<Serve
   // Shutdown pool on server close
   server.addHook('onClose', async () => {
     await closeWorkerPool();
+  });
+
+  // Initialize and start schedule service
+  const scheduleService = new ScheduleService(db);
+  scheduleService.start();
+  server.addHook('onClose', async () => {
+    scheduleService.stop();
   });
 
   // Graceful shutdown
