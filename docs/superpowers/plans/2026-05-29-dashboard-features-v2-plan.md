@@ -1,6 +1,6 @@
 # Dashboard Features V2 — Implementation Plan
 
-> **For agentic workers:** Use superpowers:subagent-driven-development to implement task-by-task.
+> **Status: COMPLETED** — All 5 tasks implemented and tested (W30-W31)
 
 **Goal:** Implement 5 dashboard features: Schedule UI, Notification Settings, Report Templates, Enhanced Comparison, PDF Export.
 
@@ -20,12 +20,12 @@
 
 Backend already has full CRUD at `/api/report-templates`. Only frontend needed.
 
-- [ ] Add `reportTemplates` API methods to `api.ts`
-- [ ] Create `ReportTemplates.tsx` page with card grid
-- [ ] Create `ReportTemplateEditor.tsx` dialog (name, description, content textarea)
-- [ ] Add route `/report-templates` in App.tsx
-- [ ] Add nav link in Layout.tsx sidebar
-- [ ] Write tests: list rendering, create dialog, edit, delete, default badge
+- [x] Add `reportTemplates` API methods to `api.ts`
+- [x] Create `ReportTemplates.tsx` page with card grid
+- [x] Create `ReportTemplateEditor.tsx` dialog (name, description, content textarea)
+- [x] Add route `/report-templates` in App.tsx
+- [x] Add nav link in Layout.tsx sidebar
+- [x] Write tests: list rendering, create dialog, edit, delete, default badge
 
 ---
 
@@ -42,13 +42,13 @@ Backend already has full CRUD at `/api/report-templates`. Only frontend needed.
 
 Backend already has full CRUD + run + history. Only frontend needed.
 
-- [ ] Add `schedules` API methods to `api.ts`
-- [ ] Create `ScheduleList.tsx` page with table/card list
-- [ ] Create `CreateScheduleForm.tsx` dialog (name, template dropdown, cron input, enabled toggle)
-- [ ] Create `ScheduleHistory.tsx` component (execution history table)
-- [ ] Add route `/schedules` in App.tsx
-- [ ] Add nav link in Layout.tsx sidebar
-- [ ] Write tests: list rendering, create form validation, run now, history display
+- [x] Add `schedules` API methods to `api.ts`
+- [x] Create `ScheduleList.tsx` page with table/card list
+- [x] Create `CreateScheduleForm.tsx` dialog (name, template dropdown, cron input, enabled toggle)
+- [x] Create `ScheduleHistory.tsx` component (execution history table)
+- [x] Add route `/schedules` in App.tsx
+- [x] Add nav link in Layout.tsx sidebar
+- [x] Write tests: list rendering, create form validation, run now, history display
 
 ---
 
@@ -64,14 +64,14 @@ Backend already has full CRUD + run + history. Only frontend needed.
 - Test: `apps/server/src/__tests__/notifications.test.ts`
 - Test: `apps/dashboard/src/__tests__/NotificationSettings.test.tsx`
 
-- [ ] Create notification_log DB table migration
-- [ ] Create `notifications.ts` route (GET/PUT config, POST test, GET history)
-- [ ] Register routes in server.ts
-- [ ] Add `notifications` API methods to `api.ts`
-- [ ] Create `NotificationSettings.tsx` page (webhook URLs, SSE toggle, test button, log table)
-- [ ] Add route in App.tsx (or tab in Settings)
-- [ ] Write server tests: config CRUD, test notification, history
-- [ ] Write UI tests: form rendering, add/remove webhook, test button
+- [x] Create notification_log DB table migration
+- [x] Create `notifications.ts` route (GET/PUT config, POST test, GET history)
+- [x] Register routes in server.ts
+- [x] Add `notifications` API methods to `api.ts`
+- [x] Create `NotificationSettings.tsx` page (webhook URLs, SSE toggle, test button, log table)
+- [x] Add route in App.tsx (or tab in Settings)
+- [x] Write server tests: config CRUD, test notification, history
+- [x] Write UI tests: form rendering, add/remove webhook, test button
 
 ---
 
@@ -84,13 +84,13 @@ Backend already has full CRUD + run + history. Only frontend needed.
 - Test: `apps/server/src/__tests__/compare.test.ts` (add detailed tests)
 - Test: `apps/dashboard/src/__tests__/CompareView.test.tsx` (update)
 
-- [ ] Add `POST /api/tasks/compare/detailed` endpoint returning step-by-step diff
-- [ ] Add `compare.detailed()` to api.ts
-- [ ] Enhance CompareView with Status Summary Card
-- [ ] Add Step Timeline Diff (side-by-side)
-- [ ] Add Action Frequency Chart (recharts bar chart)
-- [ ] Write server tests: detailed comparison data structure
-- [ ] Write UI tests: status card, timeline diff, chart rendering
+- [x] Add `POST /api/tasks/compare/detailed` endpoint returning step-by-step diff
+- [x] Add `compare.detailed()` to api.ts
+- [x] Enhance CompareView with Status Summary Card
+- [x] Add Step Timeline Diff (side-by-side)
+- [x] Add Action Frequency Chart (recharts bar chart)
+- [x] Write server tests: detailed comparison data structure
+- [x] Write UI tests: status card, timeline diff, chart rendering
 
 ---
 
@@ -105,13 +105,13 @@ Backend already has full CRUD + run + history. Only frontend needed.
 - Modify: `apps/dashboard/src/pages/TaskList.tsx`
 - Test: `apps/server/src/__tests__/export.test.ts` (add PDF tests)
 
-- [ ] Add puppeteer dependency
-- [ ] Add `exportToPdf()` method in exportService (HTML→PDF via puppeteer)
-- [ ] Add 'pdf' to ExportFormatEnum
-- [ ] Update api.ts to support 'pdf' format
-- [ ] Add PDF button to TaskDetail export dropdown
-- [ ] Add PDF button to TaskList batch export toolbar
-- [ ] Write tests: PDF header validation, content-type, task data included
+- [x] Add pdfkit dependency (pure JS, no browser needed)
+- [x] Add `toPdf()` + `batchToPdf()` methods in exportService
+- [x] Add 'pdf' to ExportFormatEnum
+- [x] Update api.ts to support 'pdf' format
+- [x] Add PDF button to TaskDetail export dropdown
+- [x] Add PDF button to TaskList batch export toolbar
+- [x] Write tests: PDF header validation, content-type, task data included
 
 ---
 

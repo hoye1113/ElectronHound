@@ -35,6 +35,8 @@
 | W27 | B+C | p95 指标 + 缺失 benchmark + 调度结果对比 | 86.43% | 2487 | ~21s | - | `8993a65` | 2026-05-29 |
 | W28 | F | TaskList 多选 + 批量导出 + batch-export API + 测试 | ~89% | 2493 | ~21s | - | `4d885c6` | 2026-05-29 |
 | W29 | C | ESLint 4→0 + TS strict 17 错误修复 + stale worktree 清理 | ~89% | 2493 | ~20s | - | `4b0593b` | 2026-05-29 |
+| W30 | F | Report Template UI + Schedule Management UI | ~89% | 2493 | ~20s | - | `64da0be` | 2026-05-29 |
+| W31 | F | Dashboard Features V2: 通知设置 + 增强对比 + PDF 导出 | ~89% | 2543 | ~27s | - | 多个 | 2026-05-29 |
 
 ---
 
@@ -43,8 +45,8 @@
 | 指标 | 基线 | 当前 | 目标 | 差距 |
 |------|------|------|------|------|
 | 覆盖率 (stmts) | ~68% | ~89% | 80% | 达标 |
-| 测试数量 | 1280 | 2493 | 持续增长 | - |
-| 测试时间 | ~65s | ~31s | <30s | 略超 |
+| 测试数量 | 1280 | 2543 | 持续增长 | - |
+| 测试时间 | ~65s | ~27s | <30s | 达标 |
 | ESLint 错误 | 110 | 0 | 0 | 达标 |
 | 裸 catch 块 | 73+ | 0 | 0 | 达标 |
 | `as unknown as` | 12 | 0 | 0 | 达标 |
@@ -76,6 +78,8 @@
 | SystemHealth.tsx | 100% | 已覆盖 |
 | TaskDetail.tsx | 99.51% | 已覆盖 |
 | Templates.tsx | 100% | 已覆盖 |
+| NotificationSettings.tsx | 100% | 已覆盖 (W31) |
+| CompareView.tsx | 100% | 已覆盖 (W31) |
 
 ---
 
@@ -150,6 +154,43 @@
 - 5 个新 electron-helper 操作（screenshot, console, eval, network, window）
 - 并行 audit-chain（Promise.allSettled）
 - CheckpointManager 断点续传
+
+### Wave 30 完成 — Report Template UI + Schedule Management UI
+
+**Report Template UI：**
+
+- 报告模板管理页面（CRUD 操作）
+- 模板字段编辑器
+- 前端测试覆盖
+
+**Schedule Management UI：**
+
+- 定时任务管理页面
+- Cron 表达式编辑器
+- 执行历史查看
+- 前端测试覆盖
+
+### Wave 31 完成 — Dashboard Features V2
+
+**通知设置（Task 3）：**
+
+- 新增 `notification_config` + `notification_log` 数据库表
+- 新增路由：GET/PUT /api/notifications/config, POST /api/notifications/test, GET /api/notifications/history
+- NotificationSettings.tsx：Webhook URL 管理、SSE 开关、事件类型选择、测试按钮、通知日志
+- 7 个后端测试 + 9 个前端测试
+
+**增强任务对比（Task 4）：**
+
+- CompareView.tsx 增强：Status Summary 卡片、Step Timeline Diff 表格、Action Frequency 柱状图
+- 使用 recharts 可视化对比数据
+- 28 个 i18n 翻译键
+
+**PDF 导出（Task 5）：**
+
+- 新增 pdfkit 依赖（纯 JS PDF 生成）
+- exportService 新增 `toPdf()` + `batchToPdf()` 方法
+- TaskDetail.tsx + TaskList.tsx 添加 PDF 导出按钮
+- 3 个新导出测试
 
 ### 后续方向
 
