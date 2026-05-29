@@ -15,6 +15,13 @@ export default defineConfig({
     outputFile: {
       junit: './test-results/junit.xml',
     },
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        maxThreads: 4,
+        minThreads: 2,
+      },
+    },
   },
   coverage: {
     provider: 'v8',
