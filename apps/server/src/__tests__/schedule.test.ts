@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, beforeAll, afterAll } from 'vitest';
 import { buildServer } from '../server.js';
-import { scheduleRoutes } from '../routes/schedules.js';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -25,8 +24,7 @@ describe('Schedule Routes', () => {
     server = bundle.server;
     db = bundle.db;
 
-    // Register schedule routes (since index.ts is not modified yet)
-    await server.register(scheduleRoutes, { prefix: '/api' });
+    // scheduleRoutes registered via index.ts
   });
 
   afterAll(async () => {

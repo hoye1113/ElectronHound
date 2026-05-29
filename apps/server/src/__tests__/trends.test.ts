@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { buildServer } from '../server.js';
-import { trendsRoutes } from '../routes/trends.js';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -52,8 +51,7 @@ describe('Route: GET /api/tasks/trends', () => {
     const bundle = await buildServer({ databasePath: dbPath });
     server = bundle.server;
     db = bundle.db;
-    // Register trendsRoutes (not in main index.ts yet)
-    await server.register(trendsRoutes, { prefix: '/api' });
+    // trendsRoutes registered via index.ts
   });
 
   afterAll(async () => {

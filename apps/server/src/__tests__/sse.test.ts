@@ -205,7 +205,9 @@ describe('SSE route registration', () => {
     // SSE connections stay open, so server.inject() would hang.
     // Instead, verify the route is registered by checking Fastify's route list.
     const routes = server.printRoutes();
-    expect(routes).toContain('stream/tasks');
+    // Fastify printRoutes() groups by common prefix — 'stream' shares 's' with 'schedules'
+    // so the tree renders as 's' → 'tream/tasks/'. Match the tree fragment.
+    expect(routes).toMatch(/tream\/tasks/);
     expect(routes).toContain(':id (GET');
 
     await server.close();

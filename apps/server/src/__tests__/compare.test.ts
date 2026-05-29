@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { buildServer } from '../server.js';
-import { compareRoutes } from '../routes/compare.js';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -68,8 +67,7 @@ describe('Route: POST /api/tasks/compare', () => {
     const bundle = await buildServer({ databasePath: dbPath });
     server = bundle.server;
     db = bundle.db;
-    // Register compareRoutes (not in main index.ts yet)
-    await server.register(compareRoutes, { prefix: '/api' });
+    // compareRoutes registered via index.ts
   });
 
   afterAll(async () => {

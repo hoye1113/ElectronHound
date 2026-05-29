@@ -10,6 +10,9 @@ import { providersRoutes } from './providers.js';
 import { templateRoutes } from './templates.js';
 import { reportTemplateRoutes } from './report-templates.js';
 import { fewShotRoutes } from './few-shot.js';
+import { scheduleRoutes } from './schedules.js';
+import { compareRoutes } from './compare.js';
+import { trendsRoutes } from './trends.js';
 
 export async function registerRoutes(server: FastifyInstance) {
   await server.register(healthRoutes);
@@ -23,4 +26,7 @@ export async function registerRoutes(server: FastifyInstance) {
   await server.register(templateRoutes, { prefix: '/api' });
   await server.register(reportTemplateRoutes, { prefix: '/api' });
   await server.register(fewShotRoutes, { prefix: '/api' });
+  await server.register(scheduleRoutes, { prefix: '/api' });
+  await server.register(compareRoutes, { prefix: '/api' });
+  await server.register(trendsRoutes, { prefix: '/api' });
 }
