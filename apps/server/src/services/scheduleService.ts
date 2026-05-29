@@ -95,7 +95,7 @@ export class ScheduleService {
 
       this.timers.set(schedule.id, timer);
       this.logger.debug(`Scheduled next run for ${schedule.name} at ${nextRunDate.toISOString()}`);
-    } catch (err) {
+    } catch (err: unknown) {
       this.logger.error(`Failed to schedule ${schedule.name} (${schedule.id})`, err);
     }
   }
@@ -154,7 +154,7 @@ export class ScheduleService {
 
       // Schedule next run
       this.scheduleNext(schedule);
-    } catch (err) {
+    } catch (err: unknown) {
       this.logger.error(`Failed to execute schedule ${schedule.name}`, err);
 
       // Record failed run

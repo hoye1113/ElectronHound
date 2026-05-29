@@ -57,7 +57,7 @@ export class NotificationService {
       if (!response.ok) {
         this.logger.warn(`Webhook returned status ${response.status}`);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       this.logger.error('Webhook notification failed', err);
     }
   }
@@ -72,7 +72,7 @@ export class NotificationService {
 
     try {
       this.sseBroadcast('notification', payload as unknown as Record<string, unknown>);
-    } catch (err) {
+    } catch (err: unknown) {
       this.logger.error('SSE broadcast failed', err);
     }
   }

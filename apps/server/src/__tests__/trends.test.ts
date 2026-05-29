@@ -30,16 +30,6 @@ function insertTask(
   return id;
 }
 
-/** Insert a step with a specific duration. */
-function insertStep(db: Database.Database, taskId: string, duration: number) {
-  const id = randomUUID();
-  const now = new Date().toISOString();
-  db.prepare(
-    `INSERT INTO steps (id, task_id, step_index, phase, status, observation, action, result, reasoning, screenshot_path, accessibility_snapshot_path, timestamp, duration)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(id, taskId, 0, 'execute', 'success', null, null, null, null, null, null, now, duration);
-}
-
 describe('Route: GET /api/tasks/trends', () => {
   let server: FastifyInstance;
   let db: Database.Database;
