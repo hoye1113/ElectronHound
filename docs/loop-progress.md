@@ -13,6 +13,7 @@
 | W7 | A | 7 文件覆盖率提升 | 71.59% | 1947 | ~63s | - | `bd3290a` | 2026-05-29 |
 | W8 | A+C | 覆盖率 + 日志统一 | 72.09% | 1986 | ~103s | - | `da6e71c` | 2026-05-29 |
 | W9 | A | Dashboard 组件测试 x3 | 80.78% | 2082 | ~65s | - | `9e1b69b` | 2026-05-29 |
+| W10 | A | Dashboard 组件测试 x3 | 83.66% | 2167 | ~73s | - | `6ca59c3` | 2026-05-29 |
 
 ---
 
@@ -20,9 +21,9 @@
 
 | 指标 | 基线 | 当前 | 目标 | 差距 |
 |------|------|------|------|------|
-| 覆盖率 (stmts) | ~68% | 80.78% | 80% | 达标 |
-| 测试数量 | 1280 | 2082 | 持续增长 | - |
-| 测试时间 | ~65s | ~65s | <30s | -35s |
+| 覆盖率 (stmts) | ~68% | 83.66% | 80% | 达标 |
+| 测试数量 | 1280 | 2167 | 持续增长 | - |
+| 测试时间 | ~65s | ~73s | <30s | -43s |
 | ESLint 错误 | 110 | 0 | 0 | 达标 |
 | 裸 catch 块 | 73+ | 0 | 0 | 达标 |
 | `as unknown as` | 12 | 0 | 0 | 达标 |
@@ -39,17 +40,17 @@
 | App.tsx | 0% | 待测试 |
 | main.tsx | 0% | 入口文件，难测试 |
 | AuditTreeView.tsx | 0% | 待测试 |
-| ReportView.tsx | 0% | 待测试 |
+| ReportView.tsx | 99.64% | 已覆盖 |
 | CreateTaskForm.tsx | 79.81% | 已覆盖 |
 | ThemeSwitcher.tsx | 0% | 待测试 |
 | Layout.tsx | 0% | 待测试 |
 | BatchList.tsx | 90.28% | 已覆盖 |
 | FeedbackLoop.tsx | 0% | 待测试 |
 | FewShotPage.tsx | 100% | 已覆盖 |
-| LiveMonitor.tsx | 0% | 待测试 |
+| LiveMonitor.tsx | 98.79% | 已覆盖 |
 | NotFound.tsx | 0% | 待测试 |
 | Settings.tsx | 98.18% | 已覆盖 |
-| SystemHealth.tsx | 0% | 待测试 |
+| SystemHealth.tsx | 100% | 已覆盖 |
 | TaskDetail.tsx | 76.92% | 部分覆盖 |
 | Templates.tsx | 100% | 已覆盖 |
 
@@ -59,8 +60,8 @@
 
 | 轨道 | 描述 | 状态 | 进度 |
 |------|------|------|------|
-| A: 覆盖率提升 | 0% 文件测试补充 | 已达标 | 72% → 80.78% |
-| B: 测试性能 | 慢测试优化 | 进行中 | 103s → 65s (目标 <30s) |
+| A: 覆盖率提升 | 0% 文件测试补充 | 已达标 | 72% → 83.66% |
+| B: 测试性能 | 慢测试优化 | 进行中 | 103s → 73s (目标 <30s) |
 | C: 代码质量 | ESLint/类型/日志 | 已完成 | 0 错误 |
 | D: 安全加固 | CVE/验证/敏感信息 | 已完成 | 1 CVE (dev) |
 
@@ -68,9 +69,9 @@
 
 ## 下一轮计划
 
-**迭代 10 — 轨道 B: 测试性能优化**
+**迭代 11 — 轨道 B: 测试性能优化**
 
-目标：测试时间 65s → <30s
+目标：测试时间 73s → <30s
 
 待优化项：
 1. 分析慢测试（>1s 的测试文件）
@@ -78,17 +79,14 @@
 3. 减少不必要的渲染
 4. 并行化测试执行
 
-**迭代 11 — 轨道 A: 剩余 Dashboard 组件测试**
+**迭代 12 — 轨道 A: 剩余 Dashboard 组件测试**
 
 待测试组件（按优先级）：
-1. SystemHealth.tsx (290 行)
-2. ReportView.tsx (264 行)
-3. LiveMonitor.tsx (213 行)
-4. AuditTreeView.tsx (97 行)
-5. FeedbackLoop.tsx (87 行)
-6. Layout.tsx (69 行)
-7. ThemeSwitcher.tsx (51 行)
-8. App.tsx (42 行)
-9. NotFound.tsx (19 行)
+1. AuditTreeView.tsx (97 行)
+2. FeedbackLoop.tsx (87 行)
+3. Layout.tsx (69 行)
+4. ThemeSwitcher.tsx (51 行)
+5. App.tsx (42 行)
+6. NotFound.tsx (19 行)
 
-预计贡献：+1-2% 覆盖率
+预计贡献：+0.5-1% 覆盖率
