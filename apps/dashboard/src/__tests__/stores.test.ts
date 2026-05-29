@@ -17,6 +17,16 @@ const mockEventSourceInstance = {
 const MockEventSource = vi.fn(() => mockEventSourceInstance);
 vi.stubGlobal('EventSource', MockEventSource);
 
+// Mock connectSSE to capture callbacks
+let capturedCallbacks: Record<string, ((data: unknown) => void) | ((e: Event) => void)> = {};
+const mockESClose = vi.fn();
+vi.mock('../lib/sse.js', () => ({
+  connectSSE: vi.fn((_taskId: string, callbacks: Record<string, unknown>) => {
+    capturedCallbacks = callbacks as typeof capturedCallbacks;
+    return { close: mockESClose };
+  }),
+}));
+
 const mockTask: Task = {
   id: '550e8400-e29b-41d4-a716-446655440000',
   goal: 'Test goal',
@@ -127,6 +137,8 @@ describe('api', () => {
 describe('taskStore', () => {
   beforeEach(() => {
     mockFetch.mockReset();
+    mockESClose.mockReset();
+    capturedCallbacks = {};
     useTaskStore.setState({
       tasks: [],
       currentTask: null,
@@ -209,11 +221,151 @@ describe('taskStore', () => {
     const cleanup = useTaskStore.getState().subscribeToTask(mockTask.id);
 
     expect(typeof cleanup).toBe('function');
-    expect(MockEventSource).toHaveBeenCalled();
 
     cleanup();
-    const esInstance = (MockEventSource as unknown as Mock).mock.results[0].value;
-    expect(esInstance.close).toHaveBeenCalled();
+    expect(mockESClose).toHaveBeenCalled();
+  });
+
+  // --- extractErrorMessage tests ---
+
+  describe('extractErrorMessage', () => {
+    it('extracts message from Error instance', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('specific error'));
+      await useTaskStore.getState().fetchTasks();
+      expect(useTaskStore.getState().error).toBe('specific error');
+    });
+
+    it('extracts string thrown value', async () => {
+      mockFetch.mockRejectedValueOnce('string error');
+      await useTaskStore.getState().fetchTasks();
+      expect(useTaskStore.getState().error).toBe('string error');
+    });
+
+    it('extracts error from object with error key', async () => {
+      mockFetch.mockRejectedValueOnce({ error: 'API error' });
+      await useTaskStore.getState().fetchTasks();
+      expect(useTaskStore.getState().error).toBe('API error');
+    });
+
+    it('extracts message from object with message key', async () => {
+      mockFetch.mockRejectedValueOnce({ message: 'msg error' });
+      await useTaskStore.getState().fetchTasks();
+      expect(useTaskStore.getState().error).toBe('msg error');
+    });
+
+    it('returns fallback for unknown error type', async () => {
+      mockFetch.mockRejectedValueOnce(42);
+      await useTaskStore.getState().fetchTasks();
+      expect(useTaskStore.getState().error).toBe('An unexpected error occurred');
+    });
+  });
+
+  // --- cancelTask tests ---
+
+  describe('cancelTask', () => {
+    it('updates task status to cancelled on success', async () => {
+      useTaskStore.setState({ tasks: [mockTask] });
+      const cancelledTask = { ...mockTask, status: 'cancelled' as const };
+      mockFetch.mockResolvedValueOnce({
+        json: () => Promise.resolve(cancelledTask),
+      });
+
+      await useTaskStore.getState().cancelTask(mockTask.id);
+
+      expect(useTaskStore.getState().tasks[0].status).toBe('cancelled');
+    });
+
+    it('sets error on cancel failure', async () => {
+      useTaskStore.setState({ tasks: [mockTask] });
+      mockFetch.mockRejectedValueOnce(new Error('Cancel failed'));
+
+      await useTaskStore.getState().cancelTask(mockTask.id);
+
+      expect(useTaskStore.getState().error).toBe('Cancel failed');
+    });
+  });
+
+  // --- subscribeToTask callback tests ---
+
+  describe('subscribeToTask callbacks', () => {
+    it('onStep appends step to currentTaskSteps', () => {
+      useTaskStore.setState({ currentTaskSteps: [] });
+      useTaskStore.getState().subscribeToTask(mockTask.id);
+
+      (capturedCallbacks.onStep as (data: unknown) => void)({ phase: 'observe', index: 0 });
+
+      expect(useTaskStore.getState().currentTaskSteps).toHaveLength(1);
+      expect(useTaskStore.getState().currentTaskSteps[0]).toEqual({ phase: 'observe', index: 0 });
+    });
+
+    it('onStep slices when exceeding MAX_STEPS (1000)', () => {
+      const existingSteps = Array.from({ length: 999 }, (_, i) => ({ index: i }));
+      useTaskStore.setState({ currentTaskSteps: existingSteps });
+      useTaskStore.getState().subscribeToTask(mockTask.id);
+
+      // Add 2 more to reach 1001
+      (capturedCallbacks.onStep as (data: unknown) => void)({ index: 999 });
+      (capturedCallbacks.onStep as (data: unknown) => void)({ index: 1000 });
+
+      const steps = useTaskStore.getState().currentTaskSteps;
+      expect(steps).toHaveLength(1000);
+      expect((steps[0] as Record<string, unknown>).index).toBe(1); // first item sliced off
+    });
+
+    it('onComplete closes ES and fetches task', async () => {
+      mockFetch.mockResolvedValueOnce({
+        json: () => Promise.resolve({ task: mockTask, steps: [] }),
+      });
+      useTaskStore.getState().subscribeToTask(mockTask.id);
+
+      await (capturedCallbacks.onComplete as () => void)();
+
+      expect(mockESClose).toHaveBeenCalled();
+      // fetchTask should have been called (mockFetch called for the GET)
+      expect(mockFetch).toHaveBeenCalled();
+    });
+
+    it('onError closes ES without fetching', () => {
+      const fetchCallsBefore = mockFetch.mock.calls.length;
+      useTaskStore.getState().subscribeToTask(mockTask.id);
+
+      (capturedCallbacks.onError as (e: Event) => void)(new Event('error'));
+
+      expect(mockESClose).toHaveBeenCalled();
+      expect(mockFetch.mock.calls.length).toBe(fetchCallsBefore);
+    });
+  });
+
+  // --- Error paths for existing actions ---
+
+  it('createTask sets error on failure', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Create failed'));
+
+    await useTaskStore.getState().createTask({
+      goal: 'Test',
+      targetAppPath: '/test',
+      llmModel: 'gpt-4o',
+      priority: 'medium',
+    });
+
+    expect(useTaskStore.getState().error).toBe('Create failed');
+  });
+
+  it('deleteTask sets error on failure', async () => {
+    useTaskStore.setState({ tasks: [mockTask] });
+    mockFetch.mockRejectedValueOnce(new Error('Delete failed'));
+
+    await useTaskStore.getState().deleteTask(mockTask.id);
+
+    expect(useTaskStore.getState().error).toBe('Delete failed');
+  });
+
+  it('fetchTask sets error on failure', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Fetch failed'));
+
+    await useTaskStore.getState().fetchTask('bad-id');
+
+    expect(useTaskStore.getState().error).toBe('Fetch failed');
   });
 });
 
