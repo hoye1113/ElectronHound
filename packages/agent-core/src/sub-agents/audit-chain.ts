@@ -27,20 +27,17 @@ function makeFailureOutput(role: SubAgentRole, error: unknown): SubAgentOutput {
 }
 
 /**
- * Runs the full 4-role sub-agent audit chain sequentially.
+ * Runs the full 4-role sub-agent audit chain.
  *
  * Pipeline order:
- *   1. test-planner → output injected into downstream context
- *   2. execution-analyst → receives planner output in context
- *   3. security-reviewer → receives planner + analyst outputs
- *   4. report-synthesizer → receives all three upstream outputs
+ *   1. test-planner, execution-analyst, security-reviewer run IN PARALLEL
+ *   2. report-synthesizer receives all three upstream outputs
  *
  * Returns `AuditChainResult` with every role's output, chain ordering,
  * wall-clock duration, and completion timestamp.
  *
- * If any agent throws, the chain stops and returns a partial result
- * with all successful outputs plus a failure placeholder for the agent
- * that failed. Downstream agents receive the failure placeholder as context.
+ * If any of the first 3 agents throws, the chain continues with the
+ * remaining agents and uses a failure placeholder for the failed agent.
  */
 export async function runAuditChain(input: SubAgentInput): Promise<AuditChainResult> {
   const startTime = Date.now();
@@ -50,76 +47,33 @@ export async function runAuditChain(input: SubAgentInput): Promise<AuditChainRes
   const security = new SecurityReviewer();
   const synthesizer = new ReportSynthesizer();
 
-  // 1. TestPlanner — uses original input.
-  let testPlannerOutput: SubAgentOutput;
-  try {
-    testPlannerOutput = await planner.run(input);
-  } catch (err: unknown) {
-    logger.error(`test-planner failed: ${toErrorMessage(err)}`);
-    return {
-      goal: input.goal,
-      testPlanner: makeFailureOutput('test-planner', err),
-      executionAnalyst: makeFailureOutput('execution-analyst', 'Skipped: test-planner failed'),
-      securityReviewer: makeFailureOutput('security-reviewer', 'Skipped: test-planner failed'),
-      reportSynthesizer: makeFailureOutput('report-synthesizer', 'Skipped: test-planner failed'),
-      chainOrder: ['test-planner', 'execution-analyst', 'security-reviewer', 'report-synthesizer'],
-      durationMs: Date.now() - startTime,
-      completedAt: new Date().toISOString(),
-    };
-  }
+  // Phase 1: Run planner, analyst, and security in parallel
+  const [planResult, analysisResult, securityResult] = await Promise.allSettled([
+    planner.run(input),
+    analyst.run(input),
+    security.run(input),
+  ]);
 
-  // 2. ExecutionAnalyst — carries planner output in context.
-  const executionInput: SubAgentInput = {
-    ...input,
-    context: {
-      ...input.context,
-      testPlannerOutput,
-    },
-  };
-  let executionAnalystOutput: SubAgentOutput;
-  try {
-    executionAnalystOutput = await analyst.run(executionInput);
-  } catch (err: unknown) {
-    logger.error(`execution-analyst failed: ${toErrorMessage(err)}`);
-    return {
-      goal: input.goal,
-      testPlanner: testPlannerOutput,
-      executionAnalyst: makeFailureOutput('execution-analyst', err),
-      securityReviewer: makeFailureOutput('security-reviewer', 'Skipped: execution-analyst failed'),
-      reportSynthesizer: makeFailureOutput('report-synthesizer', 'Skipped: execution-analyst failed'),
-      chainOrder: ['test-planner', 'execution-analyst', 'security-reviewer', 'report-synthesizer'],
-      durationMs: Date.now() - startTime,
-      completedAt: new Date().toISOString(),
-    };
-  }
+  // Extract results with fallback for failed agents
+  const testPlannerOutput: SubAgentOutput =
+    planResult.status === 'fulfilled'
+      ? planResult.value
+      : (logger.error(`test-planner failed: ${toErrorMessage(planResult.reason)}`),
+        makeFailureOutput('test-planner', planResult.reason));
 
-  // 3. SecurityReviewer — carries planner + analyst outputs.
-  const securityInput: SubAgentInput = {
-    ...input,
-    context: {
-      ...input.context,
-      testPlannerOutput,
-      executionAnalystOutput,
-    },
-  };
-  let securityReviewerOutput: SubAgentOutput;
-  try {
-    securityReviewerOutput = await security.run(securityInput);
-  } catch (err: unknown) {
-    logger.error(`security-reviewer failed: ${toErrorMessage(err)}`);
-    return {
-      goal: input.goal,
-      testPlanner: testPlannerOutput,
-      executionAnalyst: executionAnalystOutput,
-      securityReviewer: makeFailureOutput('security-reviewer', err),
-      reportSynthesizer: makeFailureOutput('report-synthesizer', 'Skipped: security-reviewer failed'),
-      chainOrder: ['test-planner', 'execution-analyst', 'security-reviewer', 'report-synthesizer'],
-      durationMs: Date.now() - startTime,
-      completedAt: new Date().toISOString(),
-    };
-  }
+  const executionAnalystOutput: SubAgentOutput =
+    analysisResult.status === 'fulfilled'
+      ? analysisResult.value
+      : (logger.error(`execution-analyst failed: ${toErrorMessage(analysisResult.reason)}`),
+        makeFailureOutput('execution-analyst', analysisResult.reason));
 
-  // 4. ReportSynthesizer — carries all three upstream outputs.
+  const securityReviewerOutput: SubAgentOutput =
+    securityResult.status === 'fulfilled'
+      ? securityResult.value
+      : (logger.error(`security-reviewer failed: ${toErrorMessage(securityResult.reason)}`),
+        makeFailureOutput('security-reviewer', securityResult.reason));
+
+  // Phase 2: Run report-synthesizer with all three upstream outputs
   const synthesizerInput: SubAgentInput = {
     ...input,
     context: {
@@ -129,21 +83,13 @@ export async function runAuditChain(input: SubAgentInput): Promise<AuditChainRes
       securityReviewerOutput,
     },
   };
+
   let reportSynthesizerOutput: SubAgentOutput;
   try {
     reportSynthesizerOutput = await synthesizer.run(synthesizerInput);
   } catch (err: unknown) {
     logger.error(`report-synthesizer failed: ${toErrorMessage(err)}`);
-    return {
-      goal: input.goal,
-      testPlanner: testPlannerOutput,
-      executionAnalyst: executionAnalystOutput,
-      securityReviewer: securityReviewerOutput,
-      reportSynthesizer: makeFailureOutput('report-synthesizer', err),
-      chainOrder: ['test-planner', 'execution-analyst', 'security-reviewer', 'report-synthesizer'],
-      durationMs: Date.now() - startTime,
-      completedAt: new Date().toISOString(),
-    };
+    reportSynthesizerOutput = makeFailureOutput('report-synthesizer', err);
   }
 
   return {
