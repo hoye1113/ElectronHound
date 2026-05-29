@@ -3,6 +3,7 @@ import { createLLMProviderAdapter, createLLMProviderAdapterForProvider } from '.
 import { loadProvidersConfig } from './config-manager.js';
 import { AgentLoop } from './runtime/agentLoop.js';
 import { SessionManager } from './session/sessionManager.js';
+import { CheckpointManager } from './session/checkpointManager.js';
 import { entriesToStepRecords, extractLastStep } from './session/entryConverter.js';
 import { runAuditChain } from './sub-agents/audit-chain.js';
 import type { RunTestResult } from './runner-types.js';
@@ -72,9 +73,29 @@ export async function runTest(
 
   const taskId = options.taskId ?? crypto.randomUUID();
 
-  // Run the agent loop (include target app path in the goal for context)
-  const goalWithContext = `Target app path: ${options.targetAppPath}\nGoal: ${options.goal}`;
-  const result = await agentLoop.run(goalWithContext);
+  // Check for existing checkpoint
+  let checkpointManager: CheckpointManager | null = null;
+  if (options.checkpointPath) {
+    try {
+      checkpointManager = new CheckpointManager(options.checkpointPath);
+    } catch (err: unknown) {
+      logger.warn(`Failed to initialize CheckpointManager: ${toErrorMessage(err)}`);
+    }
+  }
+
+  let result;
+  const existingCheckpoint = checkpointManager?.get(taskId);
+  if (existingCheckpoint) {
+    // Resume from checkpoint
+    logger.info(`Resuming from checkpoint for session ${taskId}, step ${existingCheckpoint.currentStep + 1}`);
+    result = await agentLoop.resume(existingCheckpoint);
+    // Delete checkpoint after successful resume
+    checkpointManager?.delete(taskId);
+  } else {
+    // Run the agent loop (include target app path in the goal for context)
+    const goalWithContext = `Target app path: ${options.targetAppPath}\nGoal: ${options.goal}`;
+    result = await agentLoop.run(goalWithContext);
+  }
 
   // Read session entries and convert to StepRecords
   const session = sessionManager.getSession(result.sessionId);
@@ -92,6 +113,9 @@ export async function runTest(
   } catch (err: unknown) {
     logger.warn(`Audit chain failed: ${toErrorMessage(err)}`);
   }
+
+  // Clean up checkpoint manager
+  checkpointManager?.close();
 
   // Convert AgentLoop result to RunTestResult (backward-compatible with worker-entry.ts)
   const runTestResult: RunTestResult = {

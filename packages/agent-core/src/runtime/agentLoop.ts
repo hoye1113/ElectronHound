@@ -13,6 +13,7 @@
 import type { LLMProvider } from '../llm/types.js';
 import type { SessionManager } from '../session/sessionManager.js';
 import type { MCPClient } from '../mcp/client.js';
+import type { AgentCheckpoint } from '../session/checkpointManager.js';
 import type {
   AgentLoopConfig,
   AgentLoopState,
@@ -213,6 +214,150 @@ export class AgentLoop {
     this.mcp = config.mcpClient;
     this.maxSteps = config.maxSteps ?? DEFAULT_MAX_STEPS;
     this.stuckThreshold = config.stuckThreshold ?? DEFAULT_STUCK_THRESHOLD;
+  }
+
+  /**
+   * Resume an agent loop from a checkpoint.
+   * Restores session entries and continues from checkpoint.currentStep + 1.
+   *
+   * @param checkpoint - The checkpoint to resume from.
+   * @returns Terminal result with verdict, report, and session ID.
+   */
+  async resume(checkpoint: AgentCheckpoint): Promise<AgentRunResult> {
+    const sessionId = checkpoint.sessionId;
+
+    // Restore session entries into the session manager
+    for (const entry of checkpoint.sessionEntries) {
+      this.session.addEntry(sessionId, {
+        role: entry.role,
+        content: entry.content,
+        type: entry.type,
+        id: entry.id,
+        timestamp: entry.timestamp,
+      });
+    }
+
+    // Reconstruct state from checkpoint
+    const state: AgentLoopState = {
+      sessionId,
+      taskPrompt: checkpoint.taskPrompt,
+      stepCount: checkpoint.currentStep,
+      currentObservation: checkpoint.lastObservation as unknown as Observation | null,
+      lastPlan: checkpoint.lastPlan as unknown as Plan | null,
+      lastExecution: checkpoint.lastExecutionResult as unknown as ExecutionResult | null,
+      stuckCount: 0,
+    };
+
+    // Track recent observation fingerprints for stuck detection
+    const fingerprintWindow: string[] = [];
+
+    try {
+      while (state.stepCount < this.maxSteps) {
+        // ── 1. Observe ──────────────────────────────────────────────
+        this.logger.info(`[resume] Step ${state.stepCount + 1}: Observing...`);
+        const observation = await this.observe(state);
+        state.currentObservation = observation;
+
+        this.session.addEntry(sessionId, {
+          role: 'assistant',
+          content: JSON.stringify(observation),
+          type: 'assistant',
+        });
+
+        // ── Stuck detection ─────────────────────────────────────────
+        const fp = fingerprintObservation(observation);
+        fingerprintWindow.push(fp);
+        if (fingerprintWindow.length > this.stuckThreshold) {
+          fingerprintWindow.shift();
+        }
+
+        if (
+          fingerprintWindow.length >= this.stuckThreshold &&
+          fingerprintWindow.every((f) => f === fingerprintWindow[0])
+        ) {
+          state.stuckCount = this.stuckThreshold;
+          const stuckVerdict: Verdict = {
+            verdict: 'stuck',
+            reasoning: `Stuck: ${this.stuckThreshold} consecutive identical observations detected.`,
+          };
+
+          this.session.addEntry(sessionId, {
+            role: 'system',
+            content: stuckVerdict.reasoning,
+            type: 'system',
+          });
+
+          const report = await this.report(state, stuckVerdict);
+          return { verdict: 'stuck', report, sessionId };
+        }
+
+        // ── 2. Plan ─────────────────────────────────────────────────
+        this.logger.info(`Observation: ${observation.summary.substring(0, 100)}`);
+        this.logger.info('Planning...');
+        const plan = await this.plan(observation, state);
+        state.lastPlan = plan;
+
+        this.session.addEntry(sessionId, {
+          role: 'assistant',
+          content: JSON.stringify(plan),
+          type: 'assistant',
+        });
+
+        // ── 3. Execute ──────────────────────────────────────────────
+        this.logger.info(`Plan: ${plan.action} (tool: ${plan.toolName})`);
+        this.logger.info(`Executing ${plan.toolName}...`);
+        const execution = await this.execute(plan);
+        state.lastExecution = execution;
+        state.stepCount++;
+
+        this.session.addEntry(sessionId, {
+          role: 'system',
+          content: JSON.stringify(execution),
+          type: 'system',
+        });
+
+        // ── 4. Verify ───────────────────────────────────────────────
+        this.logger.info(`Execution result: success=${execution.success}, error=${execution.error ?? 'none'}`);
+        this.logger.info('Verifying...');
+        const verdict = await this.verify(execution, plan, state);
+
+        this.session.addEntry(sessionId, {
+          role: 'assistant',
+          content: JSON.stringify(verdict),
+          type: 'assistant',
+        });
+
+        // ── Terminal verdict → 5. Report ────────────────────────────
+        if (verdict.verdict === 'pass' || verdict.verdict === 'fail' || verdict.verdict === 'stuck') {
+          const report = await this.report(state, verdict);
+          return { verdict: verdict.verdict, report, sessionId };
+        }
+
+        // verdict === 'retry': continue to next iteration
+      }
+
+      // ── Exhausted maxSteps ────────────────────────────────────────
+      const exhaustedVerdict: Verdict = {
+        verdict: 'fail',
+        reasoning: `Exceeded maximum steps (${this.maxSteps}).`,
+      };
+
+      this.session.addEntry(sessionId, {
+        role: 'system',
+        content: exhaustedVerdict.reasoning,
+        type: 'system',
+      });
+
+      const report = await this.report(state, exhaustedVerdict);
+      return { verdict: 'fail', report, sessionId };
+    } finally {
+      // Disconnect all MCP servers
+      if (this.mcp) {
+        await this.mcp.disconnect().catch((err: unknown) => {
+          this.logger.error(`MCP disconnect error: ${toErrorMessage(err)}`);
+        });
+      }
+    }
   }
 
   /**
