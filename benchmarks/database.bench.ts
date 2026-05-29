@@ -118,4 +118,14 @@ describe('Database queries', () => {
   bench('COUNT tasks with pagination', () => {
     db.prepare('SELECT COUNT(*) as total FROM tasks').get();
   });
+
+  bench('SELECT task report (task + all steps)', () => {
+    db.prepare(
+      `SELECT t.id, t.goal, t.status, t.step_count,
+              s.step_index, s.phase, s.status as step_status, s.observation, s.duration
+       FROM tasks t
+       LEFT JOIN steps s ON t.id = s.task_id
+       WHERE t.id = 'task-0'`,
+    ).all();
+  });
 });

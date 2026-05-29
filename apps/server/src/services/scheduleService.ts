@@ -23,6 +23,21 @@ interface TemplateRow {
   goal: string;
 }
 
+interface TaskResult {
+  status: string;
+  stepCount: number;
+}
+
+export interface ComparisonResult {
+  improved: boolean;
+  regressed: boolean;
+  currentStatus: string;
+  previousStatus: string;
+  currentStepCount: number;
+  previousStepCount: number;
+  details: string;
+}
+
 export class ScheduleService {
   private db: Database.Database;
   private timers: Map<string, ReturnType<typeof setTimeout>> = new Map();
@@ -111,6 +126,71 @@ export class ScheduleService {
   }
 
   /**
+   * Compare current run results with the previous run for the same schedule.
+   * Detects regressions (status degraded, step count increased significantly)
+   * and improvements (status improved, step count decreased).
+   */
+  compareResults(scheduleId: string, currentTaskId: string): ComparisonResult | null {
+    // Get current task result
+    const currentTask = this.db
+      .prepare('SELECT status, step_count FROM tasks WHERE id = ?')
+      .get(currentTaskId) as TaskResult | undefined;
+
+    if (!currentTask) return null;
+
+    // Get previous run's task ID
+    const previousRun = this.db
+      .prepare(
+        `SELECT task_id FROM schedule_runs
+         WHERE schedule_id = ? AND task_id IS NOT NULL AND task_id != ?
+         ORDER BY started_at DESC LIMIT 1`
+      )
+      .get(scheduleId, currentTaskId) as { task_id: string } | undefined;
+
+    if (!previousRun) return null;
+
+    // Get previous task result
+    const previousTask = this.db
+      .prepare('SELECT status, step_count FROM tasks WHERE id = ?')
+      .get(previousRun.task_id) as TaskResult | undefined;
+
+    if (!previousTask) return null;
+
+    const statusOrder: Record<string, number> = {
+      completed: 0,
+      queued: 1,
+      running: 2,
+      cancelled: 3,
+      failed: 4,
+    };
+
+    const currentStatusVal = statusOrder[currentTask.status] ?? 2;
+    const previousStatusVal = statusOrder[previousTask.status] ?? 2;
+
+    const regressed = currentStatusVal > previousStatusVal;
+    const improved = currentStatusVal < previousStatusVal;
+
+    const stepDiff = currentTask.step_count - previousTask.step_count;
+    const stepThreshold = Math.max(5, Math.floor(previousTask.step_count * 0.5));
+    const stepRegressed = stepDiff > stepThreshold;
+
+    const details = [
+      `Status: ${previousTask.status} → ${currentTask.status}`,
+      `Steps: ${previousTask.step_count} → ${currentTask.step_count} (${stepDiff >= 0 ? '+' : ''}${stepDiff})`,
+    ].join(', ');
+
+    return {
+      improved: improved || (stepDiff < -stepThreshold),
+      regressed: regressed || stepRegressed,
+      currentStatus: currentTask.status,
+      previousStatus: previousTask.status,
+      currentStepCount: currentTask.step_count,
+      previousStepCount: previousTask.step_count,
+      details,
+    };
+  }
+
+  /**
    * Execute a schedule: create a task, record run history, update stats.
    */
   async execute(scheduleId: string): Promise<void> {
@@ -169,6 +249,24 @@ export class ScheduleService {
         message: `Created task ${taskId} from template`,
         data: { scheduleId, taskId, scheduleName: schedule.name },
       });
+
+      // Compare with previous run results
+      const comparison = this.compareResults(scheduleId, taskId);
+      if (comparison?.regressed) {
+        await this.notificationService.send({
+          event: 'schedule:regression',
+          title: `Schedule "${schedule.name}" regression detected`,
+          message: comparison.details,
+          data: { scheduleId, taskId, scheduleName: schedule.name, comparison },
+        });
+      } else if (comparison?.improved) {
+        await this.notificationService.send({
+          event: 'schedule:improved',
+          title: `Schedule "${schedule.name}" improved`,
+          message: comparison.details,
+          data: { scheduleId, taskId, scheduleName: schedule.name, comparison },
+        });
+      }
 
       // Schedule next run
       this.scheduleNext(schedule);

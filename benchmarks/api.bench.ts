@@ -35,6 +35,10 @@ describe('API endpoints', () => {
     await server.inject({ method: 'GET', url: '/api/tasks?status=pending' });
   });
 
+  bench('GET /api/tasks/:id', async () => {
+    await server.inject({ method: 'GET', url: '/api/tasks/bench-task-0' });
+  });
+
   bench('POST /api/tasks', async () => {
     await server.inject({
       method: 'POST',

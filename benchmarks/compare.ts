@@ -15,6 +15,7 @@ export interface BenchmarkEntry {
   max: number;
   mean: number;
   p75: number;
+  p95: number;
   p99: number;
   p995: number;
   p999: number;
@@ -38,13 +39,16 @@ export interface BaselineData {
   version: number;
   timestamp: string;
   commit: string;
-  results: Record<string, { mean: number; hz: number }>;
+  results: Record<string, { mean: number; hz: number; p95: number }>;
 }
 
 export interface RegressionResult {
   name: string;
   baselineMean: number;
   currentMean: number;
+  baselineP95: number;
+  currentP95: number;
+  p95ChangePercent: number;
   changePercent: number;
   regressed: boolean;
 }
@@ -86,12 +90,12 @@ export function loadCurrent(currentPath?: string): Record<string, BenchmarkEntry
 /**
  * Flatten a benchmark report into { name: { mean, hz } } for baseline storage.
  */
-export function flattenReport(report: BenchmarkReport): Record<string, { mean: number; hz: number }> {
-  const results: Record<string, { mean: number; hz: number }> = {};
+export function flattenReport(report: BenchmarkReport): Record<string, { mean: number; hz: number; p95: number }> {
+  const results: Record<string, { mean: number; hz: number; p95: number }> = {};
   for (const file of report.files) {
     for (const group of file.groups) {
       for (const bench of group.benchmarks) {
-        results[bench.id] = { mean: bench.mean, hz: bench.hz };
+        results[bench.id] = { mean: bench.mean, hz: bench.hz, p95: bench.p95 };
       }
     }
   }
@@ -110,7 +114,7 @@ export function flattenReport(report: BenchmarkReport): Record<string, { mean: n
  * @returns Array of regression results, including which benchmarks regressed
  */
 export function checkRegression(
-  baseline: Record<string, { mean: number; hz: number }>,
+  baseline: Record<string, { mean: number; hz: number; p95: number }>,
   current: Record<string, BenchmarkEntry>,
   thresholdPercent = 10,
 ): RegressionResult[] {
@@ -126,12 +130,20 @@ export function checkRegression(
     const changePercent =
       ((currentEntry.mean - baselineEntry.mean) / baselineEntry.mean) * 100;
 
+    const p95ChangePercent =
+      baselineEntry.p95 > 0
+        ? ((currentEntry.p95 - baselineEntry.p95) / baselineEntry.p95) * 100
+        : 0;
+
     results.push({
       name,
       baselineMean: baselineEntry.mean,
       currentMean: currentEntry.mean,
+      baselineP95: baselineEntry.p95,
+      currentP95: currentEntry.p95,
+      p95ChangePercent,
       changePercent,
-      regressed: changePercent > thresholdPercent,
+      regressed: changePercent > thresholdPercent || p95ChangePercent > thresholdPercent,
     });
   }
 
