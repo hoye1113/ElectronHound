@@ -4,7 +4,12 @@ export interface Operation {
     | 'send_ipc'
     | 'mock_dialog'
     | 'get_menu_items'
-    | 'health_check';
+    | 'health_check'
+    | 'take_screenshot'
+    | 'get_console_logs'
+    | 'evaluate_in_page'
+    | 'get_network_requests'
+    | 'set_window_bounds';
   payload?: Record<string, unknown>;
 }
 
@@ -29,6 +34,12 @@ interface DialogMockConfig {
   response: unknown;
 }
 
+/** Minimal interface for a CDP (Chrome DevTools Protocol) session. */
+export interface CDPSession {
+  send(method: string, params?: Record<string, unknown>): Promise<Record<string, unknown>>;
+  on(event: string, callback: (...args: unknown[]) => void): void;
+}
+
 /**
  * Handles operations dispatched from the electron-bridge-mcp server.
  * All operations use real Electron APIs when available.
@@ -36,6 +47,14 @@ interface DialogMockConfig {
 export class OperationHandler {
   private electron: typeof import('electron') | null = null;
   private dialogMocks: Map<string, DialogMockConfig> = new Map();
+  private cdpSession: CDPSession | null = null;
+
+  /**
+   * Set the CDP session for CDP-based operations (screenshot, console logs, etc.).
+   */
+  setCdpSession(session: CDPSession): void {
+    this.cdpSession = session;
+  }
 
   /**
    * Lazily load the Electron module.
@@ -79,6 +98,16 @@ export class OperationHandler {
         return this.handleMockDialog(operation.payload);
       case 'get_menu_items':
         return this.handleGetMenuItems();
+      case 'take_screenshot':
+        return this.handleTakeScreenshot();
+      case 'get_console_logs':
+        return this.handleGetConsoleLogs();
+      case 'evaluate_in_page':
+        return this.handleEvaluateInPage(operation.payload);
+      case 'get_network_requests':
+        return this.handleGetNetworkRequests();
+      case 'set_window_bounds':
+        return this.handleSetWindowBounds(operation.payload);
       default:
         return {
           success: false,
@@ -224,6 +253,102 @@ export class OperationHandler {
         success: false,
         error: err instanceof Error ? err.message : String(err),
       };
+    }
+  }
+
+  // ── CDP-based operations ────────────────────────────────────────────────
+
+  private async handleTakeScreenshot(): Promise<OperationResult> {
+    if (!this.cdpSession) {
+      return { success: false, error: 'CDP session not available' };
+    }
+    try {
+      const screenshot = await this.cdpSession.send('Page.captureScreenshot', { format: 'png', quality: 80 });
+      return { success: true, data: { screenshot: screenshot.data } };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  }
+
+  private async handleGetConsoleLogs(): Promise<OperationResult> {
+    if (!this.cdpSession) {
+      return { success: false, error: 'CDP session not available' };
+    }
+    try {
+      const logs: unknown[] = [];
+      this.cdpSession.on('Runtime.consoleAPICalled', (params: unknown) => {
+        const p = params as Record<string, unknown>;
+        logs.push({
+          type: p.type,
+          args: (p.args as Array<Record<string, unknown>>)?.map((a) => a.value ?? a.description),
+          timestamp: p.timestamp,
+        });
+      });
+      await this.cdpSession.send('Runtime.enable');
+      return { success: true, data: { logs } };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  }
+
+  private async handleEvaluateInPage(
+    payload: Record<string, unknown> | undefined,
+  ): Promise<OperationResult> {
+    if (!this.cdpSession) {
+      return { success: false, error: 'CDP session not available' };
+    }
+    try {
+      const expression = payload?.expression;
+      if (typeof expression !== 'string' || expression.length === 0) {
+        return { success: false, error: 'payload.expression must be a non-empty string' };
+      }
+      const result = await this.cdpSession.send('Runtime.evaluate', { expression, returnByValue: true });
+      return { success: true, data: { result: result.result, exceptionDetails: result.exceptionDetails } };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  }
+
+  private async handleGetNetworkRequests(): Promise<OperationResult> {
+    if (!this.cdpSession) {
+      return { success: false, error: 'CDP session not available' };
+    }
+    try {
+      const requests: unknown[] = [];
+      this.cdpSession.on('Network.requestWillBeSent', (params: unknown) => {
+        const p = params as Record<string, unknown>;
+        const request = p.request as Record<string, unknown>;
+        requests.push({
+          url: request.url,
+          method: request.method,
+          type: p.type,
+          timestamp: p.timestamp,
+        });
+      });
+      await this.cdpSession.send('Network.enable');
+      return { success: true, data: { requests } };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  }
+
+  private async handleSetWindowBounds(
+    payload: Record<string, unknown> | undefined,
+  ): Promise<OperationResult> {
+    if (!this.cdpSession) {
+      return { success: false, error: 'CDP session not available' };
+    }
+    try {
+      const bounds = payload?.bounds as { x: number; y: number; width: number; height: number } | undefined;
+      if (!bounds || typeof bounds.x !== 'number' || typeof bounds.y !== 'number' || typeof bounds.width !== 'number' || typeof bounds.height !== 'number') {
+        return { success: false, error: 'payload.bounds must be an object with x, y, width, height numbers' };
+      }
+      const windowIdResult = await this.cdpSession.send('Browser.getWindowForTarget');
+      const windowId = windowIdResult.windowId as number;
+      await this.cdpSession.send('Browser.setWindowBounds', { windowId, bounds });
+      return { success: true, data: { windowId, bounds } };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : String(err) };
     }
   }
 
