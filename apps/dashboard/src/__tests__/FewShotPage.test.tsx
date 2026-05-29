@@ -219,7 +219,7 @@ describe('FewShotPage', () => {
       ]);
 
       // Submit the form — the submit button text is t('common.add') = 'Add'
-      fireEvent.click(screen.getByRole('button', { name: 'Add', exact: true }));
+      fireEvent.click(screen.getByRole('button', { name: /^Add$/ }));
 
       await waitFor(() => {
         expect(mockFewShotAdd).toHaveBeenCalledWith(
@@ -271,7 +271,7 @@ describe('FewShotPage', () => {
       ]);
 
       // Click save — button text is t('common.save') = 'Save'
-      fireEvent.click(screen.getByRole('button', { name: 'Save', exact: true }));
+      fireEvent.click(screen.getByRole('button', { name: /^Save$/ }));
 
       await waitFor(() => {
         expect(mockFewShotUpdate).toHaveBeenCalledWith(
@@ -367,7 +367,7 @@ describe('FewShotPage', () => {
       });
 
       // Submit without filling anything
-      const submitBtn = screen.getByRole('button', { name: 'Add', exact: true });
+      const submitBtn = screen.getByRole('button', { name: /^Add$/ });
       fireEvent.click(submitBtn);
 
       await waitFor(() => {
@@ -387,7 +387,7 @@ describe('FewShotPage', () => {
       });
 
       // Submit empty form to trigger validation
-      fireEvent.click(screen.getByRole('button', { name: 'Add', exact: true }));
+      fireEvent.click(screen.getByRole('button', { name: /^Add$/ }));
 
       await waitFor(() => {
         expect(screen.getByText('fewShot.goalRequired')).toBeInTheDocument();
@@ -407,7 +407,7 @@ describe('FewShotPage', () => {
       mockFewShotList.mockReturnValueOnce([
         createExample({ goal: 'Some goal', expectedResult: 'Some result' }),
       ]);
-      fireEvent.click(screen.getByRole('button', { name: 'Add', exact: true }));
+      fireEvent.click(screen.getByRole('button', { name: /^Add$/ }));
 
       await waitFor(() => {
         expect(screen.queryByText('fewShot.goalRequired')).not.toBeInTheDocument();
@@ -699,7 +699,7 @@ describe('FewShotPage', () => {
         createExample({ goal: 'Imported goal', expectedResult: 'Imported result' }),
       ]);
 
-      fireEvent.click(screen.getByRole('button', { name: 'Add', exact: true }));
+      fireEvent.click(screen.getByRole('button', { name: /^Add$/ }));
 
       await waitFor(() => {
         expect(mockFewShotAdd).toHaveBeenCalledWith(

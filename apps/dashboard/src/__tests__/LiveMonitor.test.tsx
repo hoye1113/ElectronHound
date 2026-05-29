@@ -13,9 +13,9 @@ vi.mock('react-router-dom', async (importOriginal) => {
 
 // Mock SSE module
 const mockClose = vi.fn();
-const mockConnectSSE = vi.fn(() => ({ close: mockClose }));
+const mockConnectSSE = vi.fn<(...args: [string, unknown]) => { close: typeof mockClose }>(() => ({ close: mockClose }));
 vi.mock('../lib/sse', () => ({
-  connectSSE: (...args: unknown[]) => mockConnectSSE(...args),
+  connectSSE: (...args: [string, unknown]) => mockConnectSSE(...args),
 }));
 
 // Mock task store
