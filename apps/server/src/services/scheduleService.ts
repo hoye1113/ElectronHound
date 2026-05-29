@@ -1,0 +1,178 @@
+import type Database from 'better-sqlite3';
+import { randomUUID } from 'node:crypto';
+import { CronExpressionParser } from 'cron-parser';
+import { getLogger } from '@eata/agent-core/dx';
+
+interface ScheduleRow {
+  id: string;
+  name: string;
+  template_id: string;
+  cron_expression: string;
+  enabled: number;
+  last_run_at: string | null;
+  next_run_at: string | null;
+  run_count: number;
+  last_status: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface TemplateRow {
+  id: string;
+  goal: string;
+}
+
+export class ScheduleService {
+  private db: Database.Database;
+  private timers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+  private logger = getLogger({ source: 'scheduleService' });
+
+  constructor(db: Database.Database) {
+    this.db = db;
+  }
+
+  /**
+   * Load all enabled schedules and set up timers for execution.
+   */
+  start(): void {
+    this.logger.info('Starting schedule service');
+
+    const schedules = this.db
+      .prepare('SELECT * FROM schedules WHERE enabled = 1')
+      .all() as ScheduleRow[];
+
+    for (const schedule of schedules) {
+      this.scheduleNext(schedule);
+    }
+
+    this.logger.info(`Loaded ${schedules.length} enabled schedules`);
+  }
+
+  /**
+   * Clear all timers and stop the service.
+   */
+  stop(): void {
+    this.logger.info('Stopping schedule service');
+
+    for (const [id, timer] of this.timers) {
+      clearTimeout(timer);
+      this.timers.delete(id);
+    }
+
+    this.logger.info('All schedule timers cleared');
+  }
+
+  /**
+   * Schedule the next execution for a given schedule.
+   */
+  private scheduleNext(schedule: ScheduleRow): void {
+    try {
+      const interval = CronExpressionParser.parse(schedule.cron_expression);
+      const nextRun = interval.next();
+      const nextRunDate = nextRun.toDate();
+      const now = new Date();
+      const delayMs = Math.max(0, nextRunDate.getTime() - now.getTime());
+
+      // Update next_run_at in database
+      this.db
+        .prepare("UPDATE schedules SET next_run_at = ?, updated_at = datetime('now') WHERE id = ?")
+        .run(nextRunDate.toISOString(), schedule.id);
+
+      // Set timer (cap at max setTimeout value to avoid overflow)
+      const maxDelay = 2147483647; // ~24.8 days
+      const actualDelay = Math.min(delayMs, maxDelay);
+
+      const timer = setTimeout(() => {
+        this.execute(schedule.id).catch((err) => {
+          this.logger.error(`Schedule execution failed for ${schedule.id}`, err);
+        });
+      }, actualDelay);
+
+      // Allow the timer to not keep the process alive
+      if (typeof timer.unref === 'function') {
+        timer.unref();
+      }
+
+      this.timers.set(schedule.id, timer);
+      this.logger.debug(`Scheduled next run for ${schedule.name} at ${nextRunDate.toISOString()}`);
+    } catch (err) {
+      this.logger.error(`Failed to schedule ${schedule.name} (${schedule.id})`, err);
+    }
+  }
+
+  /**
+   * Execute a schedule: create a task, record run history, update stats.
+   */
+  async execute(scheduleId: string): Promise<void> {
+    const schedule = this.db
+      .prepare('SELECT * FROM schedules WHERE id = ?')
+      .get(scheduleId) as ScheduleRow | undefined;
+
+    if (!schedule) {
+      this.logger.warn(`Schedule ${scheduleId} not found, skipping execution`);
+      return;
+    }
+
+    const template = this.db
+      .prepare('SELECT * FROM templates WHERE id = ?')
+      .get(schedule.template_id) as TemplateRow | undefined;
+
+    if (!template) {
+      this.logger.error(`Template ${schedule.template_id} not found for schedule ${schedule.name}`);
+      return;
+    }
+
+    const taskId = randomUUID();
+    const runId = randomUUID();
+    const now = new Date().toISOString();
+
+    try {
+      // Create a task from the template
+      this.db
+        .prepare(
+          `INSERT INTO tasks (id, goal, target_app_path, llm_model, status, created_at, updated_at)
+           VALUES (?, ?, '', '', 'queued', ?, ?)`
+        )
+        .run(taskId, template.goal, now, now);
+
+      // Record schedule run
+      this.db
+        .prepare(
+          `INSERT INTO schedule_runs (id, schedule_id, task_id, started_at, status)
+           VALUES (?, ?, ?, ?, 'running')`
+        )
+        .run(runId, scheduleId, taskId, now);
+
+      // Update schedule stats
+      this.db
+        .prepare(
+          `UPDATE schedules SET last_run_at = ?, run_count = run_count + 1, last_status = 'running', updated_at = datetime('now') WHERE id = ?`
+        )
+        .run(now, scheduleId);
+
+      this.logger.info(`Executed schedule ${schedule.name}, created task ${taskId}`);
+
+      // Schedule next run
+      this.scheduleNext(schedule);
+    } catch (err) {
+      this.logger.error(`Failed to execute schedule ${schedule.name}`, err);
+
+      // Record failed run
+      this.db
+        .prepare(
+          `INSERT INTO schedule_runs (id, schedule_id, task_id, started_at, status, error)
+           VALUES (?, ?, ?, ?, 'failed', ?)`
+        )
+        .run(runId, scheduleId, null, now, err instanceof Error ? err.message : String(err));
+
+      this.db
+        .prepare(
+          `UPDATE schedules SET last_status = 'failed', updated_at = datetime('now') WHERE id = ?`
+        )
+        .run(scheduleId);
+
+      // Still schedule next run even on failure
+      this.scheduleNext(schedule);
+    }
+  }
+}
