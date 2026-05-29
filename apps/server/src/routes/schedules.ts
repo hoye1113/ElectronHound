@@ -6,7 +6,7 @@ import {
   ScheduleFiltersSchema,
 } from '../schemas/schedule.js';
 import { IdParam } from '../utils/validation.js';
-import { parseExpression } from 'cron-parser';
+import { CronExpressionParser } from 'cron-parser';
 
 interface ScheduleRow {
   id: string;
@@ -121,7 +121,7 @@ export async function scheduleRoutes(server: FastifyInstance) {
 
     // Validate cron expression
     try {
-      parseExpression(data.cronExpression);
+      CronExpressionParser.parse(data.cronExpression);
     } catch {
       reply.code(400);
       return { error: 'Invalid cron expression' };
@@ -139,7 +139,7 @@ export async function scheduleRoutes(server: FastifyInstance) {
 
     const id = randomUUID();
     const now = new Date().toISOString();
-    const interval = parseExpression(data.cronExpression);
+    const interval = CronExpressionParser.parse(data.cronExpression);
     const nextRunAt = interval.next().toISOString();
 
     server.db
@@ -221,7 +221,7 @@ export async function scheduleRoutes(server: FastifyInstance) {
     if (data.cronExpression !== undefined) {
       // Validate cron expression
       try {
-        parseExpression(data.cronExpression);
+        CronExpressionParser.parse(data.cronExpression);
       } catch {
         reply.code(400);
         return { error: 'Invalid cron expression' };
@@ -234,7 +234,7 @@ export async function scheduleRoutes(server: FastifyInstance) {
       const cronExpr = data.cronExpression;
       const enabled = data.enabled !== undefined ? data.enabled : existing.enabled === 1;
       if (enabled) {
-        const interval = parseExpression(cronExpr);
+        const interval = CronExpressionParser.parse(cronExpr);
         updates.push('next_run_at = @nextRunAt');
         params.nextRunAt = interval.next().toISOString();
       }
