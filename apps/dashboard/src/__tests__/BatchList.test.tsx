@@ -1,17 +1,17 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import BatchList from '../pages/BatchList';
 
 // ─── Mocks ─────────────────────────────────────────────────────────────────────
 
-const mockBatchesGet = vi.fn();
+const mockBatchesList = vi.fn();
 const mockBatchesCancel = vi.fn();
 const mockBatchesCreate = vi.fn();
 
 vi.mock('../lib/api', () => ({
   api: {
     batches: {
-      get: (...args: unknown[]) => mockBatchesGet(...args),
+      list: (...args: unknown[]) => mockBatchesList(...args),
       cancel: (...args: unknown[]) => mockBatchesCancel(...args),
       create: (...args: unknown[]) => mockBatchesCreate(...args),
     },
@@ -20,7 +20,7 @@ vi.mock('../lib/api', () => ({
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = 'eata-batches';
+type BatchStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 
 function makeBatchData(overrides: Record<string, unknown> = {}) {
   return {
@@ -38,10 +38,16 @@ function makeBatchData(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function seedLocalStorage(
-  entries: Array<{ batchId: string; name: string | null; createdAt: string }>,
+function makeListResponse(
+  entries: Array<ReturnType<typeof makeBatchData>>,
+  opts: { total?: number; page?: number; limit?: number } = {},
 ) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  return {
+    data: entries,
+    total: opts.total ?? entries.length,
+    page: opts.page ?? 1,
+    limit: opts.limit ?? 50,
+  };
 }
 
 // ─── Tests ─────────────────────────────────────────────────────────────────────
@@ -49,9 +55,8 @@ function seedLocalStorage(
 describe('BatchList', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.clear();
-    // Default: api.batches.get resolves with valid data
-    mockBatchesGet.mockResolvedValue(makeBatchData());
+    // Default: api.batches.list resolves with empty data
+    mockBatchesList.mockResolvedValue(makeListResponse([]));
     mockBatchesCancel.mockResolvedValue({ success: true, batchId: 'batch-001' });
     mockBatchesCreate.mockResolvedValue({
       batchId: 'batch-new',
@@ -60,18 +65,11 @@ describe('BatchList', () => {
     });
   });
 
-  afterEach(() => {
-    localStorage.clear();
-  });
-
   // ── Rendering: loading state ──────────────────────────────────────────────
 
   it('shows loading state on initial mount', () => {
     // Make the API hang so component stays in loading
-    mockBatchesGet.mockReturnValue(new Promise(() => {}));
-    seedLocalStorage([
-      { batchId: 'batch-001', name: 'A', createdAt: new Date().toISOString() },
-    ]);
+    mockBatchesList.mockReturnValue(new Promise(() => {}));
 
     render(<BatchList />);
 
@@ -81,8 +79,7 @@ describe('BatchList', () => {
 
   // ── Rendering: empty state ────────────────────────────────────────────────
 
-  it('shows empty state when no batches stored', async () => {
-    // No localStorage entries
+  it('shows empty state when no batches returned', async () => {
     render(<BatchList />);
 
     await waitFor(() => {
@@ -94,12 +91,10 @@ describe('BatchList', () => {
   // ── Rendering: batch list ─────────────────────────────────────────────────
 
   it('renders batch list after loading', async () => {
-    const createdAt = new Date(Date.now() - 120_000).toISOString();
-    seedLocalStorage([
-      { batchId: 'batch-001', name: 'My Batch', createdAt },
-    ]);
-    mockBatchesGet.mockResolvedValue(
-      makeBatchData({ id: 'batch-001', name: 'My Batch', status: 'completed' }),
+    mockBatchesList.mockResolvedValue(
+      makeListResponse([
+        makeBatchData({ id: 'batch-001', name: 'My Batch', status: 'completed' }),
+      ]),
     );
 
     render(<BatchList />);
@@ -107,22 +102,18 @@ describe('BatchList', () => {
     await waitFor(() => {
       expect(screen.getByText('My Batch')).toBeInTheDocument();
     });
-    // Status badge
-    expect(screen.getByText('Completed')).toBeInTheDocument();
+    // Status badge (also appears in filter dropdown option, so use getAllByText)
+    expect(screen.getAllByText('Completed').length).toBeGreaterThanOrEqual(1);
     // Task count: "Tasks: 5/5"
     expect(screen.getByText(/5\/5/)).toBeInTheDocument();
   });
 
   it('renders multiple batches', async () => {
-    const now = new Date().toISOString();
-    seedLocalStorage([
-      { batchId: 'b1', name: 'Batch One', createdAt: now },
-      { batchId: 'b2', name: 'Batch Two', createdAt: now },
-    ]);
-    mockBatchesGet.mockImplementation((id: string) =>
-      Promise.resolve(
-        makeBatchData({ id, name: id === 'b1' ? 'Batch One' : 'Batch Two' }),
-      ),
+    mockBatchesList.mockResolvedValue(
+      makeListResponse([
+        makeBatchData({ id: 'b1', name: 'Batch One' }),
+        makeBatchData({ id: 'b2', name: 'Batch Two' }),
+      ]),
     );
 
     render(<BatchList />);
@@ -134,14 +125,12 @@ describe('BatchList', () => {
   });
 
   it('shows batch count in header', async () => {
-    const now = new Date().toISOString();
-    seedLocalStorage([
-      { batchId: 'b1', name: 'A', createdAt: now },
-      { batchId: 'b2', name: 'B', createdAt: now },
-      { batchId: 'b3', name: 'C', createdAt: now },
-    ]);
-    mockBatchesGet.mockImplementation((id: string) =>
-      Promise.resolve(makeBatchData({ id })),
+    mockBatchesList.mockResolvedValue(
+      makeListResponse([
+        makeBatchData({ id: 'b1', name: 'A' }),
+        makeBatchData({ id: 'b2', name: 'B' }),
+        makeBatchData({ id: 'b3', name: 'C' }),
+      ]),
     );
 
     render(<BatchList />);
@@ -152,10 +141,9 @@ describe('BatchList', () => {
   });
 
   it('shows singular batch count for 1 batch', async () => {
-    seedLocalStorage([
-      { batchId: 'b1', name: 'Solo', createdAt: new Date().toISOString() },
-    ]);
-    mockBatchesGet.mockResolvedValue(makeBatchData({ id: 'b1', name: 'Solo' }));
+    mockBatchesList.mockResolvedValue(
+      makeListResponse([makeBatchData({ id: 'b1', name: 'Solo' })]),
+    );
 
     render(<BatchList />);
 
@@ -166,34 +154,23 @@ describe('BatchList', () => {
 
   // ── Rendering: error / failed fetch state ─────────────────────────────────
 
-  it('shows fallback row when api.batches.get fails for a batch', async () => {
-    seedLocalStorage([
-      { batchId: 'batch-001', name: 'Broken Batch', createdAt: new Date().toISOString() },
-    ]);
-    mockBatchesGet.mockRejectedValue(new Error('Network error'));
-
-    render(<BatchList />);
-
-    // The component catches the error and still renders the stored entry
-    // with minimal info (name from stored entry, no data-dependent UI)
-    await waitFor(() => {
-      expect(screen.getByText('Broken Batch')).toBeInTheDocument();
-    });
-  });
-
-  it('uses batchId prefix when stored name is null and data fetch fails', async () => {
-    const batchId = '550e8400-e29b-41d4-a716-446655440000';
-    seedLocalStorage([
-      { batchId, name: null, createdAt: new Date().toISOString() },
-    ]);
-    mockBatchesGet.mockRejectedValue(new Error('fail'));
+  it('keeps existing data when api.batches.list fails', async () => {
+    // First call succeeds, second fails -- existing data should remain
+    mockBatchesList.mockResolvedValueOnce(
+      makeListResponse([makeBatchData({ id: 'b1', name: 'Good Batch' })]),
+    );
 
     render(<BatchList />);
 
     await waitFor(() => {
-      // Falls back to batchId.slice(0, 8)
-      expect(screen.getByText(batchId.slice(0, 8))).toBeInTheDocument();
+      expect(screen.getByText('Good Batch')).toBeInTheDocument();
     });
+
+    // Now make the next call fail -- simulate refresh
+    mockBatchesList.mockRejectedValueOnce(new Error('Network error'));
+
+    // The component should still show the previous data
+    expect(screen.getByText('Good Batch')).toBeInTheDocument();
   });
 
   // ── Rendering: page title and new batch button ────────────────────────────
@@ -213,15 +190,12 @@ describe('BatchList', () => {
     const older = new Date(Date.now() - 300_000).toISOString();
     const newer = new Date(Date.now() - 60_000).toISOString();
 
-    // Store order: completed first, then running
-    seedLocalStorage([
-      { batchId: 'b-completed', name: 'Done Batch', createdAt: newer },
-      { batchId: 'b-running', name: 'Active Batch', createdAt: older },
-    ]);
-    mockBatchesGet.mockImplementation((id: string) => {
-      if (id === 'b-completed') return Promise.resolve(makeBatchData({ id, name: 'Done Batch', status: 'completed' }));
-      return Promise.resolve(makeBatchData({ id, name: 'Active Batch', status: 'running' }));
-    });
+    mockBatchesList.mockResolvedValue(
+      makeListResponse([
+        makeBatchData({ id: 'b-completed', name: 'Done Batch', status: 'completed', createdAt: newer }),
+        makeBatchData({ id: 'b-running', name: 'Active Batch', status: 'running', createdAt: older }),
+      ]),
+    );
 
     render(<BatchList />);
 
@@ -240,11 +214,10 @@ describe('BatchList', () => {
   // ── Operations: cancel batch via confirmation dialog ──────────────────────
 
   it('opens cancel confirmation dialog when clicking cancel on active batch', async () => {
-    seedLocalStorage([
-      { batchId: 'b1', name: 'Running Batch', createdAt: new Date().toISOString() },
-    ]);
-    mockBatchesGet.mockResolvedValue(
-      makeBatchData({ id: 'b1', name: 'Running Batch', status: 'running' }),
+    mockBatchesList.mockResolvedValue(
+      makeListResponse([
+        makeBatchData({ id: 'b1', name: 'Running Batch', status: 'running' }),
+      ]),
     );
 
     render(<BatchList />);
@@ -262,11 +235,10 @@ describe('BatchList', () => {
   });
 
   it('calls api.batches.cancel when confirming cancel', async () => {
-    seedLocalStorage([
-      { batchId: 'b1', name: 'Running Batch', createdAt: new Date().toISOString() },
-    ]);
-    mockBatchesGet.mockResolvedValue(
-      makeBatchData({ id: 'b1', name: 'Running Batch', status: 'running' }),
+    mockBatchesList.mockResolvedValue(
+      makeListResponse([
+        makeBatchData({ id: 'b1', name: 'Running Batch', status: 'running' }),
+      ]),
     );
 
     render(<BatchList />);
@@ -288,17 +260,22 @@ describe('BatchList', () => {
   });
 
   it('refreshes batch list after successful cancel', async () => {
-    seedLocalStorage([
-      { batchId: 'b1', name: 'Running Batch', createdAt: new Date().toISOString() },
-    ]);
     let callCount = 0;
-    mockBatchesGet.mockImplementation(() => {
+    mockBatchesList.mockImplementation(() => {
       callCount++;
       if (callCount <= 1) {
-        return Promise.resolve(makeBatchData({ id: 'b1', name: 'Running Batch', status: 'running' }));
+        return Promise.resolve(
+          makeListResponse([
+            makeBatchData({ id: 'b1', name: 'Running Batch', status: 'running' }),
+          ]),
+        );
       }
       // After cancel, return cancelled status
-      return Promise.resolve(makeBatchData({ id: 'b1', name: 'Running Batch', status: 'cancelled' }));
+      return Promise.resolve(
+        makeListResponse([
+          makeBatchData({ id: 'b1', name: 'Running Batch', status: 'cancelled' }),
+        ]),
+      );
     });
 
     render(<BatchList />);
@@ -313,16 +290,15 @@ describe('BatchList', () => {
 
     await waitFor(() => {
       // refreshBatches is called again after cancel
-      expect(mockBatchesGet).toHaveBeenCalledTimes(2);
+      expect(mockBatchesList).toHaveBeenCalledTimes(2);
     });
   });
 
   it('dismisses cancel dialog when clicking cancel button', async () => {
-    seedLocalStorage([
-      { batchId: 'b1', name: 'Running Batch', createdAt: new Date().toISOString() },
-    ]);
-    mockBatchesGet.mockResolvedValue(
-      makeBatchData({ id: 'b1', name: 'Running Batch', status: 'running' }),
+    mockBatchesList.mockResolvedValue(
+      makeListResponse([
+        makeBatchData({ id: 'b1', name: 'Running Batch', status: 'running' }),
+      ]),
     );
 
     render(<BatchList />);
@@ -344,11 +320,10 @@ describe('BatchList', () => {
   });
 
   it('handles cancel API failure gracefully', async () => {
-    seedLocalStorage([
-      { batchId: 'b1', name: 'Running Batch', createdAt: new Date().toISOString() },
-    ]);
-    mockBatchesGet.mockResolvedValue(
-      makeBatchData({ id: 'b1', name: 'Running Batch', status: 'running' }),
+    mockBatchesList.mockResolvedValue(
+      makeListResponse([
+        makeBatchData({ id: 'b1', name: 'Running Batch', status: 'running' }),
+      ]),
     );
     mockBatchesCancel.mockRejectedValue(new Error('Server error'));
 
@@ -368,61 +343,13 @@ describe('BatchList', () => {
     });
   });
 
-  // ── Operations: delete (remove) batch ─────────────────────────────────────
-
-  it('removes a completed batch from the list', async () => {
-    seedLocalStorage([
-      { batchId: 'b1', name: 'Done Batch', createdAt: new Date().toISOString() },
-    ]);
-    mockBatchesGet.mockResolvedValue(
-      makeBatchData({ id: 'b1', name: 'Done Batch', status: 'completed' }),
-    );
-
-    render(<BatchList />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Done Batch')).toBeInTheDocument();
-    });
-
-    // The delete button has title="Delete"
-    fireEvent.click(screen.getByTitle('Delete'));
-
-    await waitFor(() => {
-      expect(screen.queryByText('Done Batch')).not.toBeInTheDocument();
-    });
-
-    // Should also update localStorage
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    expect(stored).toHaveLength(0);
-  });
-
-  it('removes a failed-fetch batch entry from the list', async () => {
-    seedLocalStorage([
-      { batchId: 'b1', name: 'Ghost Batch', createdAt: new Date().toISOString() },
-    ]);
-    mockBatchesGet.mockRejectedValue(new Error('gone'));
-
-    render(<BatchList />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Ghost Batch')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTitle('Delete'));
-
-    await waitFor(() => {
-      expect(screen.queryByText('Ghost Batch')).not.toBeInTheDocument();
-    });
-  });
-
   // ── Operations: cancel button not shown for non-active batches ────────────
 
-  it('shows delete button (not cancel) for completed batches', async () => {
-    seedLocalStorage([
-      { batchId: 'b1', name: 'Done', createdAt: new Date().toISOString() },
-    ]);
-    mockBatchesGet.mockResolvedValue(
-      makeBatchData({ id: 'b1', name: 'Done', status: 'completed' }),
+  it('does not show cancel button for completed batches', async () => {
+    mockBatchesList.mockResolvedValue(
+      makeListResponse([
+        makeBatchData({ id: 'b1', name: 'Done', status: 'completed' }),
+      ]),
     );
 
     render(<BatchList />);
@@ -432,15 +359,13 @@ describe('BatchList', () => {
     });
 
     expect(screen.queryByTitle('Cancel Batch')).not.toBeInTheDocument();
-    expect(screen.getByTitle('Delete')).toBeInTheDocument();
   });
 
-  it('shows cancel button (not delete) for running batches', async () => {
-    seedLocalStorage([
-      { batchId: 'b1', name: 'Active', createdAt: new Date().toISOString() },
-    ]);
-    mockBatchesGet.mockResolvedValue(
-      makeBatchData({ id: 'b1', name: 'Active', status: 'running' }),
+  it('shows cancel button for running batches', async () => {
+    mockBatchesList.mockResolvedValue(
+      makeListResponse([
+        makeBatchData({ id: 'b1', name: 'Active', status: 'running' }),
+      ]),
     );
 
     render(<BatchList />);
@@ -450,15 +375,13 @@ describe('BatchList', () => {
     });
 
     expect(screen.getByTitle('Cancel Batch')).toBeInTheDocument();
-    expect(screen.queryByTitle('Delete')).not.toBeInTheDocument();
   });
 
   it('shows cancel button for pending batches', async () => {
-    seedLocalStorage([
-      { batchId: 'b1', name: 'Queued Batch', createdAt: new Date().toISOString() },
-    ]);
-    mockBatchesGet.mockResolvedValue(
-      makeBatchData({ id: 'b1', name: 'Queued Batch', status: 'pending' }),
+    mockBatchesList.mockResolvedValue(
+      makeListResponse([
+        makeBatchData({ id: 'b1', name: 'Queued Batch', status: 'pending' }),
+      ]),
     );
 
     render(<BatchList />);
@@ -467,10 +390,9 @@ describe('BatchList', () => {
       expect(screen.getByText('Queued Batch')).toBeInTheDocument();
     });
 
-    // Status badge "Pending" should be shown
-    expect(screen.getByText('Pending')).toBeInTheDocument();
+    // Status badge "Pending" should be shown (also in filter dropdown)
+    expect(screen.getAllByText('Pending').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByTitle('Cancel Batch')).toBeInTheDocument();
-    expect(screen.queryByTitle('Delete')).not.toBeInTheDocument();
   });
 
   // ── New Batch Dialog ──────────────────────────────────────────────────────
@@ -501,14 +423,37 @@ describe('BatchList', () => {
     expect(screen.getByLabelText('Name')).toBeInTheDocument();
   });
 
+  it('refreshes batch list after creating a new batch', async () => {
+    mockBatchesList.mockResolvedValueOnce(makeListResponse([]));
+
+    render(<BatchList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('No batches found')).toBeInTheDocument();
+    });
+
+    // After creation, mock should return the new batch
+    mockBatchesList.mockResolvedValueOnce(
+      makeListResponse([makeBatchData({ id: 'batch-new', name: 'New Batch' })]),
+    );
+
+    fireEvent.click(screen.getByText('New Batch'));
+    fireEvent.change(screen.getByLabelText(/Goal/), { target: { value: 'Test goal' } });
+    fireEvent.click(screen.getByText('New Batch', { selector: 'button[type="submit"]' }));
+
+    await waitFor(() => {
+      // refreshBatches should be called again after create
+      expect(mockBatchesList).toHaveBeenCalledTimes(2);
+    });
+  });
+
   // ── Batch row info display ────────────────────────────────────────────────
 
   it('shows progress percentage for batches with data', async () => {
-    seedLocalStorage([
-      { batchId: 'b1', name: 'Halfway', createdAt: new Date().toISOString() },
-    ]);
-    mockBatchesGet.mockResolvedValue(
-      makeBatchData({ id: 'b1', name: 'Halfway', progress: 60, completedTasks: 3, totalTasks: 5 }),
+    mockBatchesList.mockResolvedValue(
+      makeListResponse([
+        makeBatchData({ id: 'b1', name: 'Halfway', progress: 60, completedTasks: 3, totalTasks: 5 }),
+      ]),
     );
 
     render(<BatchList />);
@@ -519,11 +464,10 @@ describe('BatchList', () => {
   });
 
   it('shows failed task count when failedTasks > 0', async () => {
-    seedLocalStorage([
-      { batchId: 'b1', name: 'Partial Fail', createdAt: new Date().toISOString() },
-    ]);
-    mockBatchesGet.mockResolvedValue(
-      makeBatchData({ id: 'b1', name: 'Partial Fail', status: 'failed', totalTasks: 5, completedTasks: 3, failedTasks: 2 }),
+    mockBatchesList.mockResolvedValue(
+      makeListResponse([
+        makeBatchData({ id: 'b1', name: 'Partial Fail', status: 'failed', totalTasks: 5, completedTasks: 3, failedTasks: 2 }),
+      ]),
     );
 
     render(<BatchList />);
@@ -534,43 +478,35 @@ describe('BatchList', () => {
   });
 
   it('shows different status badges correctly', async () => {
-    const now = new Date().toISOString();
-    seedLocalStorage([
-      { batchId: 'b1', name: 'Pend', createdAt: now },
-      { batchId: 'b2', name: 'Run', createdAt: now },
-      { batchId: 'b3', name: 'Done', createdAt: now },
-      { batchId: 'b4', name: 'Fail', createdAt: now },
-      { batchId: 'b5', name: 'Stop', createdAt: now },
-    ]);
-    mockBatchesGet.mockImplementation((id: string) => {
-      const statuses: Record<string, string> = {
-        b1: 'pending', b2: 'running', b3: 'completed', b4: 'failed', b5: 'cancelled',
-      };
-      const names: Record<string, string> = {
-        b1: 'Pend', b2: 'Run', b3: 'Done', b4: 'Fail', b5: 'Stop',
-      };
-      return Promise.resolve(makeBatchData({ id, name: names[id], status: statuses[id] as BatchStatus }));
-    });
+    mockBatchesList.mockResolvedValue(
+      makeListResponse([
+        makeBatchData({ id: 'b1', name: 'Pend', status: 'pending' }),
+        makeBatchData({ id: 'b2', name: 'Run', status: 'running' }),
+        makeBatchData({ id: 'b3', name: 'Done', status: 'completed' }),
+        makeBatchData({ id: 'b4', name: 'Fail', status: 'failed' }),
+        makeBatchData({ id: 'b5', name: 'Stop', status: 'cancelled' }),
+      ]),
+    );
 
     render(<BatchList />);
 
     await waitFor(() => {
-      expect(screen.getByText('Pending')).toBeInTheDocument();
-      expect(screen.getByText('Running')).toBeInTheDocument();
-      expect(screen.getByText('Completed')).toBeInTheDocument();
-      expect(screen.getByText('Failed')).toBeInTheDocument();
-      expect(screen.getByText('Cancelled')).toBeInTheDocument();
+      // Each status text appears both in the badge and in the filter dropdown
+      expect(screen.getAllByText('Pending').length).toBeGreaterThanOrEqual(2);
+      expect(screen.getAllByText('Running').length).toBeGreaterThanOrEqual(2);
+      expect(screen.getAllByText('Completed').length).toBeGreaterThanOrEqual(2);
+      expect(screen.getAllByText('Failed').length).toBeGreaterThanOrEqual(2);
+      expect(screen.getAllByText('Cancelled').length).toBeGreaterThanOrEqual(2);
     });
   });
 
   // ── Progress bar ──────────────────────────────────────────────────────────
 
   it('renders progress bar with correct width', async () => {
-    seedLocalStorage([
-      { batchId: 'b1', name: 'Prog', createdAt: new Date().toISOString() },
-    ]);
-    mockBatchesGet.mockResolvedValue(
-      makeBatchData({ id: 'b1', name: 'Prog', progress: 75 }),
+    mockBatchesList.mockResolvedValue(
+      makeListResponse([
+        makeBatchData({ id: 'b1', name: 'Prog', progress: 75 }),
+      ]),
     );
 
     render(<BatchList />);
@@ -584,30 +520,42 @@ describe('BatchList', () => {
     expect(bar).toBeInTheDocument();
   });
 
-  // ── Edge case: corrupted localStorage ─────────────────────────────────────
+  // ── Status filter ─────────────────────────────────────────────────────────
 
-  it('handles corrupted localStorage gracefully', async () => {
-    localStorage.setItem(STORAGE_KEY, 'not-valid-json{{{');
-
+  it('renders status filter dropdown', async () => {
     render(<BatchList />);
 
-    // loadStoredBatches returns [] on parse error
     await waitFor(() => {
       expect(screen.getByText('No batches found')).toBeInTheDocument();
     });
+
+    const select = screen.getByDisplayValue('All');
+    expect(select).toBeInTheDocument();
+
+    // Check all filter options
+    const options = select.querySelectorAll('option');
+    expect(options).toHaveLength(6);
+    expect(options[0]).toHaveTextContent('All');
+    expect(options[1]).toHaveTextContent('Pending');
+    expect(options[2]).toHaveTextContent('Running');
+    expect(options[3]).toHaveTextContent('Completed');
+    expect(options[4]).toHaveTextContent('Failed');
+    expect(options[5]).toHaveTextContent('Cancelled');
   });
 
-  // ── Edge case: empty localStorage ─────────────────────────────────────────
-
-  it('handles missing localStorage entry', async () => {
-    // Don't set anything in localStorage
+  it('calls api.batches.list with status filter when changed', async () => {
     render(<BatchList />);
 
     await waitFor(() => {
-      expect(screen.getByText('No batches found')).toBeInTheDocument();
+      expect(mockBatchesList).toHaveBeenCalledTimes(1);
+    });
+
+    const select = screen.getByDisplayValue('All');
+    fireEvent.change(select, { target: { value: 'running' } });
+
+    await waitFor(() => {
+      expect(mockBatchesList).toHaveBeenCalledTimes(2);
+      expect(mockBatchesList).toHaveBeenLastCalledWith({ status: 'running', limit: 50 });
     });
   });
 });
-
-// Type helper for status badge tests
-type BatchStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';

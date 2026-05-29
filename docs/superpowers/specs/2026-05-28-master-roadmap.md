@@ -165,17 +165,7 @@
 
 **验收:** 任务列表 < 50ms，报告生成 < 200ms
 
-### 4.3 Open Source (Direction D)
-
-- LICENSE, CONTRIBUTING.md, SECURITY.md
-- Issue/PR 模板, CODEOWNERS
-- package.json metadata 丰富
-- CI 分支目标 main → master
-- 英文 README 段落
-
-**验收:** 所有开源必备文件就位
-
-### 4.4 Eng Plan Phase 4: Release Management
+### 4.3 Eng Plan Phase 4: Release Management
 
 - CHANGELOG.md（历史版本补录）
 - Changesets 配置

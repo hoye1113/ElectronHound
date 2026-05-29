@@ -487,13 +487,6 @@ describe('api.templates', () => {
     expect(url).toMatch(/[?&]search=create(&|$)/);
   });
 
-  it('get fetches template by id', async () => {
-    mockFetch.mockResolvedValueOnce(jsonResponse({ id: 't1', name: 'Login' }));
-
-    const result = await api.templates.get('t1');
-    expect(result).toEqual({ id: 't1', name: 'Login' });
-  });
-
   it('create sends POST with template data', async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse({ id: 't2' }));
 
@@ -635,21 +628,13 @@ describe('api.batches', () => {
   });
 });
 
-describe('api.fewShot (localStorage)', () => {
+describe('api.fewShot', () => {
   beforeEach(() => {
-    localStorage.clear();
-  });
-
-  afterEach(() => {
-    localStorage.clear();
+    mockFetch.mockReset();
   });
 
   describe('list', () => {
-    it('returns empty array when no data in localStorage', () => {
-      expect(api.fewShot.list()).toEqual([]);
-    });
-
-    it('returns parsed data from localStorage', () => {
+    it('fetches without params', async () => {
       const examples = [
         {
           id: 'fs-1',
@@ -659,165 +644,165 @@ describe('api.fewShot (localStorage)', () => {
           metadata: { tags: ['login'], domain: 'web', difficulty: 'easy' },
         },
       ];
-      localStorage.setItem('eata-few-shot-examples', JSON.stringify(examples));
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: examples }));
 
-      const result = api.fewShot.list();
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('fs-1');
+      const result = await api.fewShot.list();
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].id).toBe('fs-1');
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain('/api/few-shot');
     });
 
-    it('returns empty array on invalid JSON', () => {
-      const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      try {
-        localStorage.setItem('eata-few-shot-examples', '{invalid json');
+    it('appends search param', async () => {
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [] }));
 
-        const result = api.fewShot.list();
-        expect(result).toEqual([]);
-        expect(consoleWarn).toHaveBeenCalledWith(
-          '[api] Failed to parse few-shot examples from localStorage:',
-          expect.any(String),
-        );
-      } finally {
-        consoleWarn.mockRestore();
-      }
+      await api.fewShot.list({ search: 'login' });
+      expect(mockFetch.mock.calls[0][0]).toMatch(/[?&]search=login(&|$)/);
+    });
+
+    it('appends domain param', async () => {
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [] }));
+
+      await api.fewShot.list({ domain: 'web' });
+      expect(mockFetch.mock.calls[0][0]).toMatch(/[?&]domain=web(&|$)/);
+    });
+
+    it('appends both params', async () => {
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [] }));
+
+      await api.fewShot.list({ search: 'test', domain: 'web' });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toMatch(/[?&]search=test(&|$)/);
+      expect(url).toMatch(/[?&]domain=web(&|$)/);
+    });
+
+    it('throws on error', async () => {
+      mockFetch.mockResolvedValueOnce(errorResponse({ error: 'Server error' }, 500));
+
+      await expect(api.fewShot.list()).rejects.toThrow('500: Server error');
     });
   });
 
   describe('add', () => {
-    it('adds an example and returns it with generated id', () => {
+    it('sends POST and returns created example', async () => {
       const data = {
         goal: 'Test login',
         steps: [{ action: 'click', observation: 'button' }],
         expectedResult: 'Logged in',
         metadata: { tags: ['auth'], domain: 'web', difficulty: 'easy' },
       };
+      const created = { ...data, id: 'fs-new' };
+      mockFetch.mockResolvedValueOnce(jsonResponse(created));
 
-      const result = api.fewShot.add(data);
+      const result = await api.fewShot.add(data);
 
-      expect(result.id).toMatch(/^fs-/);
+      expect(result.id).toBe('fs-new');
       expect(result.goal).toBe('Test login');
-
-      const stored = api.fewShot.list();
-      expect(stored).toHaveLength(1);
-      expect(stored[0].id).toBe(result.id);
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/few-shot'),
+        expect.objectContaining({ method: 'POST' }),
+      );
     });
 
-    it('appends to existing examples', () => {
-      const existing = [
-        {
-          id: 'fs-existing',
-          goal: 'old',
+    it('throws on error', async () => {
+      mockFetch.mockResolvedValueOnce(errorResponse({ error: 'Validation failed' }, 422));
+
+      await expect(
+        api.fewShot.add({
+          goal: '',
           steps: [],
-          expectedResult: 'ok',
+          expectedResult: '',
           metadata: { tags: [], domain: 'web', difficulty: 'easy' },
-        },
-      ];
-      localStorage.setItem('eata-few-shot-examples', JSON.stringify(existing));
-
-      api.fewShot.add({
-        goal: 'new',
-        steps: [],
-        expectedResult: 'ok',
-        metadata: { tags: [], domain: 'web', difficulty: 'easy' },
-      });
-
-      const stored = api.fewShot.list();
-      expect(stored).toHaveLength(2);
+        }),
+      ).rejects.toThrow('422: Validation failed');
     });
   });
 
   describe('update', () => {
-    it('updates an existing example', () => {
-      const existing = [
-        {
-          id: 'fs-1',
-          goal: 'old goal',
-          steps: [],
-          expectedResult: 'old',
-          metadata: { tags: [], domain: 'web', difficulty: 'easy' },
-        },
-      ];
-      localStorage.setItem('eata-few-shot-examples', JSON.stringify(existing));
+    it('sends PUT with data and returns updated example', async () => {
+      const updated = {
+        id: 'fs-1',
+        goal: 'new goal',
+        steps: [{ action: 'click', observation: 'btn' }],
+        expectedResult: 'new',
+        metadata: { tags: ['updated'], domain: 'web', difficulty: 'hard' },
+      };
+      mockFetch.mockResolvedValueOnce(jsonResponse(updated));
 
-      api.fewShot.update('fs-1', {
+      const result = await api.fewShot.update('fs-1', {
         goal: 'new goal',
         steps: [{ action: 'click', observation: 'btn' }],
         expectedResult: 'new',
         metadata: { tags: ['updated'], domain: 'web', difficulty: 'hard' },
       });
 
-      const stored = api.fewShot.list();
-      expect(stored[0].goal).toBe('new goal');
-      expect(stored[0].id).toBe('fs-1');
+      expect(result.goal).toBe('new goal');
+      expect(result.id).toBe('fs-1');
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/few-shot/fs-1'),
+        expect.objectContaining({ method: 'PUT' }),
+      );
     });
 
-    it('does nothing when id is not found', () => {
-      const existing = [
-        {
-          id: 'fs-1',
-          goal: 'keep',
+    it('throws on error', async () => {
+      mockFetch.mockResolvedValueOnce(errorResponse({ error: 'Not found' }, 404));
+
+      await expect(
+        api.fewShot.update('nonexistent', {
+          goal: 'test',
           steps: [],
           expectedResult: 'ok',
           metadata: { tags: [], domain: 'web', difficulty: 'easy' },
-        },
-      ];
-      localStorage.setItem('eata-few-shot-examples', JSON.stringify(existing));
-
-      api.fewShot.update('nonexistent', {
-        goal: 'should not persist',
-        steps: [],
-        expectedResult: 'ok',
-        metadata: { tags: [], domain: 'web', difficulty: 'easy' },
-      });
-
-      const stored = api.fewShot.list();
-      expect(stored[0].goal).toBe('keep');
+        }),
+      ).rejects.toThrow('404: Not found');
     });
   });
 
   describe('remove', () => {
-    it('removes an example by id', () => {
-      const existing = [
-        {
-          id: 'fs-1',
-          goal: 'keep',
-          steps: [],
-          expectedResult: 'ok',
-          metadata: { tags: [], domain: 'web', difficulty: 'easy' },
-        },
-        {
-          id: 'fs-2',
-          goal: 'remove',
-          steps: [],
-          expectedResult: 'ok',
-          metadata: { tags: [], domain: 'web', difficulty: 'easy' },
-        },
-      ];
-      localStorage.setItem('eata-few-shot-examples', JSON.stringify(existing));
+    it('sends DELETE request', async () => {
+      mockFetch.mockResolvedValueOnce(jsonResponse(undefined));
 
-      api.fewShot.remove('fs-2');
-
-      const stored = api.fewShot.list();
-      expect(stored).toHaveLength(1);
-      expect(stored[0].id).toBe('fs-1');
+      await api.fewShot.remove('fs-1');
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/few-shot/fs-1'),
+        expect.objectContaining({ method: 'DELETE' }),
+      );
     });
 
-    it('does nothing when id is not found', () => {
-      const existing = [
+    it('throws on non-OK response', async () => {
+      mockFetch.mockResolvedValueOnce(errorResponse({ error: 'Not found' }, 404));
+
+      await expect(api.fewShot.remove('fs-1')).rejects.toThrow('Delete few-shot example failed: 404');
+    });
+  });
+
+  describe('migrate', () => {
+    it('sends POST with examples and returns import stats', async () => {
+      const examples = [
         {
           id: 'fs-1',
-          goal: 'keep',
+          goal: 'test',
           steps: [],
           expectedResult: 'ok',
           metadata: { tags: [], domain: 'web', difficulty: 'easy' },
         },
       ];
-      localStorage.setItem('eata-few-shot-examples', JSON.stringify(existing));
+      mockFetch.mockResolvedValueOnce(jsonResponse({ imported: 1, skipped: 0 }));
 
-      api.fewShot.remove('nonexistent');
+      const result = await api.fewShot.migrate(examples);
 
-      const stored = api.fewShot.list();
-      expect(stored).toHaveLength(1);
+      expect(result.imported).toBe(1);
+      expect(result.skipped).toBe(0);
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/few-shot/migrate'),
+        expect.objectContaining({ method: 'POST' }),
+      );
+    });
+
+    it('throws on error', async () => {
+      mockFetch.mockResolvedValueOnce(errorResponse({ error: 'Migration failed' }, 500));
+
+      await expect(api.fewShot.migrate([])).rejects.toThrow('500: Migration failed');
     });
   });
 });

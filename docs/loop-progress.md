@@ -28,6 +28,7 @@
 | W20 | A | TaskDetail 组件测试 x12 | 86.99% | 2318 | ~28s | - | - | 2026-05-29 |
 | W21 | A | Wave 21 覆盖率优化 x6 | ~88% | 2367 | ~18s | - | - | 2026-05-29 |
 | W22 | A+C | 覆盖率补全 x3 + TS strict | ~89% | 2375 | ~20s | - | - | 2026-05-29 |
+| W23 | F | FewShot 持久化 + BatchList API + 代码清理 | ~89% | 2410 | ~18s | - | - | 2026-05-29 |
 
 ---
 
@@ -36,8 +37,8 @@
 | 指标 | 基线 | 当前 | 目标 | 差距 |
 |------|------|------|------|------|
 | 覆盖率 (stmts) | ~68% | ~89% | 80% | 达标 |
-| 测试数量 | 1280 | 2375 | 持续增长 | - |
-| 测试时间 | ~65s | ~20s | <30s | 达标 |
+| 测试数量 | 1280 | 2410 | 持续增长 | - |
+| 测试时间 | ~65s | ~18s | <30s | 达标 |
 | ESLint 错误 | 110 | 0 | 0 | 达标 |
 | 裸 catch 块 | 73+ | 0 | 0 | 达标 |
 | `as unknown as` | 12 | 0 | 0 | 达标 |
@@ -101,7 +102,28 @@
 - batches.ts 500 错误测试 → 100% stmts
 - Dashboard tsconfig.app.json + tsconfig.node.json 启用 `strict: true`（0 errors）
 
+### Wave 23 完成 — 功能开发：数据持久化 + API 迁移
+
+**FewShot 数据持久化：**
+- 新增 `few_shot_examples` 数据库表
+- 新增 CRUD 路由：GET/POST/PUT/DELETE /api/few-shot
+- 新增迁移端点：POST /api/few-shot/migrate
+- 前端 api.ts 改为 HTTP 调用
+- FewShotPage.tsx 添加 localStorage 自动迁移逻辑
+- 29 个后端测试 + 前端测试更新
+
+**BatchList API 迁移：**
+- 新增 GET /api/tasks/batches 端点（支持状态过滤 + 分页）
+- BatchList.tsx 移除 localStorage，改用 API
+- 新增状态过滤下拉框
+- 5 个新后端测试 + 26 个前端测试
+
+**代码清理：**
+- 删除未使用的 api.templates.get(id) 方法
+- 更新 Direction G 文档
+
 ### 后续方向
 
 - Skipped 测试审查（已标记 Deferred）
 - FlowyClaw e2e 测试（受阻于 electron-updater 崩溃）
+- 测试调度 + 对比 + 通知功能

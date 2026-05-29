@@ -78,6 +78,17 @@ CREATE TABLE IF NOT EXISTS templates (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS few_shot_examples (
+  id TEXT PRIMARY KEY,
+  goal TEXT NOT NULL,
+  steps TEXT NOT NULL,
+  expected_result TEXT NOT NULL,
+  metadata TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_few_shot_examples_goal ON few_shot_examples(goal);
 CREATE INDEX IF NOT EXISTS idx_steps_task_id ON steps(task_id);
 CREATE INDEX IF NOT EXISTS idx_logs_task_id ON logs(task_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);

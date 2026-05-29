@@ -434,6 +434,184 @@ describe('Route: POST /api/tasks/batch/:batchId/cancel', () => {
   });
 });
 
+describe('Route: GET /api/tasks/batches', () => {
+  let server: FastifyInstance;
+  let db: Database.Database;
+  let cleanupDir: string;
+
+  beforeAll(async () => {
+    const { dbPath, cleanupDir: dir } = createTempDbPath();
+    cleanupDir = dir;
+    const bundle = await buildServer({ databasePath: dbPath });
+    server = bundle.server;
+    db = bundle.db;
+  });
+
+  afterAll(async () => {
+    await server.close();
+    db.close();
+    try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  beforeEach(() => resetDb(db));
+
+  it('returns empty list when no batches exist', async () => {
+    const res = await server.inject({
+      method: 'GET',
+      url: '/api/tasks/batches',
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.data).toEqual([]);
+    expect(body.total).toBe(0);
+    expect(body.page).toBe(1);
+    expect(body.limit).toBe(20);
+  });
+
+  it('returns batches after creation', async () => {
+    // Create two batches
+    await server.inject({
+      method: 'POST',
+      url: '/api/tasks/batch',
+      payload: { name: 'Batch A', tasks: [{ goal: 'Task A1' }] },
+    });
+    await server.inject({
+      method: 'POST',
+      url: '/api/tasks/batch',
+      payload: { name: 'Batch B', tasks: [{ goal: 'Task B1' }, { goal: 'Task B2' }] },
+    });
+
+    const res = await server.inject({
+      method: 'GET',
+      url: '/api/tasks/batches',
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.data).toHaveLength(2);
+    expect(body.total).toBe(2);
+
+    // Batches are ordered by created_at DESC, so Batch B comes first
+    expect(body.data[0].name).toBe('Batch B');
+    expect(body.data[0].totalTasks).toBe(2);
+    expect(body.data[1].name).toBe('Batch A');
+    expect(body.data[1].totalTasks).toBe(1);
+
+    // Each batch should have the expected shape
+    for (const batch of body.data) {
+      expect(batch.id).toBeDefined();
+      expect(batch.status).toBeDefined();
+      expect(batch.completedTasks).toBe(0);
+      expect(batch.failedTasks).toBe(0);
+      expect(batch.priority).toBeDefined();
+      expect(batch.createdAt).toBeDefined();
+      expect(batch.updatedAt).toBeDefined();
+      expect(batch.progress).toBeDefined();
+    }
+  });
+
+  it('filters batches by status', async () => {
+    // Create two batches
+    const res1 = await server.inject({
+      method: 'POST',
+      url: '/api/tasks/batch',
+      payload: { name: 'Running Batch', tasks: [{ goal: 'Task 1' }] },
+    });
+    await server.inject({
+      method: 'POST',
+      url: '/api/tasks/batch',
+      payload: { name: 'Another Batch', tasks: [{ goal: 'Task 2' }] },
+    });
+
+    // Manually set the first batch to completed
+    const { batchId } = JSON.parse(res1.body);
+    db.prepare("UPDATE batches SET status = 'completed' WHERE id = ?").run(batchId);
+
+    // Filter by completed
+    const res = await server.inject({
+      method: 'GET',
+      url: '/api/tasks/batches?status=completed',
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].name).toBe('Running Batch');
+    expect(body.data[0].status).toBe('completed');
+    expect(body.total).toBe(1);
+  });
+
+  it('supports pagination with page and limit', async () => {
+    // Create 5 batches
+    for (let i = 0; i < 5; i++) {
+      await server.inject({
+        method: 'POST',
+        url: '/api/tasks/batch',
+        payload: { name: `Batch ${i}`, tasks: [{ goal: `Task ${i}` }] },
+      });
+    }
+
+    // Request page 1 with limit 2
+    const page1 = await server.inject({
+      method: 'GET',
+      url: '/api/tasks/batches?page=1&limit=2',
+    });
+
+    expect(page1.statusCode).toBe(200);
+    const body1 = JSON.parse(page1.body);
+    expect(body1.data).toHaveLength(2);
+    expect(body1.total).toBe(5);
+    expect(body1.page).toBe(1);
+    expect(body1.limit).toBe(2);
+
+    // Request page 2 with limit 2
+    const page2 = await server.inject({
+      method: 'GET',
+      url: '/api/tasks/batches?page=2&limit=2',
+    });
+
+    const body2 = JSON.parse(page2.body);
+    expect(body2.data).toHaveLength(2);
+    expect(body2.page).toBe(2);
+
+    // Request page 3 with limit 2 (should have 1 remaining)
+    const page3 = await server.inject({
+      method: 'GET',
+      url: '/api/tasks/batches?page=3&limit=2',
+    });
+
+    const body3 = JSON.parse(page3.body);
+    expect(body3.data).toHaveLength(1);
+    expect(body3.page).toBe(3);
+
+    // Ensure no overlap between pages
+    const allIds = [...body1.data, ...body2.data, ...body3.data].map((b: { id: string }) => b.id);
+    const uniqueIds = new Set(allIds);
+    expect(uniqueIds.size).toBe(5);
+  });
+
+  it('returns 500 when batch service throws', async () => {
+    const originalDb = server.db;
+    const mockDb = {
+      ...originalDb,
+      prepare: () => { throw new Error('DB connection lost'); },
+    } as unknown as Database.Database;
+    (server as unknown as Record<string, unknown>).db = mockDb;
+
+    const res = await server.inject({
+      method: 'GET',
+      url: '/api/tasks/batches',
+    });
+
+    expect(res.statusCode).toBe(500);
+    const body = JSON.parse(res.body);
+    expect(body.error).toBeDefined();
+
+    (server as unknown as Record<string, unknown>).db = originalDb;
+  });
+});
+
 describe('Batch Progress Updates', () => {
   let server: FastifyInstance;
   let db: Database.Database;

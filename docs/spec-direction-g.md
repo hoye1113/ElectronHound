@@ -14,10 +14,11 @@ Direction G 清理项目中的死代码、不一致和遗留问题。
 
 ## G1: 删除死代码
 
-### G1.1 uiStore
+### G1.1 uiStore ✅
+
 **文件:** `apps/dashboard/src/stores/uiStore.ts`
 
-该 store 没有被任何组件引用，是遗留代码。直接删除。
+该 store 没有被任何组件引用，是遗留代码。已删除。
 
 ### G1.2 未使用的 API 方法
 **文件:** `apps/dashboard/src/lib/api.ts`
@@ -28,7 +29,7 @@ Direction G 清理项目中的死代码、不一致和遗留问题。
 
 ---
 
-## G2: API Client 与 Settings 同步
+## G2: API Client 与 Settings 同步 ✅
 
 **文件:** `apps/dashboard/src/lib/api.ts`
 
@@ -46,8 +47,24 @@ Direction F 将 Settings 页面改为调用 API，需要确保 api.ts 中有完�
 
 ## 验收标准
 
-- [ ] uiStore.ts 已删除
-- [ ] 未使用的 API 方法已清理
-- [ ] api.ts 包含完整的 Provider CRUD 方法
+- [x] uiStore.ts 已删除
+- [x] 未使用的 API 方法已清理
+- [x] api.ts 包含完整的 Provider CRUD 方法
 - [ ] 项目能正常构建（`pnpm build`）
-- [ ] 所有测试通过（`pnpm test`）
+- [x] 所有测试通过（`pnpm test`）
+
+---
+
+## Completion Status
+
+### G1.1 uiStore ✅
+
+File already deleted in previous iteration.
+
+### G2 API Client Sync ✅
+
+All Provider CRUD methods already implemented in api.ts and used by Settings.tsx.
+
+### Unused API methods ✅
+
+`api.templates.get(id)` removed (only used in tests).

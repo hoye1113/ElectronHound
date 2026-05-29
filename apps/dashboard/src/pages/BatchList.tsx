@@ -7,7 +7,6 @@ import {
   Check,
   Loader2,
   Layers,
-  Trash2,
   AlertCircle,
 } from 'lucide-react';
 import { api } from '../lib/api';
@@ -16,12 +15,6 @@ import { api } from '../lib/api';
 
 type BatchStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 type BatchPriority = 'low' | 'medium' | 'high';
-
-interface StoredBatch {
-  batchId: string;
-  name: string | null;
-  createdAt: string;
-}
 
 interface BatchData {
   id: string;
@@ -38,8 +31,6 @@ interface BatchData {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = 'eata-batches';
-
 const STATUS_STYLES: Record<BatchStatus, string> = {
   pending: 'bg-zinc-500/15 text-zinc-400 ring-1 ring-zinc-500/30',
   running: 'bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/30',
@@ -49,20 +40,6 @@ const STATUS_STYLES: Record<BatchStatus, string> = {
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function loadStoredBatches(): StoredBatch[] {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw) as StoredBatch[];
-  } catch {
-    return [];
-  }
-}
-
-function saveStoredBatches(batches: StoredBatch[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(batches));
-}
 
 function formatTimeAgo(isoDate: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
   const seconds = Math.floor((Date.now() - new Date(isoDate).getTime()) / 1000);
@@ -80,7 +57,7 @@ function formatTimeAgo(isoDate: string, t: (key: string, opts?: Record<string, u
 interface NewBatchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: (batch: StoredBatch) => void;
+  onSuccess: () => void;
 }
 
 function NewBatchDialog({ open, onOpenChange, onSuccess }: NewBatchDialogProps) {
@@ -112,18 +89,13 @@ function NewBatchDialog({ open, onOpenChange, onSuccess }: NewBatchDialogProps) 
 
     try {
       const tasks = Array.from({ length: taskCount }, () => ({ goal: goal.trim() }));
-      const result = await api.batches.create({
+      await api.batches.create({
         name: name.trim() || undefined,
         tasks,
         priority,
       });
 
-      const stored: StoredBatch = {
-        batchId: result.batchId,
-        name: name.trim() || null,
-        createdAt: new Date().toISOString(),
-      };
-      onSuccess(stored);
+      onSuccess();
       onOpenChange(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('batch.createError'));
@@ -296,7 +268,6 @@ function CancelConfirmDialog({ batch, onConfirm, onCancel }: CancelConfirmDialog
               onClick={onConfirm}
               className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-500"
             >
-              <Trash2 className="size-4" />
               {t('batch.cancel')}
             </button>
           </div>
@@ -311,10 +282,9 @@ function CancelConfirmDialog({ batch, onConfirm, onCancel }: CancelConfirmDialog
 interface BatchRowProps {
   batch: BatchData;
   onCancel: (batch: BatchData) => void;
-  onRemove: (batchId: string) => void;
 }
 
-function BatchRow({ batch, onCancel, onRemove }: BatchRowProps) {
+function BatchRow({ batch, onCancel }: BatchRowProps) {
   const { t } = useTranslation();
   const isActive = batch.status === 'pending' || batch.status === 'running';
 
@@ -370,16 +340,6 @@ function BatchRow({ batch, onCancel, onRemove }: BatchRowProps) {
             <X className="size-4" />
           </button>
         )}
-        {!isActive && (
-          <button
-            type="button"
-            onClick={() => onRemove(batch.id)}
-            className="rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-red-400"
-            title={t('common.delete')}
-          >
-            <Trash2 className="size-4" />
-          </button>
-        )}
       </div>
     </div>
   );
@@ -389,32 +349,25 @@ function BatchRow({ batch, onCancel, onRemove }: BatchRowProps) {
 
 export default function BatchList() {
   const { t } = useTranslation();
-  const [storedBatches, setStoredBatches] = useState<StoredBatch[]>([]);
-  const [batchDataMap, setBatchDataMap] = useState<Map<string, BatchData>>(new Map());
+  const [batches, setBatches] = useState<BatchData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<string>('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<BatchData | null>(null);
 
-  // Load stored batches and fetch their status
   const refreshBatches = useCallback(async () => {
-    const stored = loadStoredBatches();
-    setStoredBatches(stored);
-
-    const dataMap = new Map<string, BatchData>();
-    await Promise.allSettled(
-      stored.map(async (s) => {
-        try {
-          const data = await api.batches.get(s.batchId);
-          dataMap.set(s.batchId, data as unknown as BatchData);
-        } catch {
-          // Batch may have been deleted from the server; keep the stored entry
-          // so the user can manually remove it
-        }
-      })
-    );
-    setBatchDataMap(dataMap);
-    setIsLoading(false);
-  }, []);
+    try {
+      const result = await api.batches.list({
+        status: statusFilter || undefined,
+        limit: 50,
+      });
+      setBatches(result.data);
+    } catch {
+      // Keep existing data on error
+    } finally {
+      setIsLoading(false);
+    }
+  }, [statusFilter]);
 
   useEffect(() => {
     refreshBatches();
@@ -422,23 +375,17 @@ export default function BatchList() {
 
   // Auto-refresh running batches
   useEffect(() => {
-    const hasActive = Array.from(batchDataMap.values()).some(
+    const hasActive = batches.some(
       (b) => b.status === 'pending' || b.status === 'running'
     );
     if (!hasActive) return;
 
     const interval = setInterval(refreshBatches, 10_000);
     return () => clearInterval(interval);
-  }, [batchDataMap, refreshBatches]);
+  }, [batches, refreshBatches]);
 
-  const handleCreateSuccess = (stored: StoredBatch) => {
-    const updated = [stored, ...storedBatches];
-    setStoredBatches(updated);
-    saveStoredBatches(updated);
-    // Fetch the new batch status
-    api.batches.get(stored.batchId).then((data) => {
-      setBatchDataMap((prev) => new Map(prev).set(stored.batchId, data as unknown as BatchData));
-    });
+  const handleCreateSuccess = () => {
+    refreshBatches();
   };
 
   const handleCancelConfirm = async () => {
@@ -453,27 +400,14 @@ export default function BatchList() {
     }
   };
 
-  const handleRemove = (batchId: string) => {
-    const updated = storedBatches.filter((b) => b.batchId !== batchId);
-    setStoredBatches(updated);
-    saveStoredBatches(updated);
-    setBatchDataMap((prev) => {
-      const next = new Map(prev);
-      next.delete(batchId);
-      return next;
-    });
-  };
-
   // Sort: active first, then by creation date descending
-  const sortedBatches = storedBatches
-    .map((s) => ({ stored: s, data: batchDataMap.get(s.batchId) }))
-    .sort((a, b) => {
-      const aActive = a.data && (a.data.status === 'pending' || a.data.status === 'running');
-      const bActive = b.data && (b.data.status === 'pending' || b.data.status === 'running');
-      if (aActive && !bActive) return -1;
-      if (!aActive && bActive) return 1;
-      return new Date(b.stored.createdAt).getTime() - new Date(a.stored.createdAt).getTime();
-    });
+  const sortedBatches = [...batches].sort((a, b) => {
+    const aActive = a.status === 'pending' || a.status === 'running';
+    const bActive = b.status === 'pending' || b.status === 'running';
+    if (aActive && !bActive) return -1;
+    if (!aActive && bActive) return 1;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -482,16 +416,30 @@ export default function BatchList() {
         <div>
           <h1 className="text-2xl font-bold text-zinc-100">{t('batch.title')}</h1>
           <p className="mt-1 text-sm text-zinc-500">
-            {storedBatches.length} batch{storedBatches.length !== 1 ? 'es' : ''}
+            {batches.length} batch{batches.length !== 1 ? 'es' : ''}
           </p>
         </div>
-        <button
-          onClick={() => setDialogOpen(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
-        >
-          <Plus className="size-4" />
-          {t('batch.newBatch')}
-        </button>
+        <div className="flex items-center gap-3">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-300"
+          >
+            <option value="">All</option>
+            <option value="pending">Pending</option>
+            <option value="running">Running</option>
+            <option value="completed">Completed</option>
+            <option value="failed">Failed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <button
+            onClick={() => setDialogOpen(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
+          >
+            <Plus className="size-4" />
+            {t('batch.newBatch')}
+          </button>
+        </div>
       </div>
 
       {/* Batch list */}
@@ -515,44 +463,13 @@ export default function BatchList() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {sortedBatches.map(({ stored, data }) => {
-            if (!data) {
-              // Still loading or fetch failed; show minimal info
-              return (
-                <div
-                  key={stored.batchId}
-                  className="flex items-center gap-4 rounded-lg border border-zinc-800 bg-zinc-900 p-4"
-                >
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-zinc-800">
-                    <Layers className="size-5 text-zinc-400" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="truncate text-sm font-semibold text-zinc-100">
-                      {stored.name || stored.batchId.slice(0, 8)}
-                    </h3>
-                    <p className="mt-1 text-xs text-zinc-500">{formatTimeAgo(stored.createdAt, t)}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemove(stored.batchId)}
-                    className="rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-red-400"
-                    title={t('common.delete')}
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                </div>
-              );
-            }
-
-            return (
-              <BatchRow
-                key={stored.batchId}
-                batch={data}
-                onCancel={setCancelTarget}
-                onRemove={handleRemove}
-              />
-            );
-          })}
+          {sortedBatches.map((batch) => (
+            <BatchRow
+              key={batch.id}
+              batch={batch}
+              onCancel={setCancelTarget}
+            />
+          ))}
         </div>
       )}
 

@@ -49,6 +49,17 @@ export async function batchRoutes(server: FastifyInstance) {
     }
   });
 
+  // GET /tasks/batches — list all batches with optional filters
+  server.get('/tasks/batches', async (request) => {
+    const query = request.query as Record<string, string>;
+    const status = query.status;
+    const page = query.page ? parseInt(query.page, 10) : 1;
+    const limit = query.limit ? parseInt(query.limit, 10) : 20;
+
+    const batchService = getBatchService(server.db);
+    return batchService.listBatches({ status, page, limit });
+  });
+
   // GET /tasks/batch/:batchId — get batch status with task breakdown
   server.get('/tasks/batch/:batchId', async (request, reply) => {
     const parseResult = BatchIdSchema.safeParse(request.params);

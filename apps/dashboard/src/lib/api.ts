@@ -173,9 +173,6 @@ export const api = {
       if (params?.search) query.set('search', params.search);
       return fetchJson(`${API_BASE}/api/templates?${query}`);
     },
-    get(id: string): Promise<unknown> {
-      return fetchJson(`${API_BASE}/api/templates/${id}`);
-    },
     create(data: unknown): Promise<unknown> {
       return fetchJson(`${API_BASE}/api/templates`, {
         method: 'POST',
@@ -224,35 +221,61 @@ export const api = {
     cancel(batchId: string): Promise<{ success: boolean; batchId: string }> {
       return fetchJson(`${API_BASE}/api/tasks/batch/${batchId}/cancel`, { method: 'POST' });
     },
+    list(params?: { status?: string; page?: number; limit?: number }): Promise<{
+      data: Array<{
+        id: string;
+        name: string | null;
+        status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+        totalTasks: number;
+        completedTasks: number;
+        failedTasks: number;
+        priority: string;
+        createdAt: string;
+        updatedAt: string;
+        progress: number;
+      }>;
+      total: number;
+      page: number;
+      limit: number;
+    }> {
+      const query = new URLSearchParams();
+      if (params?.status) query.set('status', params.status);
+      if (params?.page) query.set('page', String(params.page));
+      if (params?.limit) query.set('limit', String(params.limit));
+      return fetchJson(`${API_BASE}/api/tasks/batches?${query}`);
+    },
   },
   fewShot: {
-    _key: 'eata-few-shot-examples',
-    list(): FewShotExample[] {
-      try {
-        return JSON.parse(localStorage.getItem('eata-few-shot-examples') ?? '[]');
-      } catch (err: unknown) {
-        console.warn('[api] Failed to parse few-shot examples from localStorage:', err instanceof Error ? err.message : String(err));
-        return [];
-      }
+    list(params?: { search?: string; domain?: string }): Promise<{ data: FewShotExample[] }> {
+      const query = new URLSearchParams();
+      if (params?.search) query.set('search', params.search);
+      if (params?.domain) query.set('domain', params.domain);
+      return fetchJson(`${API_BASE}/api/few-shot?${query}`);
     },
-    add(data: Omit<FewShotExample, 'id'>): FewShotExample {
-      const examples = api.fewShot.list();
-      const example: FewShotExample = { ...data, id: `fs-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` };
-      examples.push(example);
-      localStorage.setItem('eata-few-shot-examples', JSON.stringify(examples));
-      return example;
+    async add(data: Omit<FewShotExample, 'id'>): Promise<FewShotExample> {
+      return fetchJson(`${API_BASE}/api/few-shot`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
     },
-    update(id: string, data: Omit<FewShotExample, 'id'>): void {
-      const examples = api.fewShot.list();
-      const idx = examples.findIndex(e => e.id === id);
-      if (idx >= 0) {
-        examples[idx] = { ...data, id };
-        localStorage.setItem('eata-few-shot-examples', JSON.stringify(examples));
-      }
+    async update(id: string, data: Omit<FewShotExample, 'id'>): Promise<FewShotExample> {
+      return fetchJson(`${API_BASE}/api/few-shot/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
     },
-    remove(id: string): void {
-      const examples = api.fewShot.list().filter(e => e.id !== id);
-      localStorage.setItem('eata-few-shot-examples', JSON.stringify(examples));
+    async remove(id: string): Promise<void> {
+      const res = await fetch(`${API_BASE}/api/few-shot/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`Delete few-shot example failed: ${res.status}`);
+    },
+    async migrate(examples: FewShotExample[]): Promise<{ imported: number; skipped: number }> {
+      return fetchJson(`${API_BASE}/api/few-shot/migrate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ examples }),
+      });
     },
   },
 };

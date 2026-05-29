@@ -9,6 +9,7 @@ const mockFewShotList = vi.fn();
 const mockFewShotAdd = vi.fn();
 const mockFewShotUpdate = vi.fn();
 const mockFewShotRemove = vi.fn();
+const mockFewShotMigrate = vi.fn();
 
 vi.mock('../lib/api', () => ({
   api: {
@@ -17,6 +18,7 @@ vi.mock('../lib/api', () => ({
       add: (...args: unknown[]) => mockFewShotAdd(...args),
       update: (...args: unknown[]) => mockFewShotUpdate(...args),
       remove: (...args: unknown[]) => mockFewShotRemove(...args),
+      migrate: (...args: unknown[]) => mockFewShotMigrate(...args),
     },
   },
 }));
@@ -91,13 +93,14 @@ describe('FewShotPage', () => {
     mockGetItem.mockReturnValue(null);
     mockSetItem.mockImplementation(() => {});
     mockRemoveItem.mockImplementation(() => {});
-    // Default: return empty list
-    mockFewShotList.mockReturnValue([]);
+    // Default: return empty list (async, matching new API shape)
+    mockFewShotList.mockResolvedValue({ data: [] });
     mockFewShotAdd.mockImplementation((data: Omit<FewShotExample, 'id'>) =>
-      createExample({ ...data, id: `fs-${Date.now()}` }),
+      Promise.resolve(createExample({ ...data, id: `fs-${Date.now()}` })),
     );
-    mockFewShotUpdate.mockImplementation(() => {});
-    mockFewShotRemove.mockImplementation(() => {});
+    mockFewShotUpdate.mockResolvedValue(undefined);
+    mockFewShotRemove.mockResolvedValue(undefined);
+    mockFewShotMigrate.mockResolvedValue({ imported: 0, skipped: 0 });
   });
 
   afterEach(() => {
@@ -109,77 +112,96 @@ describe('FewShotPage', () => {
   // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Rendering', () => {
-    it('renders empty state when no patterns exist', () => {
+    it('renders empty state when no patterns exist', async () => {
       render(<FewShotPage />);
-      expect(screen.getByText('fewShot.empty')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('fewShot.empty')).toBeInTheDocument();
+      });
       expect(screen.getByText('fewShot.emptyHint')).toBeInTheDocument();
     });
 
-    it('renders pattern list from API', () => {
-      mockFewShotList.mockReturnValue(mockExamples);
+    it('renders pattern list from API', async () => {
+      mockFewShotList.mockResolvedValue({ data: mockExamples });
       render(<FewShotPage />);
 
-      expect(screen.getByText('Test login flow')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Test login flow')).toBeInTheDocument();
+      });
       expect(screen.getByText('Navigate to settings page')).toBeInTheDocument();
       expect(screen.getByText('Submit contact form')).toBeInTheDocument();
     });
 
-    it('renders page title and subtitle', () => {
+    it('renders page title and subtitle', async () => {
       render(<FewShotPage />);
-      expect(screen.getByText('fewShot.title')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('fewShot.title')).toBeInTheDocument();
+      });
       expect(screen.getByText('fewShot.subtitle')).toBeInTheDocument();
     });
 
-    it('renders add button in empty state', () => {
+    it('renders add button in empty state', async () => {
       render(<FewShotPage />);
-      expect(screen.getByText('fewShot.addFirst')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('fewShot.addFirst')).toBeInTheDocument();
+      });
     });
 
-    it('renders add new button when examples exist', () => {
-      mockFewShotList.mockReturnValue(mockExamples);
+    it('renders add new button when examples exist', async () => {
+      mockFewShotList.mockResolvedValue({ data: mockExamples });
       render(<FewShotPage />);
-      expect(screen.getByText('fewShot.addNew')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('fewShot.addNew')).toBeInTheDocument();
+      });
     });
 
-    it('renders expected result for each example', () => {
-      mockFewShotList.mockReturnValue([mockExamples[0]]);
+    it('renders expected result for each example', async () => {
+      mockFewShotList.mockResolvedValue({ data: [mockExamples[0]] });
       render(<FewShotPage />);
-      expect(screen.getByText('User is logged in successfully')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('User is logged in successfully')).toBeInTheDocument();
+      });
     });
 
-    it('renders domain and difficulty metadata', () => {
-      mockFewShotList.mockReturnValue([mockExamples[0]]);
+    it('renders domain and difficulty metadata', async () => {
+      mockFewShotList.mockResolvedValue({ data: [mockExamples[0]] });
       render(<FewShotPage />);
-      // Domain is rendered directly as text
-      expect(screen.getByText('testing')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('testing')).toBeInTheDocument();
+      });
       // Difficulty goes through t() and renders as the key since it's missing from en.json
       expect(screen.getByText('fewShot.difficulty_easy')).toBeInTheDocument();
     });
 
-    it('renders tags on example cards', () => {
-      mockFewShotList.mockReturnValue([mockExamples[0]]);
+    it('renders tags on example cards', async () => {
+      mockFewShotList.mockResolvedValue({ data: [mockExamples[0]] });
       render(<FewShotPage />);
-      expect(screen.getByText('auth')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('auth')).toBeInTheDocument();
+      });
       expect(screen.getByText('login')).toBeInTheDocument();
     });
 
-    it('renders step count for examples', () => {
-      mockFewShotList.mockReturnValue([mockExamples[0]]);
+    it('renders step count for examples', async () => {
+      mockFewShotList.mockResolvedValue({ data: [mockExamples[0]] });
       render(<FewShotPage />);
-      // Step count is rendered as "{length} {t('fewShot.stepsCount', {count})}"
-      // The t() returns the key string since it's missing from en.json
-      expect(screen.getByText(/fewShot\.stepsCount/)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText(/fewShot\.stepsCount/)).toBeInTheDocument();
+      });
     });
 
-    it('shows search input when examples exist', () => {
-      mockFewShotList.mockReturnValue(mockExamples);
+    it('shows search input when examples exist', async () => {
+      mockFewShotList.mockResolvedValue({ data: mockExamples });
       render(<FewShotPage />);
-      expect(screen.getByPlaceholderText('fewShot.searchPlaceholder')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('fewShot.searchPlaceholder')).toBeInTheDocument();
+      });
     });
 
-    it('hides search input when no examples', () => {
+    it('hides search input when no examples', async () => {
       render(<FewShotPage />);
-      expect(screen.queryByPlaceholderText('fewShot.searchPlaceholder')).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.queryByPlaceholderText('fewShot.searchPlaceholder')).not.toBeInTheDocument();
+      });
     });
   });
 
@@ -214,9 +236,9 @@ describe('FewShotPage', () => {
       });
 
       // After create, reload returns the new example
-      mockFewShotList.mockReturnValueOnce([
+      mockFewShotList.mockResolvedValueOnce({ data: [
         createExample({ goal: 'New test goal', expectedResult: 'Expected result' }),
-      ]);
+      ] });
 
       // Submit the form — the submit button text is t('common.add') = 'Add'
       fireEvent.click(screen.getByRole('button', { name: /^Add$/ }));
@@ -232,7 +254,7 @@ describe('FewShotPage', () => {
     });
 
     it('opens edit dialog when clicking edit button', async () => {
-      mockFewShotList.mockReturnValue([mockExamples[0]]);
+      mockFewShotList.mockResolvedValue({ data: [mockExamples[0]] });
       render(<FewShotPage />);
 
       await waitFor(() => {
@@ -248,7 +270,7 @@ describe('FewShotPage', () => {
     });
 
     it('edits an existing pattern via API', async () => {
-      mockFewShotList.mockReturnValue([mockExamples[0]]);
+      mockFewShotList.mockResolvedValue({ data: [mockExamples[0]] });
       render(<FewShotPage />);
 
       await waitFor(() => {
@@ -266,9 +288,9 @@ describe('FewShotPage', () => {
       fireEvent.change(goalInput, { target: { value: 'Updated login flow' } });
 
       // After update, reload returns updated data
-      mockFewShotList.mockReturnValueOnce([
+      mockFewShotList.mockResolvedValueOnce({ data: [
         { ...mockExamples[0], goal: 'Updated login flow' },
-      ]);
+      ] });
 
       // Click save — button text is t('common.save') = 'Save'
       fireEvent.click(screen.getByRole('button', { name: /^Save$/ }));
@@ -282,7 +304,7 @@ describe('FewShotPage', () => {
     });
 
     it('shows delete confirmation dialog', async () => {
-      mockFewShotList.mockReturnValue([mockExamples[0]]);
+      mockFewShotList.mockResolvedValue({ data: [mockExamples[0]] });
       render(<FewShotPage />);
 
       await waitFor(() => {
@@ -297,7 +319,7 @@ describe('FewShotPage', () => {
     });
 
     it('deletes pattern after confirmation', async () => {
-      mockFewShotList.mockReturnValue(mockExamples);
+      mockFewShotList.mockResolvedValue({ data: mockExamples });
       render(<FewShotPage />);
 
       await waitFor(() => {
@@ -313,7 +335,7 @@ describe('FewShotPage', () => {
       });
 
       // After delete, reload returns list without the deleted example
-      mockFewShotList.mockReturnValueOnce(mockExamples.filter((e) => e.id !== 'fs-1'));
+      mockFewShotList.mockResolvedValueOnce({ data: mockExamples.filter((e) => e.id !== 'fs-1') });
 
       // Confirm deletion — button text is t('common.delete') = 'Delete'
       fireEvent.click(screen.getByText('Delete'));
@@ -328,7 +350,7 @@ describe('FewShotPage', () => {
     });
 
     it('cancels deletion when cancel is clicked', async () => {
-      mockFewShotList.mockReturnValue([mockExamples[0]]);
+      mockFewShotList.mockResolvedValue({ data: [mockExamples[0]] });
       render(<FewShotPage />);
 
       await waitFor(() => {
@@ -404,9 +426,9 @@ describe('FewShotPage', () => {
       });
 
       // Re-submit — validation should now pass and errors should be gone
-      mockFewShotList.mockReturnValueOnce([
+      mockFewShotList.mockResolvedValueOnce({ data: [
         createExample({ goal: 'Some goal', expectedResult: 'Some result' }),
-      ]);
+      ] });
       fireEvent.click(screen.getByRole('button', { name: /^Add$/ }));
 
       await waitFor(() => {
@@ -421,9 +443,13 @@ describe('FewShotPage', () => {
   // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Search/Filter', () => {
-    it('filters by keyword in goal', () => {
-      mockFewShotList.mockReturnValue(mockExamples);
+    it('filters by keyword in goal', async () => {
+      mockFewShotList.mockResolvedValue({ data: mockExamples });
       render(<FewShotPage />);
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('fewShot.searchPlaceholder')).toBeInTheDocument();
+      });
 
       const searchInput = screen.getByPlaceholderText('fewShot.searchPlaceholder');
       fireEvent.change(searchInput, { target: { value: 'login' } });
@@ -433,9 +459,13 @@ describe('FewShotPage', () => {
       expect(screen.queryByText('Submit contact form')).not.toBeInTheDocument();
     });
 
-    it('filters by keyword in expected result', () => {
-      mockFewShotList.mockReturnValue(mockExamples);
+    it('filters by keyword in expected result', async () => {
+      mockFewShotList.mockResolvedValue({ data: mockExamples });
       render(<FewShotPage />);
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('fewShot.searchPlaceholder')).toBeInTheDocument();
+      });
 
       const searchInput = screen.getByPlaceholderText('fewShot.searchPlaceholder');
       fireEvent.change(searchInput, { target: { value: 'confirmed' } });
@@ -444,9 +474,13 @@ describe('FewShotPage', () => {
       expect(screen.queryByText('Test login flow')).not.toBeInTheDocument();
     });
 
-    it('filters by tag', () => {
-      mockFewShotList.mockReturnValue(mockExamples);
+    it('filters by tag', async () => {
+      mockFewShotList.mockResolvedValue({ data: mockExamples });
       render(<FewShotPage />);
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('fewShot.searchPlaceholder')).toBeInTheDocument();
+      });
 
       const searchInput = screen.getByPlaceholderText('fewShot.searchPlaceholder');
       fireEvent.change(searchInput, { target: { value: 'auth' } });
@@ -457,9 +491,13 @@ describe('FewShotPage', () => {
       expect(screen.queryByText('Navigate to settings page')).not.toBeInTheDocument();
     });
 
-    it('filters by domain', () => {
-      mockFewShotList.mockReturnValue(mockExamples);
+    it('filters by domain', async () => {
+      mockFewShotList.mockResolvedValue({ data: mockExamples });
       render(<FewShotPage />);
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('fewShot.searchPlaceholder')).toBeInTheDocument();
+      });
 
       const searchInput = screen.getByPlaceholderText('fewShot.searchPlaceholder');
       fireEvent.change(searchInput, { target: { value: 'navigation' } });
@@ -468,9 +506,13 @@ describe('FewShotPage', () => {
       expect(screen.queryByText('Test login flow')).not.toBeInTheDocument();
     });
 
-    it('shows no results message when search has no matches', () => {
-      mockFewShotList.mockReturnValue(mockExamples);
+    it('shows no results message when search has no matches', async () => {
+      mockFewShotList.mockResolvedValue({ data: mockExamples });
       render(<FewShotPage />);
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('fewShot.searchPlaceholder')).toBeInTheDocument();
+      });
 
       const searchInput = screen.getByPlaceholderText('fewShot.searchPlaceholder');
       fireEvent.change(searchInput, { target: { value: 'nonexistent' } });
@@ -479,9 +521,13 @@ describe('FewShotPage', () => {
       expect(screen.queryByText('Test login flow')).not.toBeInTheDocument();
     });
 
-    it('clears filter when search input is emptied', () => {
-      mockFewShotList.mockReturnValue(mockExamples);
+    it('clears filter when search input is emptied', async () => {
+      mockFewShotList.mockResolvedValue({ data: mockExamples });
       render(<FewShotPage />);
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('fewShot.searchPlaceholder')).toBeInTheDocument();
+      });
 
       const searchInput = screen.getByPlaceholderText('fewShot.searchPlaceholder');
 
@@ -496,9 +542,13 @@ describe('FewShotPage', () => {
       expect(screen.getByText('Submit contact form')).toBeInTheDocument();
     });
 
-    it('filter is case insensitive', () => {
-      mockFewShotList.mockReturnValue(mockExamples);
+    it('filter is case insensitive', async () => {
+      mockFewShotList.mockResolvedValue({ data: mockExamples });
       render(<FewShotPage />);
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('fewShot.searchPlaceholder')).toBeInTheDocument();
+      });
 
       const searchInput = screen.getByPlaceholderText('fewShot.searchPlaceholder');
       fireEvent.change(searchInput, { target: { value: 'LOGIN' } });
@@ -521,7 +571,7 @@ describe('FewShotPage', () => {
     }
 
     async function openEditDialogForExample(example: FewShotExample) {
-      mockFewShotList.mockReturnValue([example]);
+      mockFewShotList.mockResolvedValue({ data: [example] });
       render(<FewShotPage />);
       await waitFor(() => {
         expect(screen.getByLabelText(/fewShot\.editExample/i)).toBeInTheDocument();
@@ -655,13 +705,17 @@ describe('FewShotPage', () => {
   // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Import/Export', () => {
-    it('exports data by calling api.fewShot.list on mount', () => {
-      mockFewShotList.mockReturnValue(mockExamples);
+    it('exports data by calling api.fewShot.list on mount', async () => {
+      mockFewShotList.mockResolvedValue({ data: mockExamples });
       render(<FewShotPage />);
 
-      expect(mockFewShotList).toHaveBeenCalled();
+      await waitFor(() => {
+        expect(mockFewShotList).toHaveBeenCalled();
+      });
       // All examples should be rendered
-      expect(screen.getByText('Test login flow')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Test login flow')).toBeInTheDocument();
+      });
       expect(screen.getByText('Navigate to settings page')).toBeInTheDocument();
       expect(screen.getByText('Submit contact form')).toBeInTheDocument();
     });
@@ -695,9 +749,9 @@ describe('FewShotPage', () => {
       fireEvent.keyDown(tagInput, { key: 'Enter' });
 
       // After save, return updated list
-      mockFewShotList.mockReturnValueOnce([
+      mockFewShotList.mockResolvedValueOnce({ data: [
         createExample({ goal: 'Imported goal', expectedResult: 'Imported result' }),
-      ]);
+      ] });
 
       fireEvent.click(screen.getByRole('button', { name: /^Add$/ }));
 
@@ -714,27 +768,31 @@ describe('FewShotPage', () => {
       });
     });
 
-    it('handles import with format errors gracefully (empty list from API)', () => {
+    it('handles import with format errors gracefully (empty list from API)', async () => {
       // Simulate api.fewShot.list returning empty due to parse error
-      mockFewShotList.mockReturnValue([]);
+      mockFewShotList.mockResolvedValue({ data: [] });
       render(<FewShotPage />);
 
       // Should show empty state, not crash
-      expect(screen.getByText('fewShot.empty')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('fewShot.empty')).toBeInTheDocument();
+      });
       expect(screen.getByText('fewShot.emptyHint')).toBeInTheDocument();
     });
 
-    it('handles malformed localStorage data (api returns empty)', () => {
+    it('handles malformed localStorage data (api returns empty)', async () => {
       // Simulate corrupted localStorage
       mockGetItem.mockReturnValue('not-valid-json');
-      mockFewShotList.mockReturnValue([]);
+      mockFewShotList.mockResolvedValue({ data: [] });
       render(<FewShotPage />);
 
-      expect(screen.getByText('fewShot.empty')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('fewShot.empty')).toBeInTheDocument();
+      });
     });
 
     it('removes example and persists deletion via api.fewShot.remove', async () => {
-      mockFewShotList.mockReturnValue([mockExamples[0]]);
+      mockFewShotList.mockResolvedValue({ data: [mockExamples[0]] });
       render(<FewShotPage />);
 
       await waitFor(() => {
@@ -747,7 +805,7 @@ describe('FewShotPage', () => {
         expect(screen.getByText('fewShot.deleteTitle')).toBeInTheDocument();
       });
 
-      mockFewShotList.mockReturnValueOnce([]);
+      mockFewShotList.mockResolvedValueOnce({ data: [] });
 
       fireEvent.click(screen.getByText('Delete'));
 

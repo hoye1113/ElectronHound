@@ -494,27 +494,51 @@ export default function FewShotPage() {
   const [deleteTarget, setDeleteTarget] = useState<FewShotExample | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const reload = useCallback(() => {
-    setExamples(api.fewShot.list());
+  const reload = useCallback(async () => {
+    try {
+      const result = await api.fewShot.list();
+      setExamples(result.data);
+    } catch {
+      // fallback: try localStorage
+      const stored = localStorage.getItem('eata-few-shot-examples');
+      if (stored) {
+        try { setExamples(JSON.parse(stored)); } catch { /* ignore */ }
+      }
+    }
   }, []);
 
   useEffect(() => {
+    // Check for localStorage data to migrate
+    const stored = localStorage.getItem('eata-few-shot-examples');
+    if (stored) {
+      try {
+        const examples = JSON.parse(stored);
+        if (Array.isArray(examples) && examples.length > 0) {
+          api.fewShot.migrate(examples).then(() => {
+            localStorage.removeItem('eata-few-shot-examples');
+            reload();
+          }).catch(() => {
+            // Migration failed, keep localStorage data as fallback
+          });
+        }
+      } catch { /* invalid JSON, ignore */ }
+    }
     reload();
   }, [reload]);
 
-  const handleSave = (data: Omit<FewShotExample, 'id'>) => {
+  const handleSave = async (data: Omit<FewShotExample, 'id'>) => {
     if (editingExample) {
-      api.fewShot.update(editingExample.id, data);
+      await api.fewShot.update(editingExample.id, data);
     } else {
-      api.fewShot.add(data);
+      await api.fewShot.add(data);
     }
     setEditingExample(null);
     reload();
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    api.fewShot.remove(deleteTarget.id);
+    await api.fewShot.remove(deleteTarget.id);
     setDeleteTarget(null);
     reload();
   };

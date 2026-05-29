@@ -144,6 +144,72 @@ export class BatchService {
   }
 
   /**
+   * List batches with optional filtering and pagination.
+   */
+  listBatches(params?: { status?: string; page?: number; limit?: number }): {
+    data: Array<{
+      id: string;
+      name: string | null;
+      status: BatchStatus;
+      totalTasks: number;
+      completedTasks: number;
+      failedTasks: number;
+      priority: string;
+      createdAt: string;
+      updatedAt: string;
+      progress: number;
+    }>;
+    total: number;
+    page: number;
+    limit: number;
+  } {
+    const page = params?.page ?? 1;
+    const limit = Math.min(params?.limit ?? 20, 100);
+    const offset = (page - 1) * limit;
+
+    let countSql = 'SELECT COUNT(*) as count FROM batches WHERE 1=1';
+    let dataSql = 'SELECT * FROM batches WHERE 1=1';
+    const dbParams: Record<string, unknown> = {};
+
+    if (params?.status) {
+      const statusFilter = ' AND status = @status';
+      countSql += statusFilter;
+      dataSql += statusFilter;
+      dbParams.status = params.status;
+    }
+
+    const total = (this.db.prepare(countSql).get(dbParams) as { count: number }).count;
+
+    dataSql += ' ORDER BY created_at DESC LIMIT @limit OFFSET @offset';
+    dbParams.limit = limit;
+    dbParams.offset = offset;
+
+    const rows = this.db.prepare(dataSql).all(dbParams) as Array<Record<string, unknown>>;
+
+    const data = rows.map(row => {
+      const totalTasks = Number(row.total_tasks);
+      const completedTasks = Number(row.completed_tasks);
+      const failedTasks = Number(row.failed_tasks);
+      const progress = totalTasks > 0 ? Math.round(((completedTasks + failedTasks) / totalTasks) * 100) : 0;
+
+      return {
+        id: String(row.id),
+        name: row.name as string | null,
+        status: row.status as BatchStatus,
+        totalTasks,
+        completedTasks,
+        failedTasks,
+        priority: String(row.priority),
+        createdAt: String(row.created_at),
+        updatedAt: String(row.updated_at),
+        progress,
+      };
+    });
+
+    return { data, total, page, limit };
+  }
+
+  /**
    * Cancel a batch and all its pending tasks.
    */
   cancelBatch(batchId: string): boolean {
