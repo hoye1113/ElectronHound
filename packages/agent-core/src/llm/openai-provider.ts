@@ -12,6 +12,7 @@ import type { LLMProviderConfig } from '../llm-types.js';
  */
 export function createOpenAIProvider(config: LLMProviderConfig): LLMProvider {
   const baseURL = config.baseURL.replace(/\/+$/, '');
+  const useJsonMode = config.jsonMode !== false; // default true
 
   return {
     async generateObject<T>(opts: GenerateObjectOptions<T>): Promise<{ object: T }> {
@@ -30,7 +31,7 @@ export function createOpenAIProvider(config: LLMProviderConfig): LLMProvider {
         body: JSON.stringify({
           model: config.model,
           messages,
-          response_format: { type: 'json_object' },
+          ...(useJsonMode ? { response_format: { type: 'json_object' } } : {}),
           max_tokens: opts.maxTokens ?? 2000,
         }),
       });

@@ -33,6 +33,7 @@ interface CliArgs {
   targetAppPath: string;
   llmModel: string;
   maxSteps: number;
+  providerId?: string;
 }
 
 // ─── Argument Parsing ────────────────────────────────────
@@ -63,6 +64,7 @@ export function parseArgs(argv: string[]): CliArgs {
     targetAppPath: raw.app ?? '',
     llmModel: raw.model ?? 'gpt-4o',
     maxSteps: raw.maxSteps !== undefined ? parseInt(raw.maxSteps, 10) : 50,
+    providerId: raw.provider || undefined,
   };
 }
 
@@ -94,6 +96,7 @@ export function validateArgs(
       targetAppPath: result.data.targetAppPath,
       llmModel: result.data.llmModel,
       maxSteps: result.data.maxSteps ?? 50,
+      providerId: args.providerId,
     },
   };
 }
@@ -301,7 +304,7 @@ export async function cliMain(
     return 1;
   }
 
-  const { goal, targetAppPath, llmModel, maxSteps } = validation.data;
+  const { goal, targetAppPath, llmModel, maxSteps, providerId } = validation.data;
 
   logger.info('Starting test execution', {
     goal: goal.slice(0, 50) + (goal.length > 50 ? '...' : ''),
@@ -334,6 +337,7 @@ export async function cliMain(
       targetAppPath,
       llmModel,
       maxSteps,
+      providerId,
     });
 
     taskId = result.taskId;

@@ -14,6 +14,8 @@ export interface LLMProviderConfig {
   baseURL: string;
   model: string;
   enabled?: boolean;
+  /** When false, omit response_format json_object (for models that don't support it well). Defaults to true. */
+  jsonMode?: boolean;
 }
 
 export interface ProvidersConfig {
@@ -61,5 +63,15 @@ export const BUILTIN_TEMPLATES: LLMProviderConfig[] = [
     baseURL: 'https://api.groq.com/openai/v1',
     model: 'llama-3.1-70b-versatile',
     enabled: true,
+  },
+  {
+    id: 'minimax-template',
+    name: 'MiniMax',
+    type: 'openai-compatible',
+    apiKey: 'sk-',
+    baseURL: 'https://api.minimaxi.com/v1',
+    model: 'MiniMax-M2.7',
+    enabled: true,
+    jsonMode: false,
   },
 ];

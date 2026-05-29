@@ -35,22 +35,30 @@ const DEFAULT_STUCK_THRESHOLD = 3;
 // ── System prompts ────────────────────────────────────────────────────────
 
 const OBSERVE_SYSTEM = [
-  'You are an observation agent. Analyze the current state of the system.',
+  'You are an observation agent for testing an Electron application.',
+  'Your job is to analyze the current state of the TEST EXECUTION (not your own environment).',
+  '',
   'Return a JSON object with:',
-  '  - "summary": a concise human-readable description of what you see',
-  '  - "details": any structured data or metrics about the current state',
-  'Be precise and factual.',
+  '  - "summary": a concise description of the current test state',
+  '  - "details": any structured data about the test execution',
+  '',
+  'Important context:',
+  '- If no tool has been executed yet, report: "No actions taken yet. App needs to be launched."',
+  '- If a tool was executed, describe its result and the current app state.',
+  '- Focus on the Electron app being tested, NOT your own environment.',
+  '- Be precise and factual about what the test has accomplished so far.',
 ].join('\n');
 
 const PLAN_SYSTEM = [
-  'You are a planning agent. Based on the current observation, decide the next action.',
+  'You are a planning agent for testing an Electron application.',
+  'Based on the current observation, decide the NEXT action to take.',
+  '',
   'Return a JSON object with:',
   '  - "reasoning": explain why you chose this action',
   '  - "action": a human-readable description of the action',
   '  - "toolName": the name of the tool to invoke',
   '  - "toolArgs": an object with the arguments for the tool',
   '  - "expectedOutcome": what you expect to happen after executing this action',
-  'Choose the action that makes the most progress toward the goal.',
   '',
   'Available tools:',
   '  - electron_launch: Launch an Electron app. Args: { targetAppPath: string, debuggingPort?: number }',
@@ -63,30 +71,37 @@ const PLAN_SYSTEM = [
   '  - browser_type: Type text. Args: { ref: string, text: string }',
   '  - browser_navigate: Navigate to URL. Args: { url: string }',
   '',
-  '## Workflow',
+  '## CRITICAL: Workflow Order',
   '',
-  'Follow this sequence for testing an Electron app:',
-  '1. **Launch**: Use `electron_launch` with the target app path',
-  '2. **Observe**: Use `browser_snapshot` to see the current UI state',
-  '3. **Interact**: Use `browser_click`, `browser_type`, etc. to test features',
-  '4. **Verify**: Use `browser_snapshot` again to confirm the result',
-  '5. **Cleanup**: Use `electron_close` with the PID from step 1',
+  'You MUST follow this exact sequence:',
+  '1. FIRST: Use `electron_launch` to start the app (if not already launched)',
+  '2. THEN: Use `browser_snapshot` to see the UI',
+  '3. THEN: Use browser_* tools to interact with the UI',
+  '4. FINALLY: Use `electron_close` to clean up',
   '',
   'Rules:',
-  '- Always launch the app before using browser_* tools',
-  '- Always close the app when testing is complete',
-  '- Use electron_* tools for main process operations (IPC, dialogs)',
-  '- Use browser_* tools for UI interactions (click, type, navigate)',
-  '- If a tool call fails, check if the app is still running before retrying',
+  '- If the observation says "No actions taken yet" or "App needs to be launched", you MUST use electron_launch first',
+  '- NEVER use execute_main or browser_* tools before the app is launched',
+  '- Always use the targetAppPath from the task context for electron_launch',
+  '- If a tool fails, try launching the app again before giving up',
 ].join('\n');
 
 const VERIFY_SYSTEM = [
-  'You are a verification agent. Evaluate whether the last action achieved the expected outcome.',
+  'You are a verification agent for Electron app testing.',
+  'Evaluate whether the TEST GOAL has been fully achieved based on the execution results.',
+  '',
   'Return a JSON object with:',
-  '  - "verdict": one of "pass" (goal complete), "fail" (goal cannot be achieved),',
-  '             "stuck" (no progress being made), or "retry" (continue trying)',
-  '  - "reasoning": explain your verdict',
-  'Be decisive: use "retry" only when more progress is clearly possible.',
+  '  - "verdict": one of "pass" (goal fully achieved), "fail" (goal cannot be achieved),',
+  '             "stuck" (no progress being made), or "retry" (continue testing)',
+  '  - "reasoning": explain your verdict with specific evidence',
+  '',
+  'Rules for verdict:',
+  '  - "pass": ONLY when the goal has been FULLY achieved with evidence (e.g., UI verified, elements found)',
+  '  - "retry": when progress is being made but goal is not yet complete (e.g., app launched but UI not checked)',
+  '  - "fail": when the goal is impossible (e.g., app crashed, critical error)',
+  '  - "stuck": when no progress after multiple attempts',
+  '',
+  'Be strict: launching the app alone is NOT enough to pass. You must verify the actual goal.',
 ].join('\n');
 
 const REPORT_SYSTEM = [
@@ -271,7 +286,7 @@ export class AgentLoop {
         // ── 2. Plan ─────────────────────────────────────────────────
         this.logger.info(`Observation: ${observation.summary.substring(0, 100)}`);
         this.logger.info('Planning...');
-        const plan = await this.plan(observation);
+        const plan = await this.plan(observation, state);
         state.lastPlan = plan;
 
         this.session.addEntry(sessionId, {
@@ -296,7 +311,7 @@ export class AgentLoop {
         // ── 4. Verify ───────────────────────────────────────────────
         this.logger.info(`Execution result: success=${execution.success}, error=${execution.error ?? 'none'}`);
         this.logger.info('Verifying...');
-        const verdict = await this.verify(execution, plan);
+        const verdict = await this.verify(execution, plan, state);
 
         this.session.addEntry(sessionId, {
           role: 'assistant',
@@ -345,8 +360,10 @@ export class AgentLoop {
   async observe(state: AgentLoopState): Promise<Observation> {
     const contextParts: string[] = [];
 
+    contextParts.push(`Task: ${state.taskPrompt}`);
+
     if (state.lastPlan) {
-      contextParts.push(`Last action: ${state.lastPlan.action}`);
+      contextParts.push(`Last action: ${state.lastPlan.action} (tool: ${state.lastPlan.toolName})`);
     }
     if (state.lastExecution) {
       contextParts.push(
@@ -354,9 +371,9 @@ export class AgentLoop {
       );
     }
 
-    const context = contextParts.length > 0 ? `\nPrevious context:\n${contextParts.join('\n')}` : '';
+    const context = contextParts.length > 0 ? `\nContext:\n${contextParts.join('\n')}` : '';
 
-    const prompt = `Step ${state.stepCount + 1}. Observe the current state.${context}`;
+    const prompt = `Step ${state.stepCount + 1}. Observe the current state of the Electron app test execution.${context}`;
 
     const { text } = await this.llm.generateText({
       prompt,
@@ -378,9 +395,10 @@ export class AgentLoop {
   /**
    * Plan — generate the next action plan via the LLM.
    */
-  async plan(observation: Observation): Promise<Plan> {
+  async plan(observation: Observation, state: AgentLoopState): Promise<Plan> {
     const prompt = [
-      `Goal steps completed so far: included in session history.`,
+      `Task: ${state.taskPrompt}`,
+      `Current step: ${state.stepCount + 1}`,
       `Current observation: ${observation.summary}`,
       `Details: ${JSON.stringify(observation.details)}`,
       `Decide the next action to make progress toward the goal.`,
@@ -440,14 +458,21 @@ export class AgentLoop {
   /**
    * Verify — evaluate whether the last execution met the expected outcome.
    */
-  async verify(execution: ExecutionResult, plan: Plan): Promise<Verdict> {
+  async verify(execution: ExecutionResult, plan: Plan, state: AgentLoopState): Promise<Verdict> {
+    const toolsUsed = state.stepCount;
     const prompt = [
-      `Action: ${plan.action}`,
+      `Task goal: ${state.taskPrompt}`,
+      `Steps completed so far: ${toolsUsed}`,
+      ``,
+      `Last action: ${plan.action}`,
       `Expected outcome: ${plan.expectedOutcome}`,
       `Execution success: ${execution.success}`,
       `Execution result: ${JSON.stringify(execution.result)}`,
       execution.error ? `Error: ${execution.error}` : '',
-      `Evaluate whether the goal has been achieved.`,
+      ``,
+      `Evaluate whether the FULL TASK GOAL has been achieved.`,
+      `Remember: launching the app is only the first step. You must verify the actual goal requirements.`,
+      `If the goal asks to "check UI elements" or "verify content", you need browser_snapshot results.`,
     ]
       .filter(Boolean)
       .join('\n');

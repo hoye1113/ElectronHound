@@ -72,8 +72,9 @@ export async function runTest(
 
   const taskId = options.taskId ?? crypto.randomUUID();
 
-  // Run the agent loop
-  const result = await agentLoop.run(options.goal);
+  // Run the agent loop (include target app path in the goal for context)
+  const goalWithContext = `Target app path: ${options.targetAppPath}\nGoal: ${options.goal}`;
+  const result = await agentLoop.run(goalWithContext);
 
   // Read session entries and convert to StepRecords
   const session = sessionManager.getSession(result.sessionId);
