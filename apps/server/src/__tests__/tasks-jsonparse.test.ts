@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, afterAll } from 'vitest';
 import { buildServer } from '../server.js';
 import type { FastifyInstance } from 'fastify';
 import type Database from 'better-sqlite3';
@@ -16,7 +16,7 @@ describe('Tasks Routes - JSON.parse Error Handling', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -24,7 +24,7 @@ describe('Tasks Routes - JSON.parse Error Handling', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try {
@@ -32,6 +32,11 @@ describe('Tasks Routes - JSON.parse Error Handling', () => {
     } catch {
       /* ignore */
     }
+  });
+
+  beforeEach(() => {
+    db.prepare('DELETE FROM tasks').run();
+    db.prepare('DELETE FROM steps').run();
   });
 
   it('GET /api/tasks/:id handles corrupted result_summary JSON gracefully', async () => {

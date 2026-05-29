@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, afterAll } from 'vitest';
 import { buildServer } from '../server.js';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -30,7 +30,7 @@ describe('Report Template Routes', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -38,10 +38,20 @@ describe('Report Template Routes', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  function resetDb() {
+    db.prepare('DELETE FROM steps').run();
+    db.prepare('DELETE FROM tasks').run();
+    db.prepare('DELETE FROM report_templates WHERE id != ?').run(DEFAULT_TEMPLATE_ID);
+  }
+
+  beforeEach(() => {
+    resetDb();
   });
 
   describe('GET /api/report-templates', () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import type Database from 'better-sqlite3';
 import { tmpdir } from 'node:os';
@@ -53,11 +53,7 @@ describe('Providers Routes', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
-    // Reset mock state
-    mockProviders.providers = [];
-    mockProviders.activeId = '';
-
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -65,7 +61,7 @@ describe('Providers Routes', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try {
@@ -73,6 +69,12 @@ describe('Providers Routes', () => {
     } catch {
       /* ignore */
     }
+  });
+
+  beforeEach(() => {
+    // Reset mock state
+    mockProviders.providers = [];
+    mockProviders.activeId = '';
   });
 
   it('GET /api/providers returns empty list', async () => {
