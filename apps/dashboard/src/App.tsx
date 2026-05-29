@@ -12,6 +12,7 @@ const SettingsPage = React.lazy(() => import('./pages/Settings'));
 const Templates = React.lazy(() => import('./pages/Templates'));
 const SystemHealth = React.lazy(() => import('./pages/SystemHealth'));
 const BatchList = React.lazy(() => import('./pages/BatchList'));
+const CompareView = React.lazy(() => import('./pages/CompareView'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/templates" element={<Templates />} />
               <Route path="/health" element={<SystemHealth />} />
+              <Route path="/compare" element={<CompareView />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

@@ -245,6 +245,21 @@ export const api = {
       return fetchJson(`${API_BASE}/api/tasks/batches?${query}`);
     },
   },
+  compare: {
+    run(taskIds: [string, string]) {
+      return fetchJson(`${API_BASE}/api/tasks/compare`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskIds }),
+      });
+    },
+  },
+  trends: {
+    get(days?: number) {
+      const query = days ? `?days=${days}` : '';
+      return fetchJson(`${API_BASE}/api/tasks/trends${query}`);
+    },
+  },
   fewShot: {
     list(params?: { search?: string; domain?: string }): Promise<{ data: FewShotExample[] }> {
       const query = new URLSearchParams();
