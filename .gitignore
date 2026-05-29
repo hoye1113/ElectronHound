@@ -26,6 +26,7 @@ Thumbs.db
 coverage/
 data/reports/
 packages/*/data/
+benchmarks/current.json
 
 # TypeScript compilation output
 *.js
