@@ -267,6 +267,32 @@
     "status_aborted": "已中止",
     "loadError": "加载报告失败"
   },
+  "auditTree": {
+    "title": "审计树",
+    "loading": "加载审计树...",
+    "loadError": "加载审计数据失败",
+    "noData": "暂无审计数据"
+  },
+  "auditReport": {
+    "verdict": {
+      "pass": "通过",
+      "info": "信息",
+      "warn": "警告",
+      "fail": "失败"
+    },
+    "noData": "暂无审计数据",
+    "noDataHint": "任务完成后将显示审计数据",
+    "duration": "耗时：{{ms}}ms",
+    "completedAt": "完成于 {{time}}",
+    "role": {
+      "test-planner": "测试规划师",
+      "execution-analyst": "执行分析师",
+      "security-reviewer": "安全审查员",
+      "report-synthesizer": "报告综合器"
+    },
+    "findingsLabel": "{{count}} 个发现",
+    "recommendationsLabel": "{{count}} 个建议"
+  },
   "batch": {
     "title": "批量测试",
     "newBatch": "新建批量",

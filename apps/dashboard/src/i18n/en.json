@@ -267,6 +267,32 @@
     "status_aborted": "Aborted",
     "loadError": "Failed to load report"
   },
+  "auditTree": {
+    "title": "Audit Tree",
+    "loading": "Loading audit tree...",
+    "loadError": "Failed to load audit data",
+    "noData": "No audit data available"
+  },
+  "auditReport": {
+    "verdict": {
+      "pass": "Pass",
+      "info": "Info",
+      "warn": "Warning",
+      "fail": "Fail"
+    },
+    "noData": "No audit data",
+    "noDataHint": "Audit data will appear after task completion",
+    "duration": "Duration: {{ms}}ms",
+    "completedAt": "Completed at {{time}}",
+    "role": {
+      "test-planner": "Test Planner",
+      "execution-analyst": "Execution Analyst",
+      "security-reviewer": "Security Reviewer",
+      "report-synthesizer": "Report Synthesizer"
+    },
+    "findingsLabel": "{{count}} finding(s)",
+    "recommendationsLabel": "{{count}} recommendation(s)"
+  },
   "batch": {
     "title": "Batch Testing",
     "newBatch": "New Batch",
