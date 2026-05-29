@@ -44,7 +44,7 @@
     "changeset": "changeset",
     "version": "changeset version",
     "release": "pnpm build && pnpm test && changeset publish",
-    "bench": "vitest bench --run",
+    "bench": "vitest bench --run --config vitest.bench.config.ts --outputJson benchmarks/current.json",
     "bench:update": "node scripts/update-baseline.js",
     "bench:check": "node scripts/check-benchmark.js"
   },

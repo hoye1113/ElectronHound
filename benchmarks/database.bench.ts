@@ -8,6 +8,14 @@ beforeAll(() => {
   db = new Database(':memory:');
   runMigrations(db);
 
+  // Seed batches first (referenced by tasks via foreign key)
+  const insertBatch = db.prepare(
+    `INSERT INTO batches (id, name, status, total_tasks, created_at, updated_at) VALUES (?, ?, 'completed', 10, datetime('now'), datetime('now'))`,
+  );
+  for (let i = 0; i < 5; i++) {
+    insertBatch.run(`batch-${i}`, `Batch ${i}`);
+  }
+
   // Seed 1000 tasks with varied statuses and batch IDs
   const insertTask = db.prepare(
     `INSERT INTO tasks (id, goal, target_app_path, llm_model, status, step_count, created_at, updated_at, batch_id)

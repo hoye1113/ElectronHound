@@ -9,7 +9,7 @@ beforeAll(async () => {
   server = built.server;
   db = built.db;
   const insertTask = db.prepare(
-    'INSERT INTO tasks (id, goal, target_app_path, llm_model, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, datetime("now"), datetime("now"))',
+    'INSERT INTO tasks (id, goal, target_app_path, llm_model, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, datetime(\'now\'), datetime(\'now\'))',
   );
   for (let i = 0; i < 100; i++) {
     insertTask.run(

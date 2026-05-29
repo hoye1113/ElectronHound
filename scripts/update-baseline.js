@@ -41,7 +41,7 @@ function main() {
   console.log('Running benchmarks...');
 
   try {
-    execSync('npx vitest bench --run', {
+    execSync('npx vitest bench --run --config vitest.bench.config.ts --outputJson benchmarks/current.json', {
       cwd: resolve(__dirname, '..'),
       stdio: 'inherit',
     });
