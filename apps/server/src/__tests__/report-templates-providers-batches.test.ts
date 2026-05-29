@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { buildServer } from '../server.js';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -115,6 +115,41 @@ function insertReportTemplate(
   return id;
 }
 
+/** Reset DB to seeded state between tests (shared server optimization). */
+function resetDb(db: Database.Database) {
+  db.prepare('DELETE FROM tasks').run();
+  db.prepare('DELETE FROM batches').run();
+  // Delete all non-seeded templates
+  db.prepare("DELETE FROM report_templates WHERE id != '00000000-0000-0000-0000-000000000001'").run();
+  // Re-seed default template if it was deleted by a test
+  const existing = db.prepare("SELECT id FROM report_templates WHERE id = '00000000-0000-0000-0000-000000000001'").get();
+  if (!existing) {
+    const now = new Date().toISOString();
+    db.prepare(
+      `INSERT INTO report_templates (id, name, description, sections, styling, is_default, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      '00000000-0000-0000-0000-000000000001',
+      'Default',
+      'Default report template',
+      JSON.stringify([{ id: 'section-summary', type: 'summary', title: 'Summary', enabled: true, order: 1 }]),
+      JSON.stringify({ theme: 'light', primaryColor: '#3b82f6' }),
+      1,
+      now,
+      now,
+    );
+  } else {
+    // Reset seeded default to original state in case tests modified it
+    db.prepare("UPDATE report_templates SET is_default = 1, name = 'Default' WHERE id = '00000000-0000-0000-0000-000000000001'").run();
+  }
+  // Reset mock providers config to default
+  mockProvidersConfig = {
+    version: 1,
+    providers: [...mockProviders],
+    activeId: 'openai-default',
+  };
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // Report Templates
 // ═══════════════════════════════════════════════════════════════════
@@ -124,7 +159,7 @@ describe('Route: GET /api/report-templates', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -132,11 +167,13 @@ describe('Route: GET /api/report-templates', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('returns the seeded default template on fresh database', async () => {
     const res = await server.inject({ method: 'GET', url: '/api/report-templates' });
@@ -179,7 +216,7 @@ describe('Route: GET /api/report-templates/:id', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -187,11 +224,13 @@ describe('Route: GET /api/report-templates/:id', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('returns the default template by id', async () => {
     const defaultId = '00000000-0000-0000-0000-000000000001';
@@ -237,7 +276,7 @@ describe('Route: POST /api/report-templates', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -245,11 +284,13 @@ describe('Route: POST /api/report-templates', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('creates a template and returns 201', async () => {
     const res = await server.inject({
@@ -414,7 +455,7 @@ describe('Route: PUT /api/report-templates/:id', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -422,11 +463,13 @@ describe('Route: PUT /api/report-templates/:id', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('updates template name', async () => {
     const id = insertReportTemplate(db);
@@ -574,7 +617,7 @@ describe('Route: DELETE /api/report-templates/:id', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -582,11 +625,13 @@ describe('Route: DELETE /api/report-templates/:id', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('deletes a non-default template and returns 204', async () => {
     const id = insertReportTemplate(db);
@@ -645,7 +690,7 @@ describe('Report Templates: Full CRUD integration', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -653,11 +698,13 @@ describe('Report Templates: Full CRUD integration', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('create -> get -> update -> delete lifecycle', async () => {
     // Create
@@ -746,13 +793,7 @@ describe('Route: GET /api/providers', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
-    // Reset mock state
-    mockProvidersConfig = {
-      version: 1,
-      providers: [...mockProviders],
-      activeId: 'openai-default',
-    };
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -760,11 +801,13 @@ describe('Route: GET /api/providers', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('returns providers config', async () => {
     const res = await server.inject({ method: 'GET', url: '/api/providers' });
@@ -794,12 +837,7 @@ describe('Route: POST /api/providers', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
-    mockProvidersConfig = {
-      version: 1,
-      providers: [...mockProviders],
-      activeId: 'openai-default',
-    };
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -807,11 +845,13 @@ describe('Route: POST /api/providers', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   const validProvider = {
     id: 'custom-provider',
@@ -919,12 +959,7 @@ describe('Route: PUT /api/providers/:id', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
-    mockProvidersConfig = {
-      version: 1,
-      providers: [...mockProviders],
-      activeId: 'openai-default',
-    };
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -932,7 +967,7 @@ describe('Route: PUT /api/providers/:id', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
@@ -1028,12 +1063,7 @@ describe('Route: DELETE /api/providers/:id', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
-    mockProvidersConfig = {
-      version: 1,
-      providers: [...mockProviders],
-      activeId: 'openai-default',
-    };
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -1041,11 +1071,13 @@ describe('Route: DELETE /api/providers/:id', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('deletes a provider and returns config', async () => {
     const res = await server.inject({ method: 'DELETE', url: '/api/providers/openai-default' });
@@ -1068,12 +1100,7 @@ describe('Route: POST /api/providers/:id/activate', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
-    mockProvidersConfig = {
-      version: 1,
-      providers: [...mockProviders],
-      activeId: 'openai-default',
-    };
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -1081,11 +1108,13 @@ describe('Route: POST /api/providers/:id/activate', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('sets a provider as active', async () => {
     // Add a second provider first
@@ -1121,12 +1150,7 @@ describe('Route: POST /api/providers/:id/test', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
-    mockProvidersConfig = {
-      version: 1,
-      providers: [...mockProviders],
-      activeId: 'openai-default',
-    };
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -1134,11 +1158,13 @@ describe('Route: POST /api/providers/:id/test', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('returns success for a testable provider', async () => {
     const res = await server.inject({ method: 'POST', url: '/api/providers/openai-default/test' });
@@ -1161,12 +1187,7 @@ describe('Providers: Full CRUD integration', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
-    mockProvidersConfig = {
-      version: 1,
-      providers: [...mockProviders],
-      activeId: 'openai-default',
-    };
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -1174,11 +1195,13 @@ describe('Providers: Full CRUD integration', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('create -> list -> update -> delete lifecycle', async () => {
     // Create
@@ -1232,12 +1255,7 @@ describe('Route: POST /api/tasks/batch', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
-    mockProvidersConfig = {
-      version: 1,
-      providers: [...mockProviders],
-      activeId: 'openai-default',
-    };
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -1245,11 +1263,13 @@ describe('Route: POST /api/tasks/batch', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   const validBatch = {
     name: 'Test Batch',
@@ -1509,12 +1529,7 @@ describe('Route: GET /api/tasks/batch/:batchId', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
-    mockProvidersConfig = {
-      version: 1,
-      providers: [...mockProviders],
-      activeId: 'openai-default',
-    };
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -1522,11 +1537,13 @@ describe('Route: GET /api/tasks/batch/:batchId', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('returns batch status with tasks', async () => {
     // Create a batch first
@@ -1617,12 +1634,7 @@ describe('Route: POST /api/tasks/batch/:batchId/cancel', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
-    mockProvidersConfig = {
-      version: 1,
-      providers: [...mockProviders],
-      activeId: 'openai-default',
-    };
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -1630,11 +1642,13 @@ describe('Route: POST /api/tasks/batch/:batchId/cancel', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('cancels a running batch', async () => {
     // Create batch
@@ -1744,12 +1758,7 @@ describe('Batches: Full lifecycle integration', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
-    mockProvidersConfig = {
-      version: 1,
-      providers: [...mockProviders],
-      activeId: 'openai-default',
-    };
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -1757,11 +1766,13 @@ describe('Batches: Full lifecycle integration', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('create -> get status -> cancel lifecycle', async () => {
     // Create
