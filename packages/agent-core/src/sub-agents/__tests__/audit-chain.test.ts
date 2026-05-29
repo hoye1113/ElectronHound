@@ -352,7 +352,7 @@ describe('sub-agent audit chain', () => {
 
     // ── Error handling: test-planner failure (L57-69) ─────────────────────────
 
-    it('returns partial result with 4 failure placeholders when test-planner throws', async () => {
+    it('returns partial result when test-planner throws (parallel: others still run)', async () => {
       const errorMsg = 'planner exploded';
       mockTestPlannerRun.mockRejectedValueOnce(new Error(errorMsg));
 
@@ -372,25 +372,22 @@ describe('sub-agent audit chain', () => {
       expectFailurePlaceholder(result.testPlanner, 'test-planner');
       expect(result.testPlanner.auditReport.summary).toContain(errorMsg);
 
-      // downstream roles: skip placeholders
-      expectFailurePlaceholder(result.executionAnalyst, 'execution-analyst');
-      expect(result.executionAnalyst.auditReport.summary).toContain('Skipped: test-planner failed');
+      // Parallel execution: execution-analyst and security-reviewer still run
+      expectSubAgentOutput(result.executionAnalyst, 'execution-analyst');
+      expectSubAgentOutput(result.securityReviewer, 'security-reviewer');
 
-      expectFailurePlaceholder(result.securityReviewer, 'security-reviewer');
-      expect(result.securityReviewer.auditReport.summary).toContain('Skipped: test-planner failed');
+      // report-synthesizer runs with the 3 upstream outputs (one is a failure placeholder)
+      expectSubAgentOutput(result.reportSynthesizer, 'report-synthesizer');
 
-      expectFailurePlaceholder(result.reportSynthesizer, 'report-synthesizer');
-      expect(result.reportSynthesizer.auditReport.summary).toContain('Skipped: test-planner failed');
-
-      // Downstream agents should NOT have been called.
-      expect(mockExecutionAnalystRun).not.toHaveBeenCalled();
-      expect(mockSecurityReviewerRun).not.toHaveBeenCalled();
-      expect(mockReportSynthesizerRun).not.toHaveBeenCalled();
+      // Parallel agents should have been called
+      expect(mockExecutionAnalystRun).toHaveBeenCalled();
+      expect(mockSecurityReviewerRun).toHaveBeenCalled();
+      expect(mockReportSynthesizerRun).toHaveBeenCalled();
     });
 
     // ── Error handling: execution-analyst failure (L80-93) ────────────────────
 
-    it('returns partial result when execution-analyst throws', async () => {
+    it('returns partial result when execution-analyst throws (parallel: others still run)', async () => {
       const errorMsg = 'analyst crashed';
       mockExecutionAnalystRun.mockRejectedValueOnce(new Error(errorMsg));
 
@@ -405,24 +402,20 @@ describe('sub-agent audit chain', () => {
       expectFailurePlaceholder(result.executionAnalyst, 'execution-analyst');
       expect(result.executionAnalyst.auditReport.summary).toContain(errorMsg);
 
-      // downstream: skip placeholders
-      expectFailurePlaceholder(result.securityReviewer, 'security-reviewer');
-      expect(result.securityReviewer.auditReport.summary).toContain(
-        'Skipped: execution-analyst failed',
-      );
-      expectFailurePlaceholder(result.reportSynthesizer, 'report-synthesizer');
-      expect(result.reportSynthesizer.auditReport.summary).toContain(
-        'Skipped: execution-analyst failed',
-      );
+      // Parallel execution: security-reviewer still runs
+      expectSubAgentOutput(result.securityReviewer, 'security-reviewer');
 
-      // security-reviewer and report-synthesizer should NOT have been called.
-      expect(mockSecurityReviewerRun).not.toHaveBeenCalled();
-      expect(mockReportSynthesizerRun).not.toHaveBeenCalled();
+      // report-synthesizer runs with the 3 upstream outputs (one is a failure placeholder)
+      expectSubAgentOutput(result.reportSynthesizer, 'report-synthesizer');
+
+      // Parallel agents should have been called
+      expect(mockSecurityReviewerRun).toHaveBeenCalled();
+      expect(mockReportSynthesizerRun).toHaveBeenCalled();
     });
 
     // ── Error handling: security-reviewer failure (L109-120) ──────────────────
 
-    it('returns partial result when security-reviewer throws', async () => {
+    it('returns partial result when security-reviewer throws (parallel: synthesizer still runs)', async () => {
       const errorMsg = 'security scan panicked';
       mockSecurityReviewerRun.mockRejectedValueOnce(new Error(errorMsg));
 
@@ -438,14 +431,11 @@ describe('sub-agent audit chain', () => {
       expectFailurePlaceholder(result.securityReviewer, 'security-reviewer');
       expect(result.securityReviewer.auditReport.summary).toContain(errorMsg);
 
-      // report-synthesizer: skip placeholder
-      expectFailurePlaceholder(result.reportSynthesizer, 'report-synthesizer');
-      expect(result.reportSynthesizer.auditReport.summary).toContain(
-        'Skipped: security-reviewer failed',
-      );
+      // report-synthesizer still runs with the 3 upstream outputs (one is a failure placeholder)
+      expectSubAgentOutput(result.reportSynthesizer, 'report-synthesizer');
 
-      // report-synthesizer should NOT have been called.
-      expect(mockReportSynthesizerRun).not.toHaveBeenCalled();
+      // report-synthesizer should have been called
+      expect(mockReportSynthesizerRun).toHaveBeenCalled();
     });
 
     // ── Error handling: report-synthesizer failure (L136-147) ─────────────────
@@ -499,39 +489,40 @@ describe('sub-agent audit chain', () => {
       expectSubAgentOutput(result.executionAnalyst, 'execution-analyst');
       expectFailurePlaceholder(result.securityReviewer, 'security-reviewer');
       expect(result.securityReviewer.auditReport.summary).toContain('42');
-      expectFailurePlaceholder(result.reportSynthesizer, 'report-synthesizer');
+      // report-synthesizer still runs with the 3 upstream outputs
+      expectSubAgentOutput(result.reportSynthesizer, 'report-synthesizer');
     });
 
     // ── Edge cases ───────────────────────────────────────────────────────────
 
-    it('passes context.testPlannerOutput to execution-analyst', async () => {
+    it('passes original input context to execution-analyst (parallel: no upstream output)', async () => {
       let capturedInput: SubAgentInput | undefined;
       mockExecutionAnalystRun.mockImplementation(async (input: SubAgentInput) => {
         capturedInput = input;
         return makeOutput('execution-analyst');
       });
 
-      await runAuditChain(makeInput({ goal: 'context check' }));
+      await runAuditChain(makeInput({ goal: 'context check', context: { customKey: 'value' } }));
 
       expect(capturedInput).toBeDefined();
-      expect(capturedInput!.context).toHaveProperty('testPlannerOutput');
-      expect((capturedInput!.context['testPlannerOutput'] as SubAgentOutput).role).toBe(
-        'test-planner',
-      );
+      // In parallel mode, execution-analyst receives the original input context
+      expect(capturedInput!.context).toHaveProperty('customKey');
+      expect(capturedInput!.context['customKey']).toBe('value');
     });
 
-    it('passes planner + analyst outputs to security-reviewer', async () => {
+    it('passes original input context to security-reviewer (parallel: no upstream output)', async () => {
       let capturedInput: SubAgentInput | undefined;
       mockSecurityReviewerRun.mockImplementation(async (input: SubAgentInput) => {
         capturedInput = input;
         return makeOutput('security-reviewer');
       });
 
-      await runAuditChain(makeInput());
+      await runAuditChain(makeInput({ context: { myKey: 'myVal' } }));
 
       expect(capturedInput).toBeDefined();
-      expect(capturedInput!.context).toHaveProperty('testPlannerOutput');
-      expect(capturedInput!.context).toHaveProperty('executionAnalystOutput');
+      // In parallel mode, security-reviewer receives the original input context
+      expect(capturedInput!.context).toHaveProperty('myKey');
+      expect(capturedInput!.context['myKey']).toBe('myVal');
     });
 
     it('passes all three upstream outputs to report-synthesizer', async () => {
