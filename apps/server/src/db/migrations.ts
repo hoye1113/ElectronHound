@@ -78,6 +78,13 @@ CREATE TABLE IF NOT EXISTS templates (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS agent_checkpoints (
+  session_id TEXT PRIMARY KEY,
+  checkpoint TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS few_shot_examples (
   id TEXT PRIMARY KEY,
   goal TEXT NOT NULL,
