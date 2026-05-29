@@ -653,7 +653,7 @@ describe('Config Wizard', () => {
     beforeEach(async () => {
       const { createInterface } = await import('node:readline');
       mockReadline = createMockReadline([]);
-      vi.mocked(createInterface).mockReturnValue(mockReadline as ReturnType<typeof createInterface>);
+      vi.mocked(createInterface).mockReturnValue(mockReadline as unknown as ReturnType<typeof createInterface>);
     });
 
     it('should handle full interactive flow selecting provider 1', async () => {
@@ -937,7 +937,7 @@ describe('Config Wizard', () => {
       realWrite(configPath, '{"version":1,"providers":[],"activeId":""}');
 
       const { existsSync } = await import('node:fs');
-      vi.mocked(existsSync).mockImplementation((p: string) => {
+      vi.mocked(existsSync).mockImplementation((p: import('node:fs').PathLike) => {
         if (p === configPath) return true;
         return realExists(p);
       });
@@ -973,7 +973,7 @@ describe('Config Wizard', () => {
       realWrite(configPath, '{"version":1,"providers":[],"activeId":""}');
 
       const { existsSync } = await import('node:fs');
-      vi.mocked(existsSync).mockImplementation((p: string) => {
+      vi.mocked(existsSync).mockImplementation((p: import('node:fs').PathLike) => {
         if (p === configPath) return true;
         return realExists(p);
       });
@@ -1071,7 +1071,7 @@ describe('Config Wizard', () => {
 
       const { createInterface } = await import('node:readline');
       const mockRl = createMockReadline(['1', 'sk-key']);
-      vi.mocked(createInterface).mockReturnValue(mockRl as ReturnType<typeof createInterface>);
+      vi.mocked(createInterface).mockReturnValue(mockRl as unknown as ReturnType<typeof createInterface>);
 
       try {
         const wizard = new ConfigWizard({
@@ -1096,7 +1096,7 @@ describe('Config Wizard', () => {
 
       const { createInterface } = await import('node:readline');
       const mockRl = createMockReadline(['1', '']);  // empty key = failure
-      vi.mocked(createInterface).mockReturnValue(mockRl as ReturnType<typeof createInterface>);
+      vi.mocked(createInterface).mockReturnValue(mockRl as unknown as ReturnType<typeof createInterface>);
 
       try {
         const wizard = new ConfigWizard({

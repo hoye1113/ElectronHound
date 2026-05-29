@@ -6,12 +6,12 @@ import { join } from 'node:path';
 import { mkdtempSync, rmSync } from 'node:fs';
 
 // Mock sseHub to control addClient behavior
-const mockAddClient = vi.fn(() => true);
-const mockBroadcast = vi.fn();
+const mockAddClient = vi.fn((_taskId?: string, _reply?: unknown) => true);
+const mockBroadcast = vi.fn((_taskId?: string, _event?: unknown) => {});
 vi.mock('../streams/sseHub.js', () => ({
   sseHub: {
-    addClient: (...args: unknown[]) => mockAddClient(...args),
-    broadcast: (...args: unknown[]) => mockBroadcast(...args),
+    addClient: (taskId: string, reply: unknown) => mockAddClient(taskId, reply),
+    broadcast: (taskId: string, event: unknown) => mockBroadcast(taskId, event),
   },
 }));
 

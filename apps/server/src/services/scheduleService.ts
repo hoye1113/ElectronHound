@@ -121,7 +121,7 @@ export class ScheduleService {
       this.timers.set(schedule.id, timer);
       this.logger.debug(`Scheduled next run for ${schedule.name} at ${nextRunDate.toISOString()}`);
     } catch (err: unknown) {
-      this.logger.error(`Failed to schedule ${schedule.name} (${schedule.id})`, err);
+      this.logger.error(`Failed to schedule ${schedule.name} (${schedule.id})`, err instanceof Error ? err : undefined);
     }
   }
 
@@ -133,7 +133,7 @@ export class ScheduleService {
   compareResults(scheduleId: string, currentTaskId: string): ComparisonResult | null {
     // Get current task result
     const currentTask = this.db
-      .prepare('SELECT status, step_count FROM tasks WHERE id = ?')
+      .prepare('SELECT status, step_count as stepCount FROM tasks WHERE id = ?')
       .get(currentTaskId) as TaskResult | undefined;
 
     if (!currentTask) return null;
@@ -151,7 +151,7 @@ export class ScheduleService {
 
     // Get previous task result
     const previousTask = this.db
-      .prepare('SELECT status, step_count FROM tasks WHERE id = ?')
+      .prepare('SELECT status, step_count as stepCount FROM tasks WHERE id = ?')
       .get(previousRun.task_id) as TaskResult | undefined;
 
     if (!previousTask) return null;
@@ -170,13 +170,13 @@ export class ScheduleService {
     const regressed = currentStatusVal > previousStatusVal;
     const improved = currentStatusVal < previousStatusVal;
 
-    const stepDiff = currentTask.step_count - previousTask.step_count;
-    const stepThreshold = Math.max(5, Math.floor(previousTask.step_count * 0.5));
+    const stepDiff = currentTask.stepCount - previousTask.stepCount;
+    const stepThreshold = Math.max(5, Math.floor(previousTask.stepCount * 0.5));
     const stepRegressed = stepDiff > stepThreshold;
 
     const details = [
       `Status: ${previousTask.status} → ${currentTask.status}`,
-      `Steps: ${previousTask.step_count} → ${currentTask.step_count} (${stepDiff >= 0 ? '+' : ''}${stepDiff})`,
+      `Steps: ${previousTask.stepCount} → ${currentTask.stepCount} (${stepDiff >= 0 ? '+' : ''}${stepDiff})`,
     ].join(', ');
 
     return {
@@ -184,8 +184,8 @@ export class ScheduleService {
       regressed: regressed || stepRegressed,
       currentStatus: currentTask.status,
       previousStatus: previousTask.status,
-      currentStepCount: currentTask.step_count,
-      previousStepCount: previousTask.step_count,
+      currentStepCount: currentTask.stepCount,
+      previousStepCount: previousTask.stepCount,
       details,
     };
   }
@@ -271,7 +271,7 @@ export class ScheduleService {
       // Schedule next run
       this.scheduleNext(schedule);
     } catch (err: unknown) {
-      this.logger.error(`Failed to execute schedule ${schedule.name}`, err);
+      this.logger.error(`Failed to execute schedule ${schedule.name}`, err instanceof Error ? err : undefined);
 
       // Notify on failure
       await this.notificationService.send({
