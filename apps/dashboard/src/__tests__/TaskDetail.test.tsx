@@ -18,6 +18,9 @@ vi.mock('react-router-dom', async (importOriginal) => {
 // Mock api module
 const mockTasksGet = vi.fn();
 const mockReportsGet = vi.fn();
+const mockGetExportUrl = vi.fn(
+  (id: string, format: string) => `http://localhost:3000/api/tasks/${id}/export/${format}`,
+);
 vi.mock('../lib/api', () => ({
   api: {
     tasks: {
@@ -30,6 +33,7 @@ vi.mock('../lib/api', () => ({
   },
   getScreenshotUrl: (taskId: string, stepIndex: number) =>
     `http://localhost:3000/api/tasks/${taskId}/steps/${stepIndex}/screenshot`,
+  getExportUrl: (...args: unknown[]) => mockGetExportUrl(...args),
 }));
 
 // Mock ScreenshotGallery
@@ -368,5 +372,280 @@ describe('TaskDetail', () => {
     await waitFor(() => {
       expect(screen.getByText(/click/)).toBeInTheDocument();
     });
+  });
+
+  // --- formatTimeRange tests ---
+
+  it('displays duration in seconds when < 60s', async () => {
+    mockTasksGet.mockResolvedValue({
+      task: makeTask({
+        createdAt: '2026-05-28T10:00:00Z',
+        updatedAt: '2026-05-28T10:00:15Z',
+      }),
+      steps: [],
+    });
+
+    render(<TaskDetail />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Test the login flow')).toBeInTheDocument();
+    });
+    expect(screen.getByText('15s')).toBeInTheDocument();
+  });
+
+  it('displays duration in minutes when < 60m', async () => {
+    mockTasksGet.mockResolvedValue({
+      task: makeTask({
+        createdAt: '2026-05-28T10:00:00Z',
+        updatedAt: '2026-05-28T10:05:00Z',
+      }),
+      steps: [],
+    });
+
+    render(<TaskDetail />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Test the login flow')).toBeInTheDocument();
+    });
+    expect(screen.getByText('5m')).toBeInTheDocument();
+  });
+
+  it('displays duration in hours and minutes when >= 60m', async () => {
+    mockTasksGet.mockResolvedValue({
+      task: makeTask({
+        createdAt: '2026-05-28T10:00:00Z',
+        updatedAt: '2026-05-28T12:30:00Z',
+      }),
+      steps: [],
+    });
+
+    render(<TaskDetail />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Test the login flow')).toBeInTheDocument();
+    });
+    expect(screen.getByText('2h 30m')).toBeInTheDocument();
+  });
+
+  // --- Status badge: aborted ---
+
+  it('shows task status badge for aborted task', async () => {
+    mockTasksGet.mockResolvedValue({
+      task: makeTask({ status: 'aborted' }),
+      steps: [],
+    });
+
+    render(<TaskDetail />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Aborted')).toBeInTheDocument();
+    });
+  });
+
+  // --- Export dropdown ---
+
+  it('opens export dropdown on click', async () => {
+    mockTasksGet.mockResolvedValue({
+      task: makeTask(),
+      steps: [],
+    });
+
+    render(<TaskDetail />);
+
+    let exportBtn!: HTMLElement;
+    await waitFor(() => {
+      exportBtn = screen.getByRole('button', { name: 'Export' });
+      expect(exportBtn).toBeInTheDocument();
+    });
+
+    fireEvent.click(exportBtn);
+
+    expect(screen.getByText('Export JSON')).toBeInTheDocument();
+    expect(screen.getByText('Export CSV')).toBeInTheDocument();
+    expect(screen.getByText('Export HTML')).toBeInTheDocument();
+  });
+
+  it('opens correct export URL for JSON', async () => {
+    const windowOpenSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+    mockTasksGet.mockResolvedValue({
+      task: makeTask(),
+      steps: [],
+    });
+
+    render(<TaskDetail />);
+
+    let exportBtn!: HTMLElement;
+    await waitFor(() => {
+      exportBtn = screen.getByRole('button', { name: 'Export' });
+    });
+
+    fireEvent.click(exportBtn);
+    fireEvent.click(screen.getByText('Export JSON'));
+
+    expect(mockGetExportUrl).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440000', 'json');
+    expect(windowOpenSpy).toHaveBeenCalledWith(
+      'http://localhost:3000/api/tasks/550e8400-e29b-41d4-a716-446655440000/export/json',
+    );
+    windowOpenSpy.mockRestore();
+  });
+
+  it('opens correct export URL for CSV', async () => {
+    const windowOpenSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+    mockTasksGet.mockResolvedValue({
+      task: makeTask(),
+      steps: [],
+    });
+
+    render(<TaskDetail />);
+
+    let exportBtn!: HTMLElement;
+    await waitFor(() => {
+      exportBtn = screen.getByRole('button', { name: 'Export' });
+    });
+
+    fireEvent.click(exportBtn);
+    fireEvent.click(screen.getByText('Export CSV'));
+
+    expect(mockGetExportUrl).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440000', 'csv');
+    expect(windowOpenSpy).toHaveBeenCalledWith(
+      'http://localhost:3000/api/tasks/550e8400-e29b-41d4-a716-446655440000/export/csv',
+    );
+    windowOpenSpy.mockRestore();
+  });
+
+  it('opens correct export URL for HTML', async () => {
+    const windowOpenSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+    mockTasksGet.mockResolvedValue({
+      task: makeTask(),
+      steps: [],
+    });
+
+    render(<TaskDetail />);
+
+    let exportBtn!: HTMLElement;
+    await waitFor(() => {
+      exportBtn = screen.getByRole('button', { name: 'Export' });
+    });
+
+    fireEvent.click(exportBtn);
+    fireEvent.click(screen.getByText('Export HTML'));
+
+    expect(mockGetExportUrl).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440000', 'html');
+    expect(windowOpenSpy).toHaveBeenCalledWith(
+      'http://localhost:3000/api/tasks/550e8400-e29b-41d4-a716-446655440000/export/html',
+    );
+    windowOpenSpy.mockRestore();
+  });
+
+  it('closes export dropdown after selecting an option', async () => {
+    vi.spyOn(window, 'open').mockReturnValue(null);
+    mockTasksGet.mockResolvedValue({
+      task: makeTask(),
+      steps: [],
+    });
+
+    render(<TaskDetail />);
+
+    let exportBtn!: HTMLElement;
+    await waitFor(() => {
+      exportBtn = screen.getByRole('button', { name: 'Export' });
+    });
+
+    fireEvent.click(exportBtn);
+    expect(screen.getByText('Export JSON')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Export JSON'));
+    expect(screen.queryByText('Export JSON')).not.toBeInTheDocument();
+  });
+
+  it('closes export dropdown on outside click', async () => {
+    mockTasksGet.mockResolvedValue({
+      task: makeTask(),
+      steps: [],
+    });
+
+    render(<TaskDetail />);
+
+    let exportBtn!: HTMLElement;
+    await waitFor(() => {
+      exportBtn = screen.getByRole('button', { name: 'Export' });
+    });
+
+    fireEvent.click(exportBtn);
+    expect(screen.getByText('Export JSON')).toBeInTheDocument();
+
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByText('Export JSON')).not.toBeInTheDocument();
+  });
+
+  // --- Download report click handlers ---
+
+  it('downloads JSON report on button click', async () => {
+    const mockReport = { task: makeTask(), steps: [] };
+    mockReportsGet.mockResolvedValue(mockReport);
+    const clickSpy = vi.fn();
+    const createElement = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      const el = createElement(tag);
+      if (tag === 'a') {
+        el.click = clickSpy;
+      }
+      return el;
+    });
+    // URL.createObjectURL/revokeObjectURL not available in jsdom
+    const createObjectURLSpy = vi.fn().mockReturnValue('blob:mock');
+    const revokeObjectURLSpy = vi.fn();
+    (URL as unknown as Record<string, unknown>).createObjectURL = createObjectURLSpy;
+    (URL as unknown as Record<string, unknown>).revokeObjectURL = revokeObjectURLSpy;
+
+    mockTasksGet.mockResolvedValue({
+      task: makeTask(),
+      steps: [],
+    });
+
+    render(<TaskDetail />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Download JSON report')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText('Download JSON report'));
+
+    await waitFor(() => {
+      expect(mockReportsGet).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440000');
+      expect(clickSpy).toHaveBeenCalled();
+      expect(createObjectURLSpy).toHaveBeenCalled();
+      expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:mock');
+    });
+
+    vi.restoreAllMocks();
+  });
+
+  it('downloads HTML report on button click', async () => {
+    const clickSpy = vi.fn();
+    const createElement = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      const el = createElement(tag);
+      if (tag === 'a') {
+        el.click = clickSpy;
+      }
+      return el;
+    });
+
+    mockTasksGet.mockResolvedValue({
+      task: makeTask(),
+      steps: [],
+    });
+
+    render(<TaskDetail />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Download HTML report')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText('Download HTML report'));
+
+    expect(clickSpy).toHaveBeenCalled();
+    vi.restoreAllMocks();
   });
 });
