@@ -27,6 +27,11 @@ const BatchExportParams = z.object({
   format: ExportFormatEnum,
 });
 
+const BatchExportBody = z.object({
+  taskIds: z.array(z.string().uuid('Invalid ID format')).min(1, 'At least one task ID required').max(100, 'Maximum 100 tasks per export'),
+  format: ExportFormatEnum,
+});
+
 // ── Content type mapping ────────────────────────────────────────────
 
 // ── Routes ──────────────────────────────────────────────────────────
@@ -85,6 +90,70 @@ export async function exportRoutes(server: FastifyInstance) {
           `attachment; filename="report-${reportId}.${result.fileExtension}"`,
         )
         .send(result.content);
+    } catch (error: unknown) {
+      return handleExportError(error, reply);
+    }
+  });
+
+  // POST /tasks/batch-export — export selected tasks by IDs
+  server.post('/tasks/batch-export', async (request, reply) => {
+    const parsed = BatchExportBody.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: 'Invalid parameters',
+        details: parsed.error.issues,
+      });
+    }
+
+    const { taskIds, format } = parsed.data;
+
+    try {
+      const exportService = createExportService(server.db);
+      const results = taskIds.map((taskId) => {
+        try {
+          return exportService.exportTask(taskId, format);
+        } catch {
+          return null;
+        }
+      });
+
+      const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null);
+
+      if (validResults.length === 0) {
+        return reply.status(404).send({ error: 'No valid tasks found for export' });
+      }
+
+      // Combine results based on format
+      let combinedContent: string;
+      let contentType: string;
+      let fileExtension: string;
+
+      if (format === 'json') {
+        const parsed = validResults.map((r) => JSON.parse(r.content as string));
+        combinedContent = JSON.stringify(parsed, null, 2);
+        contentType = 'application/json';
+        fileExtension = 'json';
+      } else if (format === 'csv') {
+        // Use first result's header, then combine all rows
+        const csvResults = validResults.map((r) => r.content as string);
+        const header = csvResults[0]?.split('\n')[0] ?? '';
+        const rows = csvResults.flatMap((csv) => csv.split('\n').slice(1));
+        combinedContent = [header, ...rows].join('\n');
+        contentType = 'text/csv';
+        fileExtension = 'csv';
+      } else {
+        // HTML: combine all into one document
+        const htmlParts = validResults.map((r) => r.content as string);
+        combinedContent = `<!DOCTYPE html><html><head><title>Batch Export</title></head><body>${htmlParts.join('<hr/>')}</body></html>`;
+        contentType = 'text/html';
+        fileExtension = 'html';
+      }
+
+      reply
+        .code(200)
+        .header('Content-Type', contentType)
+        .header('Content-Disposition', `attachment; filename="batch-export.${fileExtension}"`)
+        .send(combinedContent);
     } catch (error: unknown) {
       return handleExportError(error, reply);
     }

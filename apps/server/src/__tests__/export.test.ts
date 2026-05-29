@@ -457,3 +457,119 @@ describe('Export API: Batch export', () => {
     expect(res.body).toContain('<table>');
   });
 });
+
+// ── POST /tasks/batch-export tests ──────────────────────────────────
+
+describe('Export API: POST /tasks/batch-export', () => {
+  let server: FastifyInstance;
+  let db: Database.Database;
+  let cleanupDir: string;
+  const TASK_2_ID = 'a0000000-0000-4000-a000-000000000002';
+
+  beforeAll(async () => {
+    const { dbPath, cleanupDir: dir } = createTempDbPath();
+    cleanupDir = dir;
+    const bundle = await buildServer({ databasePath: dbPath });
+    server = bundle.server;
+    db = bundle.db;
+  });
+
+  afterAll(async () => {
+    await server.close();
+    db.close();
+    try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  beforeEach(() => {
+    resetDb(db);
+    // Seed two tasks
+    seedTestData(db);
+    const now = new Date().toISOString();
+    db.prepare(
+      `INSERT INTO tasks (id, goal, target_app_path, llm_model, status, max_steps, step_count, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(TASK_2_ID, 'Second task', '/app.exe', 'gpt-4o', 'completed', 50, 1, now, now);
+    db.prepare(
+      `INSERT INTO steps (id, task_id, step_index, phase, status, observation, action, timestamp, duration)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run('b0000000-0000-4000-b000-000000000003', TASK_2_ID, 0, 'observe', 'success', 'Step one', null, now, 100);
+  });
+
+  it('exports multiple tasks as combined JSON array', async () => {
+    const res = await server.inject({
+      method: 'POST',
+      url: '/api/tasks/batch-export',
+      payload: { taskIds: [TEST_TASK_ID, TASK_2_ID], format: 'json' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toContain('application/json');
+    expect(res.headers['content-disposition']).toContain('batch-export.json');
+
+    const body = JSON.parse(res.body);
+    expect(body).toHaveLength(2);
+    expect(body[0].task.id).toBe(TEST_TASK_ID);
+    expect(body[1].task.id).toBe(TASK_2_ID);
+  });
+
+  it('exports multiple tasks as combined CSV', async () => {
+    const res = await server.inject({
+      method: 'POST',
+      url: '/api/tasks/batch-export',
+      payload: { taskIds: [TEST_TASK_ID, TASK_2_ID], format: 'csv' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toContain('text/csv');
+
+    const lines = res.body.split('\n').filter((line: string) => line.trim());
+    // Header + 2 steps from task 1 + 1 step from task 2
+    expect(lines).toHaveLength(4);
+  });
+
+  it('exports multiple tasks as combined HTML', async () => {
+    const res = await server.inject({
+      method: 'POST',
+      url: '/api/tasks/batch-export',
+      payload: { taskIds: [TEST_TASK_ID, TASK_2_ID], format: 'html' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toContain('text/html');
+    expect(res.body).toContain('<!DOCTYPE html>');
+    expect(res.body).toContain('<hr/>');
+  });
+
+  it('returns 404 when no valid tasks found', async () => {
+    const fakeId = 'e0000000-0000-4000-e000-000000000099';
+    const res = await server.inject({
+      method: 'POST',
+      url: '/api/tasks/batch-export',
+      payload: { taskIds: [fakeId], format: 'json' },
+    });
+
+    expect(res.statusCode).toBe(404);
+    const body = JSON.parse(res.body);
+    expect(body.error).toContain('No valid tasks');
+  });
+
+  it('returns 400 for empty taskIds array', async () => {
+    const res = await server.inject({
+      method: 'POST',
+      url: '/api/tasks/batch-export',
+      payload: { taskIds: [], format: 'json' },
+    });
+
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('returns 400 for invalid format', async () => {
+    const res = await server.inject({
+      method: 'POST',
+      url: '/api/tasks/batch-export',
+      payload: { taskIds: [TEST_TASK_ID], format: 'xml' },
+    });
+
+    expect(res.statusCode).toBe(400);
+  });
+});

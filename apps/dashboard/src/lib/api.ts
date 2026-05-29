@@ -118,6 +118,17 @@ export const api = {
     cancel(id: string): Promise<Task> {
       return fetchJson(`${API_BASE}/api/tasks/${id}/cancel`, { method: 'POST' });
     },
+    async batchExport(taskIds: string[], format: 'json' | 'csv' | 'html'): Promise<Blob> {
+      const res = await fetch(`${API_BASE}/api/tasks/batch-export`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskIds, format }),
+      });
+      if (!res.ok) {
+        throw new Error(`Batch export failed: ${res.status}`);
+      }
+      return res.blob();
+    },
   },
   reports: {
     get(taskId: string): Promise<unknown> {
