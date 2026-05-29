@@ -276,6 +276,7 @@
     "exportJson": "Export JSON",
     "exportCsv": "Export CSV",
     "exportHtml": "Export HTML",
+    "exportPdf": "Export PDF",
     "loadError": "Failed to load task details"
   },
   "reportView": {

@@ -56,7 +56,7 @@ export default function TaskList() {
     setSelectedTasks(new Set());
   }, []);
 
-  const handleBatchExport = useCallback(async (format: 'json' | 'csv' | 'html') => {
+  const handleBatchExport = useCallback(async (format: 'json' | 'csv' | 'html' | 'pdf') => {
     if (selectedTasks.size === 0) return;
     setExporting(true);
     try {
@@ -167,6 +167,14 @@ export default function TaskList() {
             >
               <Download className="size-3.5" />
               HTML
+            </button>
+            <button
+              onClick={() => handleBatchExport('pdf')}
+              disabled={exporting}
+              className="inline-flex items-center gap-1.5 rounded-md bg-zinc-800 px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-zinc-700 disabled:opacity-50"
+            >
+              <Download className="size-3.5" />
+              PDF
             </button>
           </div>
         </div>

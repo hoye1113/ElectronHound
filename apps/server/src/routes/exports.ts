@@ -10,7 +10,7 @@ import { createExportService, ExportError } from '../services/exportService.js';
 
 // ── Validation schemas ──────────────────────────────────────────────
 
-const ExportFormatEnum = z.enum(['json', 'csv', 'html']);
+const ExportFormatEnum = z.enum(['json', 'csv', 'html', 'pdf']);
 
 const TaskExportParams = z.object({
   taskId: z.string().uuid('Invalid ID format'),
@@ -51,7 +51,7 @@ export async function exportRoutes(server: FastifyInstance) {
 
     try {
       const exportService = createExportService(server.db);
-      const result = exportService.exportTask(taskId, format);
+      const result = await exportService.exportTask(taskId, format);
 
       reply
         .code(200)
@@ -109,13 +109,13 @@ export async function exportRoutes(server: FastifyInstance) {
 
     try {
       const exportService = createExportService(server.db);
-      const results = taskIds.map((taskId) => {
+      const results = await Promise.all(taskIds.map(async (taskId) => {
         try {
-          return exportService.exportTask(taskId, format);
+          return await exportService.exportTask(taskId, format);
         } catch {
           return null;
         }
-      });
+      }));
 
       const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null);
 
@@ -141,6 +141,11 @@ export async function exportRoutes(server: FastifyInstance) {
         combinedContent = [header, ...rows].join('\n');
         contentType = 'text/csv';
         fileExtension = 'csv';
+      } else if (format === 'pdf') {
+        // PDF: return first result as base64 (single task PDF)
+        combinedContent = validResults[0].content;
+        contentType = 'application/pdf';
+        fileExtension = 'pdf';
       } else {
         // HTML: combine all into one document
         const htmlParts = validResults.map((r) => r.content as string);
@@ -173,7 +178,7 @@ export async function exportRoutes(server: FastifyInstance) {
 
     try {
       const exportService = createExportService(server.db);
-      const result = exportService.exportBatch(batchId, format);
+      const result = await exportService.exportBatch(batchId, format);
 
       reply
         .code(200)

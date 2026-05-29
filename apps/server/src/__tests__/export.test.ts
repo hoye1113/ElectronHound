@@ -322,6 +322,65 @@ describe('Export Service: HTML export', () => {
   });
 });
 
+// ── PDF export tests ────────────────────────────────────────────────
+
+describe('Export Service: PDF export', () => {
+  let server: FastifyInstance;
+  let db: Database.Database;
+  let cleanupDir: string;
+
+  beforeAll(async () => {
+    const { dbPath, cleanupDir: dir } = createTempDbPath();
+    cleanupDir = dir;
+    const bundle = await buildServer({ databasePath: dbPath });
+    server = bundle.server;
+    db = bundle.db;
+  });
+
+  afterAll(async () => {
+    await server.close();
+    db.close();
+    try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  beforeEach(() => { resetDb(db); seedTestData(db); });
+
+  it('exports task as PDF', async () => {
+    const res = await server.inject({
+      method: 'GET',
+      url: `/api/tasks/${TEST_TASK_ID}/export/pdf`,
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toContain('application/pdf');
+    expect(res.headers['content-disposition']).toContain('.pdf');
+
+    // PDF content is base64-encoded, decode and check for PDF header
+    const buffer = Buffer.from(res.body, 'base64');
+    // PDF files start with %PDF
+    expect(buffer.slice(0, 5).toString()).toContain('%PDF');
+  });
+
+  it('returns 404 for non-existent task', async () => {
+    const fakeId = 'f0000000-0000-4000-a000-000000000001';
+    const res = await server.inject({
+      method: 'GET',
+      url: `/api/tasks/${fakeId}/export/pdf`,
+    });
+
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('returns 400 for invalid task ID format', async () => {
+    const res = await server.inject({
+      method: 'GET',
+      url: '/api/tasks/not-a-uuid/export/pdf',
+    });
+
+    expect(res.statusCode).toBe(400);
+  });
+});
+
 // ── Error handling tests ─────────────────────────────────────────────
 
 describe('Export API: Error handling', () => {

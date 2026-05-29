@@ -856,7 +856,7 @@ describe('Export: Edge cases', () => {
     const taskId = 'dd000000-0000-4000-d000-000000000001';
     const res = await server.inject({
       method: 'GET',
-      url: `/api/tasks/${taskId}/export/pdf`,
+      url: `/api/tasks/${taskId}/export/xml`,
     });
 
     expect(res.statusCode).toBe(400);

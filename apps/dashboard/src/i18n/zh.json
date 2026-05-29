@@ -278,6 +278,7 @@
     "exportJson": "导出 JSON",
     "exportCsv": "导出 CSV",
     "exportHtml": "导出 HTML",
+    "exportPdf": "导出 PDF",
     "loadError": "加载任务详情失败"
   },
   "reportView": {

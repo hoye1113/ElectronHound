@@ -32,7 +32,7 @@ export function getScreenshotUrl(taskId: string, stepIndex: number): string {
   return `${API_BASE}/api/tasks/${taskId}/steps/${stepIndex}/screenshot`;
 }
 
-export function getExportUrl(taskId: string, format: 'json' | 'csv' | 'html'): string {
+export function getExportUrl(taskId: string, format: 'json' | 'csv' | 'html' | 'pdf'): string {
   return `${API_BASE}/api/tasks/${taskId}/export/${format}`;
 }
 
@@ -209,7 +209,7 @@ export const api = {
     cancel(id: string): Promise<Task> {
       return fetchJson(`${API_BASE}/api/tasks/${id}/cancel`, { method: 'POST' });
     },
-    async batchExport(taskIds: string[], format: 'json' | 'csv' | 'html'): Promise<Blob> {
+    async batchExport(taskIds: string[], format: 'json' | 'csv' | 'html' | 'pdf'): Promise<Blob> {
       const res = await fetch(`${API_BASE}/api/tasks/batch-export`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -6,10 +6,12 @@
  */
 import { readFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
+import { PassThrough } from 'node:stream';
 import type Database from 'better-sqlite3';
 import type { Task, StepRecord } from '@eata/shared-types';
 import { toErrorMessage } from '@eata/agent-core/utils/error';
 import { formatDuration } from '@eata/agent-core';
+import PDFDocument from 'pdfkit';
 import { createStderrLogger } from '../utils/logger.js';
 import { dbRowToTask, dbRowToStep } from '../utils/dbMappers.js';
 import { escapeHtml } from '../utils/text.js';
@@ -19,7 +21,7 @@ const logger = createStderrLogger('exportService');
 
 // ── Types ────────────────────────────────────────────────────────────
 
-export type ExportFormat = 'json' | 'csv' | 'html';
+export type ExportFormat = 'json' | 'csv' | 'html' | 'pdf';
 
 export interface ExportResult {
   content: string;
@@ -182,7 +184,7 @@ export class ExportService {
   /**
    * Export a single task with its steps and logs.
    */
-  exportTask(taskId: string, format: ExportFormat): ExportResult {
+  async exportTask(taskId: string, format: ExportFormat): Promise<ExportResult> {
     const taskRow = this.db
       .prepare('SELECT * FROM tasks WHERE id = ?')
       .get(taskId) as Record<string, unknown> | undefined;
@@ -209,6 +211,8 @@ export class ExportService {
         return this.toCsv([{ task, steps }]);
       case 'html':
         return this.toHtml(task, steps);
+      case 'pdf':
+        return this.toPdf(task, steps);
     }
   }
 
@@ -254,13 +258,15 @@ export class ExportService {
         return this.toCsv([{ task, steps }]);
       case 'html':
         return this.toHtml(task, steps);
+      case 'pdf':
+        return this.toPdf(task, steps);
     }
   }
 
   /**
    * Export all tasks in a batch.
    */
-  exportBatch(batchId: string, format: ExportFormat): ExportResult {
+  async exportBatch(batchId: string, format: ExportFormat): Promise<ExportResult> {
     // Verify batch exists
     const batchRow = this.db
       .prepare('SELECT * FROM batches WHERE id = ?')
@@ -321,6 +327,8 @@ export class ExportService {
         return this.toCsv(tasksWithSteps);
       case 'html':
         return this.batchToHtml(batchInfo, tasksWithSteps);
+      case 'pdf':
+        return this.batchToPdf(batchInfo, tasksWithSteps);
     }
   }
 
@@ -648,6 +656,215 @@ export class ExportService {
       contentType: 'text/html; charset=utf-8',
       fileExtension: 'html',
     };
+  }
+
+  // ── PDF formatters ──────────────────────────────────────────────────
+
+  private async toPdf(task: Task, steps: StepRecord[]): Promise<ExportResult> {
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    const chunks: Buffer[] = [];
+    const stream = new PassThrough();
+
+    return new Promise((resolve, reject) => {
+      stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+      stream.on('end', () => {
+        resolve({
+          content: Buffer.concat(chunks).toString('base64'),
+          contentType: 'application/pdf',
+          fileExtension: 'pdf',
+        });
+      });
+      stream.on('error', reject);
+
+      doc.pipe(stream);
+
+      // Title
+      doc.fontSize(20).font('Helvetica-Bold').text(task.goal, { align: 'left' });
+      doc.moveDown(0.5);
+
+      // Meta info
+      doc
+        .fontSize(10)
+        .font('Helvetica')
+        .fillColor('#666666')
+        .text(`Status: ${task.status}  |  Model: ${task.llmModel}  |  Created: ${formatDate(task.createdAt)}`);
+      doc.moveDown(1);
+
+      // Summary
+      const totalDuration = steps.reduce((sum, s) => sum + s.duration, 0);
+      const successSteps = steps.filter((s) => s.status === 'success').length;
+      const failedSteps = steps.filter((s) => s.status === 'failed').length;
+
+      doc.fontSize(14).font('Helvetica-Bold').fillColor('#333333').text('Summary');
+      doc.moveDown(0.3);
+      doc
+        .fontSize(10)
+        .font('Helvetica')
+        .fillColor('#444444')
+        .text(`Total Steps: ${steps.length}    Passed: ${successSteps}    Failed: ${failedSteps}    Duration: ${formatDuration(totalDuration)}`);
+      doc.moveDown(1);
+
+      // Result Summary
+      if (task.resultSummary) {
+        doc.fontSize(14).font('Helvetica-Bold').fillColor('#333333').text('Result Summary');
+        doc.moveDown(0.3);
+        doc
+          .fontSize(10)
+          .font('Helvetica')
+          .fillColor('#444444')
+          .text(`Success: ${task.resultSummary.success ? 'Yes' : 'No'}`);
+        doc.text(task.resultSummary.summary);
+        if (task.resultSummary.error) {
+          doc.fillColor('#cc0000').text(`Error: ${task.resultSummary.error}`);
+        }
+        doc.fillColor('#444444');
+        doc.moveDown(1);
+      }
+
+      // Steps table
+      if (steps.length > 0) {
+        doc.fontSize(14).font('Helvetica-Bold').fillColor('#333333').text('Steps');
+        doc.moveDown(0.5);
+
+        const tableTop = doc.y;
+        const colWidths = [40, 70, 60, 80, 250];
+        const headers = ['#', 'Phase', 'Status', 'Duration', 'Observation'];
+
+        // Header row
+        doc.fontSize(9).font('Helvetica-Bold').fillColor('#666666');
+        let x = 50;
+        headers.forEach((h, i) => {
+          doc.text(h, x, tableTop, { width: colWidths[i], align: 'left' });
+          x += colWidths[i];
+        });
+
+        doc.moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke('#cccccc');
+        doc.moveDown(0.8);
+
+        // Data rows
+        doc.font('Helvetica').fontSize(8).fillColor('#444444');
+        for (const step of steps) {
+          if (doc.y > 720) {
+            doc.addPage();
+          }
+          const rowY = doc.y;
+          x = 50;
+          doc.text(String(step.stepIndex), x, rowY, { width: colWidths[0] });
+          x += colWidths[0];
+          doc.text(step.phase, x, rowY, { width: colWidths[1] });
+          x += colWidths[1];
+          doc.text(step.status, x, rowY, { width: colWidths[2] });
+          x += colWidths[2];
+          doc.text(formatDuration(step.duration), x, rowY, { width: colWidths[3] });
+          x += colWidths[3];
+          doc.text(step.observation?.slice(0, 80) ?? '-', x, rowY, { width: colWidths[4] });
+          doc.moveDown(0.6);
+        }
+      }
+
+      // Footer
+      doc.moveDown(2);
+      doc
+        .fontSize(8)
+        .fillColor('#999999')
+        .text(`Exported at ${formatDate(new Date().toISOString())}  |  Task ID: ${task.id}`, { align: 'center' });
+
+      doc.end();
+    });
+  }
+
+  private async batchToPdf(
+    batchInfo: Record<string, unknown>,
+    tasksWithSteps: Array<{ task: Task; steps: StepRecord[] }>,
+  ): Promise<ExportResult> {
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    const chunks: Buffer[] = [];
+    const stream = new PassThrough();
+
+    return new Promise((resolve, reject) => {
+      stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+      stream.on('end', () => {
+        resolve({
+          content: Buffer.concat(chunks).toString('base64'),
+          contentType: 'application/pdf',
+          fileExtension: 'pdf',
+        });
+      });
+      stream.on('error', reject);
+
+      doc.pipe(stream);
+
+      // Title
+      doc
+        .fontSize(20)
+        .font('Helvetica-Bold')
+        .text(`Batch: ${(batchInfo.name as string) ?? 'Unnamed'}`);
+      doc.moveDown(0.5);
+
+      // Meta
+      doc
+        .fontSize(10)
+        .font('Helvetica')
+        .fillColor('#666666')
+        .text(`Status: ${batchInfo.status}  |  Priority: ${batchInfo.priority}  |  Created: ${formatDate(String(batchInfo.createdAt))}`);
+      doc.moveDown(1);
+
+      // Summary
+      doc.fontSize(14).font('Helvetica-Bold').fillColor('#333333').text('Summary');
+      doc.moveDown(0.3);
+      doc
+        .fontSize(10)
+        .font('Helvetica')
+        .fillColor('#444444')
+        .text(`Total Tasks: ${batchInfo.totalTasks}    Completed: ${batchInfo.completedTasks}    Failed: ${batchInfo.failedTasks}`);
+      doc.moveDown(1);
+
+      // Tasks table
+      doc.fontSize(14).font('Helvetica-Bold').fillColor('#333333').text('Tasks');
+      doc.moveDown(0.5);
+
+      const tableTop = doc.y;
+      const colWidths = [80, 200, 80, 60, 80];
+      const headers = ['ID', 'Goal', 'Status', 'Steps', 'Duration'];
+
+      doc.fontSize(9).font('Helvetica-Bold').fillColor('#666666');
+      let x = 50;
+      headers.forEach((h, i) => {
+        doc.text(h, x, tableTop, { width: colWidths[i], align: 'left' });
+        x += colWidths[i];
+      });
+
+      doc.moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke('#cccccc');
+      doc.moveDown(0.8);
+
+      doc.font('Helvetica').fontSize(8).fillColor('#444444');
+      for (const { task, steps } of tasksWithSteps) {
+        if (doc.y > 720) {
+          doc.addPage();
+        }
+        const rowY = doc.y;
+        x = 50;
+        doc.text(task.id.slice(0, 8) + '...', x, rowY, { width: colWidths[0] });
+        x += colWidths[0];
+        doc.text(task.goal.slice(0, 40), x, rowY, { width: colWidths[1] });
+        x += colWidths[1];
+        doc.text(task.status, x, rowY, { width: colWidths[2] });
+        x += colWidths[2];
+        doc.text(String(steps.length), x, rowY, { width: colWidths[3] });
+        x += colWidths[3];
+        doc.text(formatDuration(steps.reduce((s, step) => s + step.duration, 0)), x, rowY, { width: colWidths[4] });
+        doc.moveDown(0.6);
+      }
+
+      // Footer
+      doc.moveDown(2);
+      doc
+        .fontSize(8)
+        .fillColor('#999999')
+        .text(`Exported at ${formatDate(new Date().toISOString())}  |  Batch ID: ${batchInfo.id}`, { align: 'center' });
+
+      doc.end();
+    });
   }
 }
 
