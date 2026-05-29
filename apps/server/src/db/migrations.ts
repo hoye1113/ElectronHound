@@ -98,6 +98,36 @@ CREATE INDEX IF NOT EXISTS idx_templates_built_in ON templates(built_in);
 CREATE INDEX IF NOT EXISTS idx_tasks_batch_id ON tasks(batch_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at);
 CREATE INDEX IF NOT EXISTS idx_steps_task_step ON steps(task_id, step_index);
+
+CREATE TABLE IF NOT EXISTS schedules (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  template_id TEXT NOT NULL,
+  cron_expression TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  last_run_at TEXT,
+  next_run_at TEXT,
+  run_count INTEGER NOT NULL DEFAULT 0,
+  last_status TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_schedules_enabled ON schedules(enabled);
+
+CREATE TABLE IF NOT EXISTS schedule_runs (
+  id TEXT PRIMARY KEY,
+  schedule_id TEXT NOT NULL,
+  task_id TEXT,
+  started_at TEXT NOT NULL DEFAULT (datetime('now')),
+  completed_at TEXT,
+  status TEXT NOT NULL DEFAULT 'running',
+  summary TEXT,
+  error TEXT,
+  FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_schedule_runs_schedule ON schedule_runs(schedule_id);
 `;
 
 /**
