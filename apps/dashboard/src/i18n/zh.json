@@ -1,4 +1,33 @@
 {
+  "compare": {
+    "title": "任务对比",
+    "subtitle": "对比两个任务以查看执行结果的差异",
+    "taskA": "任务 A",
+    "taskB": "任务 B",
+    "compare": "对比",
+    "comparing": "对比中...",
+    "newFailures": "新增失败",
+    "fixedIssues": "已修复问题",
+    "planChanges": "计划变更",
+    "unchanged": "未变化",
+    "statusSummary": "状态摘要",
+    "totalSteps": "总步骤数",
+    "passed": "通过",
+    "failed": "失败",
+    "retried": "重试",
+    "duration": "耗时",
+    "stepTimeline": "步骤时间线对比",
+    "step": "步骤",
+    "phase": "阶段",
+    "changed": "已变更",
+    "actionFrequency": "操作频率",
+    "actionCount": "操作次数",
+    "actionName": "操作",
+    "enterBothIds": "请输入两个任务 ID",
+    "loadError": "加载对比数据失败",
+    "taskAStatus": "任务 A 状态",
+    "taskBStatus": "任务 B 状态"
+  },
   "common": {
     "cancel": "取消",
     "delete": "删除",
@@ -178,6 +207,7 @@
     "settings": "设置",
     "templates": "模板",
     "reportTemplates": "报告模板",
+    "notifications": "通知",
     "system": "系统"
   },
   "templates": {
@@ -396,5 +426,28 @@
     "title": "执行历史",
     "empty": "暂无执行历史",
     "viewTask": "查看任务"
+  },
+  "notifications": {
+    "title": "通知设置",
+    "subtitle": "配置任务通知方式",
+    "webhookSection": "Webhook URL",
+    "webhookPlaceholder": "https://example.com/webhook",
+    "addWebhook": "添加",
+    "sseSection": "服务器发送事件",
+    "sseEnabled": "启用 SSE 通知",
+    "eventSection": "事件类型",
+    "event_task.completed": "任务完成",
+    "event_task.failed": "任务失败",
+    "event_task.created": "任务创建",
+    "event_batch.completed": "批量完成",
+    "event_batch.failed": "批量失败",
+    "sendTest": "发送测试通知",
+    "testSuccess": "测试通知发送成功",
+    "testFailed": "测试通知发送失败",
+    "logSection": "通知日志",
+    "logEmpty": "暂无通知记录",
+    "saveConfig": "保存配置",
+    "configSaved": "配置已保存",
+    "loadError": "加载通知设置失败"
   }
 }

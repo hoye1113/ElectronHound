@@ -32,7 +32,7 @@ function insertTask(db: Database.Database, overrides: Partial<{ id: string; stat
 function insertStep(
   db: Database.Database,
   taskId: string,
-  opts: { stepIndex: number; phase: string; status: string; actionName?: string },
+  opts: { stepIndex: number; phase: string; status: string; actionName?: string; duration?: number },
 ) {
   const id = randomUUID();
   const now = new Date().toISOString();
@@ -52,7 +52,7 @@ function insertStep(
     null,
     null,
     now,
-    100,
+    opts.duration ?? 100,
   );
 }
 
@@ -133,5 +133,198 @@ describe('Route: POST /api/tasks/compare', () => {
     const body = JSON.parse(res.body);
     expect(body.error).toBe('Validation failed');
     expect(body.details).toBeDefined();
+  });
+});
+
+describe('Route: POST /api/tasks/compare/detailed', () => {
+  let server: FastifyInstance;
+  let db: Database.Database;
+  let cleanupDir: string;
+
+  beforeAll(async () => {
+    const { dbPath, cleanupDir: dir } = createTempDbPath();
+    cleanupDir = dir;
+    const bundle = await buildServer({ databasePath: dbPath });
+    server = bundle.server;
+    db = bundle.db;
+  });
+
+  afterAll(async () => {
+    await server.close();
+    db.close();
+    try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  beforeEach(() => resetDb(db));
+
+  it('returns summary with correct step counts', async () => {
+    const idA = insertTask(db, { status: 'completed' });
+    const idB = insertTask(db, { status: 'completed' });
+
+    // Task A: 2 success, 1 failed
+    insertStep(db, idA, { stepIndex: 0, phase: 'observe', status: 'success', duration: 100 });
+    insertStep(db, idA, { stepIndex: 1, phase: 'plan', status: 'success', duration: 200 });
+    insertStep(db, idA, { stepIndex: 2, phase: 'verify', status: 'failed', duration: 150 });
+
+    // Task B: 1 success, 1 failed, 1 retry
+    insertStep(db, idB, { stepIndex: 0, phase: 'observe', status: 'success', duration: 110 });
+    insertStep(db, idB, { stepIndex: 1, phase: 'plan', status: 'retry', duration: 250 });
+    insertStep(db, idB, { stepIndex: 2, phase: 'verify', status: 'failed', duration: 180 });
+
+    const res = await server.inject({
+      method: 'POST',
+      url: '/api/tasks/compare/detailed',
+      payload: { taskIds: [idA, idB] },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+
+    expect(body.summary).toBeDefined();
+    expect(body.summary.taskA.totalSteps).toBe(3);
+    expect(body.summary.taskA.passedSteps).toBe(2);
+    expect(body.summary.taskA.failedSteps).toBe(1);
+    expect(body.summary.taskA.retriedSteps).toBe(0);
+    expect(body.summary.taskA.totalDuration).toBe(450);
+
+    expect(body.summary.taskB.totalSteps).toBe(3);
+    expect(body.summary.taskB.passedSteps).toBe(1);
+    expect(body.summary.taskB.failedSteps).toBe(1);
+    expect(body.summary.taskB.retriedSteps).toBe(1);
+    expect(body.summary.taskB.totalDuration).toBe(540);
+  });
+
+  it('returns actionFrequency with correct counts', async () => {
+    const idA = insertTask(db, { status: 'completed' });
+    const idB = insertTask(db, { status: 'completed' });
+
+    // Task A: plan steps with actions
+    insertStep(db, idA, { stepIndex: 0, phase: 'plan', status: 'success', actionName: 'click' });
+    insertStep(db, idA, { stepIndex: 1, phase: 'plan', status: 'success', actionName: 'click' });
+    insertStep(db, idA, { stepIndex: 2, phase: 'plan', status: 'success', actionName: 'type' });
+
+    // Task B: plan steps with different actions
+    insertStep(db, idB, { stepIndex: 0, phase: 'plan', status: 'success', actionName: 'click' });
+    insertStep(db, idB, { stepIndex: 1, phase: 'plan', status: 'success', actionName: 'navigate' });
+
+    const res = await server.inject({
+      method: 'POST',
+      url: '/api/tasks/compare/detailed',
+      payload: { taskIds: [idA, idB] },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+
+    expect(body.actionFrequency).toBeDefined();
+    expect(body.actionFrequency.taskA).toEqual({ click: 2, type: 1 });
+    expect(body.actionFrequency.taskB).toEqual({ click: 1, navigate: 1 });
+  });
+
+  it('returns timelineDiff with correct structure', async () => {
+    const idA = insertTask(db, { status: 'completed' });
+    const idB = insertTask(db, { status: 'completed' });
+
+    insertStep(db, idA, { stepIndex: 0, phase: 'observe', status: 'success', duration: 100 });
+    insertStep(db, idA, { stepIndex: 1, phase: 'verify', status: 'success', duration: 200 });
+
+    insertStep(db, idB, { stepIndex: 0, phase: 'observe', status: 'success', duration: 110 });
+    insertStep(db, idB, { stepIndex: 1, phase: 'verify', status: 'failed', duration: 300 });
+
+    const res = await server.inject({
+      method: 'POST',
+      url: '/api/tasks/compare/detailed',
+      payload: { taskIds: [idA, idB] },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+
+    expect(body.timelineDiff).toBeDefined();
+    expect(body.timelineDiff).toHaveLength(2);
+
+    // First entry (observe step - unchanged)
+    expect(body.timelineDiff[0]).toEqual({
+      stepIndex: 0,
+      phase: 'observe',
+      taskAStatus: 'success',
+      taskBStatus: 'success',
+      taskADuration: 100,
+      taskBDuration: 110,
+      changed: false,
+    });
+
+    // Second entry (verify step - changed)
+    expect(body.timelineDiff[1]).toEqual({
+      stepIndex: 1,
+      phase: 'verify',
+      taskAStatus: 'success',
+      taskBStatus: 'failed',
+      taskADuration: 200,
+      taskBDuration: 300,
+      changed: true,
+    });
+  });
+
+  it('changed steps have changed: true', async () => {
+    const idA = insertTask(db, { status: 'completed' });
+    const idB = insertTask(db, { status: 'completed' });
+
+    // Same status - not changed
+    insertStep(db, idA, { stepIndex: 0, phase: 'observe', status: 'success' });
+    insertStep(db, idB, { stepIndex: 0, phase: 'observe', status: 'success' });
+
+    // Different status - changed
+    insertStep(db, idA, { stepIndex: 1, phase: 'verify', status: 'success' });
+    insertStep(db, idB, { stepIndex: 1, phase: 'verify', status: 'failed' });
+
+    // Only in B - changed (null vs status)
+    insertStep(db, idB, { stepIndex: 2, phase: 'execute', status: 'success' });
+
+    const res = await server.inject({
+      method: 'POST',
+      url: '/api/tasks/compare/detailed',
+      payload: { taskIds: [idA, idB] },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+
+    const changedEntries = body.timelineDiff.filter(
+      (e: { changed: boolean }) => e.changed,
+    );
+    expect(changedEntries.length).toBe(2); // verify and execute steps
+
+    const unchangedEntries = body.timelineDiff.filter(
+      (e: { changed: boolean }) => !e.changed,
+    );
+    expect(unchangedEntries.length).toBe(1); // observe step
+  });
+
+  it('returns 404 when a task is missing', async () => {
+    const idA = insertTask(db);
+    const fakeId = randomUUID();
+
+    const res = await server.inject({
+      method: 'POST',
+      url: '/api/tasks/compare/detailed',
+      payload: { taskIds: [idA, fakeId] },
+    });
+
+    expect(res.statusCode).toBe(404);
+    const body = JSON.parse(res.body);
+    expect(body.error).toContain('Task not found');
+  });
+
+  it('returns 400 for invalid payload', async () => {
+    const res = await server.inject({
+      method: 'POST',
+      url: '/api/tasks/compare/detailed',
+      payload: { taskIds: ['not-a-uuid', 'also-not-uuid'] },
+    });
+
+    expect(res.statusCode).toBe(400);
+    const body = JSON.parse(res.body);
+    expect(body.error).toBe('Validation failed');
   });
 });

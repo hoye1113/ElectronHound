@@ -157,6 +157,26 @@ export interface HealthResponse {
   uptime: number;
 }
 
+export interface NotificationConfig {
+  id: string;
+  webhookUrls: string[];
+  sseEnabled: boolean;
+  eventTypes: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotificationLogEntry {
+  id: string;
+  eventType: string;
+  channel: 'webhook' | 'sse';
+  target: string | null;
+  status: 'sent' | 'failed' | 'pending';
+  error: string | null;
+  payload: unknown;
+  createdAt: string;
+}
+
 export const api = {
   tasks: {
     list(params?: { status?: string; page?: number; limit?: number }): Promise<{
@@ -394,9 +414,40 @@ export const api = {
       return fetchJson(`${API_BASE}/api/schedules/${id}/history`);
     },
   },
+  notifications: {
+    getConfig(): Promise<NotificationConfig> {
+      return fetchJson(`${API_BASE}/api/notifications/config`);
+    },
+    updateConfig(data: {
+      webhookUrls?: string[];
+      sseEnabled?: boolean;
+      eventTypes?: string[];
+    }): Promise<NotificationConfig> {
+      return fetchJson(`${API_BASE}/api/notifications/config`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    },
+    test(): Promise<{ success: boolean; message: string }> {
+      return fetchJson(`${API_BASE}/api/notifications/test`, {
+        method: 'POST',
+      });
+    },
+    history(): Promise<{ data: NotificationLogEntry[] }> {
+      return fetchJson(`${API_BASE}/api/notifications/history`);
+    },
+  },
   compare: {
     run(taskIds: [string, string]) {
       return fetchJson(`${API_BASE}/api/tasks/compare`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskIds }),
+      });
+    },
+    detailed(taskIds: [string, string]) {
+      return fetchJson(`${API_BASE}/api/tasks/compare/detailed`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ taskIds }),
