@@ -1,7 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { IdParam } from '../utils/validation.js';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -63,7 +62,7 @@ const UpdateConfigSchema = z.object({
 
 export async function notificationRoutes(server: FastifyInstance) {
   // GET /notifications/config — Returns the singleton config (creates default if missing)
-  server.get('/notifications/config', async (_request, reply) => {
+  server.get('/notifications/config', async (_request, _reply) => {
     let row = server.db
       .prepare('SELECT * FROM notification_config LIMIT 1')
       .get() as NotificationConfigRow | undefined;

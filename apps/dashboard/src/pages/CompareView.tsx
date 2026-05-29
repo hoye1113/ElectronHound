@@ -64,13 +64,6 @@ interface DetailedCompareResponse {
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-function statusColor(status: string | null): string {
-  if (status === 'success') return 'text-emerald-400';
-  if (status === 'failed') return 'text-red-400';
-  if (status === 'retry') return 'text-amber-400';
-  return 'text-zinc-500';
-}
-
 function statusBg(status: string | null): string {
   if (status === 'success') return 'bg-emerald-500/15 text-emerald-400';
   if (status === 'failed') return 'bg-red-500/15 text-red-400';
