@@ -9,6 +9,3 @@ export const UuidParam = z.object({ id: z.string().uuid() });
 
 /** Validate that the `:id` path parameter is a non-empty string. */
 export const IdParam = z.object({ id: z.string().min(1) });
-
-/** Validate that the `:id` path parameter is a valid provider ID. */
-export const ProviderIdParam = z.object({ id: z.string().min(1) });

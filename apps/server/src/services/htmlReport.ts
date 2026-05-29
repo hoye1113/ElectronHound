@@ -1,4 +1,6 @@
 import type { Task, StepRecord } from '@eata/shared-types';
+import { formatDuration } from '@eata/agent-core';
+import { escapeHtml } from '../utils/text.js';
 
 const STATUS_COLORS: Record<string, string> = {
   // Task status
@@ -119,26 +121,8 @@ const CSS = `
   }
 `;
 
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString();
-}
-
-function formatDuration(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  const sec = Math.floor(ms / 1000);
-  if (sec < 60) return `${sec}s`;
-  const min = Math.floor(sec / 60);
-  const remSec = sec % 60;
-  return `${min}m ${remSec}s`;
 }
 
 function renderStep(step: StepRecord, _taskId: string): string {

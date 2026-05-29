@@ -8,7 +8,7 @@ import {
   setActiveProvider,
   createProviderInstance,
 } from '@eata/agent-core';
-import { ProviderIdParam } from '../utils/validation.js';
+import { IdParam } from '../utils/validation.js';
 import { toErrorMessage } from '@eata/agent-core/utils/error';
 
 const CreateProviderSchema = z.object({
@@ -44,7 +44,7 @@ export async function providersRoutes(server: FastifyInstance) {
 
   // PUT /providers/:id - 更新供应商
   server.put('/providers/:id', async (request, reply) => {
-    const paramsResult = ProviderIdParam.safeParse(request.params);
+    const paramsResult = IdParam.safeParse(request.params);
     if (!paramsResult.success) {
       return reply.status(400).send({ error: 'Invalid provider ID', details: paramsResult.error.issues });
     }
@@ -63,7 +63,7 @@ export async function providersRoutes(server: FastifyInstance) {
 
   // DELETE /providers/:id - 删除供应商
   server.delete('/providers/:id', async (request, reply) => {
-    const paramsResult = ProviderIdParam.safeParse(request.params);
+    const paramsResult = IdParam.safeParse(request.params);
     if (!paramsResult.success) {
       return reply.status(400).send({ error: 'Invalid provider ID', details: paramsResult.error.issues });
     }
@@ -75,7 +75,7 @@ export async function providersRoutes(server: FastifyInstance) {
 
   // POST /providers/:id/test - 测试连接
   server.post('/providers/:id/test', async (request, reply) => {
-    const paramsResult = ProviderIdParam.safeParse(request.params);
+    const paramsResult = IdParam.safeParse(request.params);
     if (!paramsResult.success) {
       return reply.status(400).send({ error: 'Invalid provider ID', details: paramsResult.error.issues });
     }
@@ -101,7 +101,7 @@ export async function providersRoutes(server: FastifyInstance) {
 
   // POST /providers/:id/activate - 设为默认
   server.post('/providers/:id/activate', async (request, reply) => {
-    const paramsResult = ProviderIdParam.safeParse(request.params);
+    const paramsResult = IdParam.safeParse(request.params);
     if (!paramsResult.success) {
       return reply.status(400).send({ error: 'Invalid provider ID', details: paramsResult.error.issues });
     }

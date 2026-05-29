@@ -46,8 +46,8 @@ export default function CreateTaskForm({ open, onOpenChange, onSuccess }: Create
             setProviderId(config.activeId);
           }
         })
-        .catch(() => {
-          // Providers list failed, continue without it
+        .catch((err: unknown) => {
+          console.warn('[CreateTaskForm] Failed to load providers:', err instanceof Error ? err.message : String(err));
         });
     }
   }, [open]);

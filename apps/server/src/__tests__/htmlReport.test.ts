@@ -144,7 +144,7 @@ describe('generateHTMLReport', () => {
   it('formats duration in seconds', () => {
     const steps = [makeStep({ duration: 3000 })];
     const html = generateHTMLReport(makeTask(), steps);
-    expect(html).toContain('3s');
+    expect(html).toContain('3.0s');
   });
 
   it('formats duration in minutes and seconds', () => {

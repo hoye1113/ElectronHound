@@ -43,7 +43,7 @@ export function connectSSE(taskId: string, callbacks: SSECallbacks): EventSource
   es.addEventListener('error', (e) => callbacks.onError?.(e));
 
   es.onerror = () => {
-    // Auto-reconnect is built into EventSource
+    console.warn('[SSE] Connection error, EventSource will auto-reconnect');
   };
 
   return es;
