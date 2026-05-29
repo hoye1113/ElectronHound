@@ -13,6 +13,7 @@ import { fewShotRoutes } from './few-shot.js';
 import { scheduleRoutes } from './schedules.js';
 import { compareRoutes } from './compare.js';
 import { trendsRoutes } from './trends.js';
+import { notificationRoutes } from './notifications.js';
 
 export async function registerRoutes(server: FastifyInstance) {
   await server.register(healthRoutes);
@@ -29,4 +30,5 @@ export async function registerRoutes(server: FastifyInstance) {
   await server.register(scheduleRoutes, { prefix: '/api' });
   await server.register(compareRoutes, { prefix: '/api' });
   await server.register(trendsRoutes, { prefix: '/api' });
+  await server.register(notificationRoutes, { prefix: '/api' });
 }

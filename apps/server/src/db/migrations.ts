@@ -135,6 +135,29 @@ CREATE TABLE IF NOT EXISTS schedule_runs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_schedule_runs_schedule ON schedule_runs(schedule_id);
+
+CREATE TABLE IF NOT EXISTS notification_config (
+  id TEXT PRIMARY KEY,
+  webhook_urls TEXT NOT NULL DEFAULT '[]',
+  sse_enabled INTEGER NOT NULL DEFAULT 1,
+  event_types TEXT NOT NULL DEFAULT '["task.completed","task.failed","batch.completed"]',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS notification_log (
+  id TEXT PRIMARY KEY,
+  event_type TEXT NOT NULL,
+  channel TEXT NOT NULL CHECK(channel IN ('webhook', 'sse')),
+  target TEXT,
+  status TEXT NOT NULL CHECK(status IN ('sent', 'failed', 'pending')),
+  error TEXT,
+  payload TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_notification_log_event ON notification_log(event_type);
+CREATE INDEX IF NOT EXISTS idx_notification_log_created ON notification_log(created_at);
 `;
 
 /**

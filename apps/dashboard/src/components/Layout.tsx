@@ -11,6 +11,7 @@ import {
   Layers,
   FileText,
   Clock,
+  Bell,
 } from 'lucide-react';
 
 const navItems = [
@@ -21,6 +22,7 @@ const navItems = [
   { to: '/feedback', labelKey: 'nav.feedback', icon: MessageSquare },
   { to: '/templates', labelKey: 'nav.templates', icon: LayoutTemplate },
   { to: '/report-templates', labelKey: 'nav.reportTemplates', icon: FileText },
+  { to: '/notifications', labelKey: 'nav.notifications', icon: Bell },
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },
   { to: '/health', labelKey: 'nav.system', icon: Heart },
 ];
