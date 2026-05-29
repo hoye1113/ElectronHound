@@ -81,17 +81,15 @@
 
 ## 下一轮计划
 
-**迭代 16 — 轨道 A: 剩余 Dashboard 组件测试**
+**迭代 19 — 轨道 E: Agent Loop 端到端验证**
 
-待测试组件（按优先级）：
+- 使用内置 fixture 验证 MiniMax-M2.7 agent loop（已完成：PASS, 2 steps, 1m 36s）
+- FlowyClaw e2e 测试受阻于 `electron-updater@6.8.3` 崩溃（需用户确认环境差异）
+
+**迭代 20 — 轨道 A: 剩余覆盖提升**
+
+待测试组件：
 1. main.tsx (10 行) - 入口文件，难测试
+2. TaskDetail.tsx (76.92%) - 部分覆盖
 
-预计贡献：+0.05% 覆盖率
-
-**迭代 17 — 轨道 B: 其他服务器测试优化**
-
-可优化的服务器测试文件（同样 pattern）：
-- health-exports-stream.test.ts
-- export.test.ts
-- server.test.ts
-- routes.test.ts
+预计贡献：+0.1% 覆盖率
