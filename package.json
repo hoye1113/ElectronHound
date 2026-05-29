@@ -43,7 +43,10 @@
     "agent:run": "npx tsx packages/agent-core/src/cli.ts",
     "changeset": "changeset",
     "version": "changeset version",
-    "release": "pnpm build && pnpm test && changeset publish"
+    "release": "pnpm build && pnpm test && changeset publish",
+    "bench": "vitest bench --run",
+    "bench:update": "node scripts/update-baseline.js",
+    "bench:check": "node scripts/check-benchmark.js"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",

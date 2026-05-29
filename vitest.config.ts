@@ -23,6 +23,11 @@ export default defineConfig({
       },
     },
   },
+  bench: {
+    include: ['benchmarks/**/*.bench.ts'],
+    reporters: ['default', 'json'],
+    outputFile: 'benchmarks/current.json',
+  },
   coverage: {
     provider: 'v8',
     reporter: ['text', 'lcov'],
