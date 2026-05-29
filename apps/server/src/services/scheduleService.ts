@@ -2,6 +2,7 @@ import type Database from 'better-sqlite3';
 import { randomUUID } from 'node:crypto';
 import { CronExpressionParser } from 'cron-parser';
 import { getLogger } from '@eata/agent-core/dx';
+import { NotificationService } from './notificationService.js';
 
 interface ScheduleRow {
   id: string;
@@ -26,9 +27,18 @@ export class ScheduleService {
   private db: Database.Database;
   private timers: Map<string, ReturnType<typeof setTimeout>> = new Map();
   private logger = getLogger({ source: 'scheduleService' });
+  private notificationService: NotificationService;
 
   constructor(db: Database.Database) {
     this.db = db;
+    this.notificationService = new NotificationService();
+  }
+
+  /**
+   * Get the notification service for external SSE broadcast wiring.
+   */
+  getNotificationService(): NotificationService {
+    return this.notificationService;
   }
 
   /**
@@ -152,10 +162,26 @@ export class ScheduleService {
 
       this.logger.info(`Executed schedule ${schedule.name}, created task ${taskId}`);
 
+      // Notify on successful execution
+      await this.notificationService.send({
+        event: 'schedule:executed',
+        title: `Schedule "${schedule.name}" executed`,
+        message: `Created task ${taskId} from template`,
+        data: { scheduleId, taskId, scheduleName: schedule.name },
+      });
+
       // Schedule next run
       this.scheduleNext(schedule);
     } catch (err: unknown) {
       this.logger.error(`Failed to execute schedule ${schedule.name}`, err);
+
+      // Notify on failure
+      await this.notificationService.send({
+        event: 'schedule:failed',
+        title: `Schedule "${schedule.name}" failed`,
+        message: err instanceof Error ? err.message : String(err),
+        data: { scheduleId, scheduleName: schedule.name },
+      });
 
       // Record failed run
       this.db

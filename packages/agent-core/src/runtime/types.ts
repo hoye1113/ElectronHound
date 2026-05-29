@@ -26,6 +26,8 @@ export interface AgentLoopConfig {
   maxSteps?: number;
   /** Number of consecutive identical observations before stuck detection triggers. @default 3 */
   stuckThreshold?: number;
+  /** Optional callback invoked after each step completes. Used for checkpoint persistence. */
+  onStepComplete?: (stepCount: number, state: AgentLoopState) => void;
 }
 
 /**

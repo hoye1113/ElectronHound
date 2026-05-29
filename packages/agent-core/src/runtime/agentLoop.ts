@@ -206,6 +206,7 @@ export class AgentLoop {
   private readonly mcp: MCPClient | undefined;
   private readonly maxSteps: number;
   private readonly stuckThreshold: number;
+  private readonly onStepComplete?: (stepCount: number, state: AgentLoopState) => void;
   private readonly logger = createStderrLogger('agentLoop');
 
   constructor(config: AgentLoopConfig) {
@@ -214,6 +215,7 @@ export class AgentLoop {
     this.mcp = config.mcpClient;
     this.maxSteps = config.maxSteps ?? DEFAULT_MAX_STEPS;
     this.stuckThreshold = config.stuckThreshold ?? DEFAULT_STUCK_THRESHOLD;
+    this.onStepComplete = config.onStepComplete;
   }
 
   /**
@@ -315,6 +317,9 @@ export class AgentLoop {
           content: JSON.stringify(execution),
           type: 'system',
         });
+
+        // ── Checkpoint save ─────────────────────────────────────────
+        this.onStepComplete?.(state.stepCount, state);
 
         // ── 4. Verify ───────────────────────────────────────────────
         this.logger.info(`Execution result: success=${execution.success}, error=${execution.error ?? 'none'}`);
@@ -452,6 +457,9 @@ export class AgentLoop {
           content: JSON.stringify(execution),
           type: 'system',
         });
+
+        // ── Checkpoint save ─────────────────────────────────────────
+        this.onStepComplete?.(state.stepCount, state);
 
         // ── 4. Verify ───────────────────────────────────────────────
         this.logger.info(`Execution result: success=${execution.success}, error=${execution.error ?? 'none'}`);

@@ -8,6 +8,21 @@ import { createStderrLogger } from '../utils/logger.js';
 
 const logger = createStderrLogger('audit-chain');
 
+const ROLE_TIMEOUT_MS = 60_000; // 60 seconds per role
+
+/**
+ * Race a promise against a timeout. Rejects with a timeout error if the
+ * promise does not settle within `ms` milliseconds.
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms),
+    ),
+  ]);
+}
+
 /**
  * Create a failure output placeholder for a sub-agent that threw an exception.
  */
@@ -47,11 +62,11 @@ export async function runAuditChain(input: SubAgentInput): Promise<AuditChainRes
   const security = new SecurityReviewer();
   const synthesizer = new ReportSynthesizer();
 
-  // Phase 1: Run planner, analyst, and security in parallel
+  // Phase 1: Run planner, analyst, and security in parallel (with per-role timeout)
   const [planResult, analysisResult, securityResult] = await Promise.allSettled([
-    planner.run(input),
-    analyst.run(input),
-    security.run(input),
+    withTimeout(planner.run(input), ROLE_TIMEOUT_MS, 'test-planner'),
+    withTimeout(analyst.run(input), ROLE_TIMEOUT_MS, 'execution-analyst'),
+    withTimeout(security.run(input), ROLE_TIMEOUT_MS, 'security-reviewer'),
   ]);
 
   // Extract results with fallback for failed agents
@@ -86,7 +101,7 @@ export async function runAuditChain(input: SubAgentInput): Promise<AuditChainRes
 
   let reportSynthesizerOutput: SubAgentOutput;
   try {
-    reportSynthesizerOutput = await synthesizer.run(synthesizerInput);
+    reportSynthesizerOutput = await withTimeout(synthesizer.run(synthesizerInput), ROLE_TIMEOUT_MS, 'report-synthesizer');
   } catch (err: unknown) {
     logger.error(`report-synthesizer failed: ${toErrorMessage(err)}`);
     reportSynthesizerOutput = makeFailureOutput('report-synthesizer', err);

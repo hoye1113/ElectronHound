@@ -63,17 +63,7 @@ export async function runTest(
   // Create session manager
   const sessionManager = new SessionManager(options.checkpointPath);
 
-  // Create AgentLoop
-  const agentLoop = new AgentLoop({
-    llmProvider,
-    sessionManager,
-    mcpClient,
-    maxSteps: options.maxSteps ?? 50,
-  });
-
-  const taskId = options.taskId ?? crypto.randomUUID();
-
-  // Check for existing checkpoint
+  // Create checkpoint manager for per-step persistence
   let checkpointManager: CheckpointManager | null = null;
   if (options.checkpointPath) {
     try {
@@ -83,6 +73,33 @@ export async function runTest(
     }
   }
 
+  // Create AgentLoop with per-step checkpoint callback
+  const agentLoop = new AgentLoop({
+    llmProvider,
+    sessionManager,
+    mcpClient,
+    maxSteps: options.maxSteps ?? 50,
+    onStepComplete: checkpointManager
+      ? (stepCount, state) => {
+          checkpointManager.save({
+            sessionId: state.sessionId,
+            currentStep: stepCount,
+            maxSteps: options.maxSteps ?? 50,
+            taskPrompt: state.taskPrompt,
+            config: { maxSteps: options.maxSteps ?? 50 },
+            lastObservation: state.currentObservation as unknown as Record<string, unknown> | null,
+            lastPlan: state.lastPlan as unknown as Record<string, unknown> | null,
+            lastExecutionResult: state.lastExecution as unknown as Record<string, unknown> | null,
+            sessionEntries: [],
+            timestamp: new Date().toISOString(),
+          });
+        }
+      : undefined,
+  });
+
+  const taskId = options.taskId ?? crypto.randomUUID();
+
+  // Check for existing checkpoint
   let result;
   const existingCheckpoint = checkpointManager?.get(taskId);
   if (existingCheckpoint) {
