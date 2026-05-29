@@ -8,7 +8,7 @@
  * - GET /api/tasks/batch/:batchId/export/:format — batch export
  * - GET /api/stream/tasks/:id — SSE streaming endpoint
  */
-import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { buildServer } from '../server.js';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -103,6 +103,37 @@ function seedTestData(db: Database.Database, opts?: { batchId?: string }) {
   ).run(TEST_TASK_ID, 'warn', 'Slow response detected', JSON.stringify({ latency: 5000 }), now);
 }
 
+/** Reset DB to seeded state between tests (shared server optimization). */
+function resetDb(db: Database.Database) {
+  db.prepare('DELETE FROM steps').run();
+  db.prepare('DELETE FROM logs').run();
+  db.prepare('DELETE FROM tasks').run();
+  db.prepare('DELETE FROM batches').run();
+  // Delete all non-seeded report templates
+  db.prepare("DELETE FROM report_templates WHERE id != '00000000-0000-0000-0000-000000000001'").run();
+  // Re-seed default template if it was deleted by a test
+  const existing = db.prepare("SELECT id FROM report_templates WHERE id = '00000000-0000-0000-0000-000000000001'").get();
+  if (!existing) {
+    const now = new Date().toISOString();
+    db.prepare(
+      `INSERT INTO report_templates (id, name, description, sections, styling, is_default, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      '00000000-0000-0000-0000-000000000001',
+      'Default',
+      'Default report template',
+      JSON.stringify([{ id: 'section-summary', type: 'summary', title: 'Summary', enabled: true, order: 1 }]),
+      JSON.stringify({ theme: 'light', primaryColor: '#3b82f6' }),
+      1,
+      now,
+      now,
+    );
+  } else {
+    // Reset seeded default to original state in case tests modified it
+    db.prepare("UPDATE report_templates SET is_default = 1, name = 'Default' WHERE id = '00000000-0000-0000-0000-000000000001'").run();
+  }
+}
+
 // ─────────────────────────────────────────────────────────────
 // Health Route Tests
 // ─────────────────────────────────────────────────────────────
@@ -112,7 +143,7 @@ describe('Route: GET /health', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -120,11 +151,13 @@ describe('Route: GET /health', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('returns 200 with ok status', async () => {
     const res = await server.inject({ method: 'GET', url: '/health' });
@@ -204,19 +237,23 @@ describe('Export: Task JSON', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
     server = bundle.server;
     db = bundle.db;
-    seedTestData(db);
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  beforeEach(() => {
+    resetDb(db);
+    seedTestData(db);
   });
 
   it('returns task data with steps and logs', async () => {
@@ -288,19 +325,23 @@ describe('Export: Task CSV', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
     server = bundle.server;
     db = bundle.db;
-    seedTestData(db);
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  beforeEach(() => {
+    resetDb(db);
+    seedTestData(db);
   });
 
   it('returns CSV with correct content type', async () => {
@@ -358,19 +399,23 @@ describe('Export: Task HTML', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
     server = bundle.server;
     db = bundle.db;
-    seedTestData(db);
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  beforeEach(() => {
+    resetDb(db);
+    seedTestData(db);
   });
 
   it('returns self-contained HTML document', async () => {
@@ -458,19 +503,23 @@ describe('Export: Report', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
     server = bundle.server;
     db = bundle.db;
-    seedTestData(db);
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  beforeEach(() => {
+    resetDb(db);
+    seedTestData(db);
   });
 
   it('exports report as JSON', async () => {
@@ -561,19 +610,23 @@ describe('Export: Batch', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
     server = bundle.server;
     db = bundle.db;
-    seedTestData(db, { batchId: BATCH_ID });
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  beforeEach(() => {
+    resetDb(db);
+    seedTestData(db, { batchId: BATCH_ID });
   });
 
   it('exports batch as JSON with batch info and tasks', async () => {
@@ -670,7 +723,7 @@ describe('Export: Edge cases', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -678,11 +731,13 @@ describe('Export: Edge cases', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('exports a task with no steps as JSON', async () => {
     const now = new Date().toISOString();
@@ -822,7 +877,7 @@ describe('Route: GET /api/stream/tasks/:id', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -830,11 +885,13 @@ describe('Route: GET /api/stream/tasks/:id', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('stream route is registered in the server route table', () => {
     // Verify the route exists by checking Fastify's registered routes

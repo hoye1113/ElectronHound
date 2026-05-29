@@ -4,7 +4,7 @@
  * Tests for batch creation, status retrieval, cancellation,
  * and progress updates.
  */
-import { describe, it, expect, afterEach, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { buildServer } from '../server.js';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -17,12 +17,18 @@ function createTempDbPath(): { dbPath: string; cleanupDir: string } {
   return { dbPath: join(tmpDir, 'test-db.sqlite3'), cleanupDir: tmpDir };
 }
 
+/** Reset DB between tests (shared server optimization). */
+function resetDb(db: Database.Database) {
+  db.prepare('DELETE FROM tasks').run();
+  db.prepare('DELETE FROM batches').run();
+}
+
 describe('Route: POST /api/tasks/batch', () => {
   let server: FastifyInstance;
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -30,11 +36,13 @@ describe('Route: POST /api/tasks/batch', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   const validBatchBody = {
     name: 'Test Batch',
@@ -159,7 +167,7 @@ describe('Route: GET /api/tasks/batch/:batchId', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -167,11 +175,13 @@ describe('Route: GET /api/tasks/batch/:batchId', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('returns batch status with task breakdown', async () => {
     // Create a batch first
@@ -264,7 +274,7 @@ describe('Route: POST /api/tasks/batch/:batchId/cancel', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -272,11 +282,13 @@ describe('Route: POST /api/tasks/batch/:batchId/cancel', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('cancels a running batch', async () => {
     // Insert batch and tasks directly to avoid worker pool interference
@@ -365,7 +377,7 @@ describe('Batch Progress Updates', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -373,11 +385,13 @@ describe('Batch Progress Updates', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('returns batch status as completed when all tasks finish', async () => {
     // Insert batch and tasks directly to avoid worker pool interference

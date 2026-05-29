@@ -4,7 +4,7 @@
  * Tests for the export service and API endpoints covering
  * JSON, CSV, and HTML export formats for tasks, reports, and batches.
  */
-import { describe, it, expect, afterEach, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { buildServer } from '../server.js';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -21,6 +21,15 @@ function createTempDbPath(): { dbPath: string; cleanupDir: string } {
 const TEST_TASK_ID = 'a0000000-0000-4000-a000-000000000001';
 const TEST_STEP_1_ID = 'b0000000-0000-4000-b000-000000000001';
 const TEST_STEP_2_ID = 'b0000000-0000-4000-b000-000000000002';
+
+/** Reset DB between tests (shared server optimization). */
+function resetDb(db: Database.Database) {
+  db.prepare('DELETE FROM logs').run();
+  db.prepare('DELETE FROM steps').run();
+  db.prepare('DELETE FROM tasks').run();
+  db.prepare('DELETE FROM batches').run();
+  db.prepare('DELETE FROM report_templates WHERE id != \'00000000-0000-0000-0000-000000000001\'').run();
+}
 
 /** Insert a test task with optional steps and batch. */
 function seedTestData(db: Database.Database, opts?: { batchId?: string }) {
@@ -91,20 +100,21 @@ describe('Export Service: JSON export', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
     server = bundle.server;
     db = bundle.db;
-    seedTestData(db);
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => { resetDb(db); seedTestData(db); });
 
   it('exports task as valid JSON with all fields', async () => {
     const res = await server.inject({
@@ -146,20 +156,21 @@ describe('Export Service: CSV export', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
     server = bundle.server;
     db = bundle.db;
-    seedTestData(db);
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => { resetDb(db); seedTestData(db); });
 
   it('exports task as CSV with correct headers', async () => {
     const res = await server.inject({
@@ -244,20 +255,21 @@ describe('Export Service: HTML export', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
     server = bundle.server;
     db = bundle.db;
-    seedTestData(db);
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => { resetDb(db); seedTestData(db); });
 
   it('exports task as self-contained HTML', async () => {
     const res = await server.inject({
@@ -317,7 +329,7 @@ describe('Export API: Error handling', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -325,11 +337,13 @@ describe('Export API: Error handling', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('returns 404 for non-existent task', async () => {
     const fakeUuid = 'e0000000-0000-4000-e000-000000000001';
@@ -375,27 +389,29 @@ describe('Export API: Batch export', () => {
   let cleanupDir: string;
   const BATCH_ID = 'a1000000-0000-4000-a100-000000000001';
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
     server = bundle.server;
     db = bundle.db;
+  });
 
+  afterAll(async () => {
+    await server.close();
+    db.close();
+    try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  beforeEach(() => {
+    resetDb(db);
     // Insert batch record first (tasks reference batch via FK)
     const now = new Date().toISOString();
     db.prepare(
       `INSERT INTO batches (id, name, status, total_tasks, completed_tasks, failed_tasks, priority, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(BATCH_ID, 'Test Batch', 'completed', 1, 1, 0, 'medium', now, now);
-
     seedTestData(db, { batchId: BATCH_ID });
-  });
-
-  afterEach(async () => {
-    await server.close();
-    db.close();
-    try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
 
   it('exports batch as JSON with all tasks', async () => {

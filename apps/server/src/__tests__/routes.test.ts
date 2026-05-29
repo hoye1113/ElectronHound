@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { buildServer } from '../server.js';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -11,12 +11,25 @@ function createTempDbPath(): { dbPath: string; cleanupDir: string } {
   return { dbPath: join(tmpDir, 'test-db.sqlite3'), cleanupDir: tmpDir };
 }
 
+/** Reset DB tables between tests (shared server optimization). */
+function resetDb(db: Database.Database) {
+  db.prepare('DELETE FROM steps').run();
+  db.prepare('DELETE FROM tasks').run();
+}
+
+/** Reset DB tables and filesystem artifacts between tests. */
+function resetDbWithFs(db: Database.Database) {
+  db.prepare('DELETE FROM steps').run();
+  db.prepare('DELETE FROM tasks').run();
+  try { rmSync('data', { recursive: true, force: true }); } catch { /* ignore */ }
+}
+
 describe('Route: GET /health', () => {
   let server: FastifyInstance;
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -24,11 +37,13 @@ describe('Route: GET /health', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('returns status ok and timestamp', async () => {
     const res = await server.inject({ method: 'GET', url: '/health' });
@@ -44,7 +59,7 @@ describe('Route: POST /api/tasks', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -52,11 +67,13 @@ describe('Route: POST /api/tasks', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   const validBody = {
     goal: 'Click the submit button',
@@ -152,7 +169,7 @@ describe('Route: GET /api/tasks', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -160,11 +177,13 @@ describe('Route: GET /api/tasks', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('returns empty array when no tasks exist', async () => {
     const res = await server.inject({ method: 'GET', url: '/api/tasks' });
@@ -241,7 +260,7 @@ describe('Route: GET /api/tasks/:id', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -249,11 +268,13 @@ describe('Route: GET /api/tasks/:id', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('returns task with steps', async () => {
     const now = new Date().toISOString();
@@ -306,7 +327,7 @@ describe('Route: DELETE /api/tasks/:id', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -314,11 +335,13 @@ describe('Route: DELETE /api/tasks/:id', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDb(db));
 
   it('deletes a queued task and returns 204', async () => {
     const now = new Date().toISOString();
@@ -377,7 +400,7 @@ describe('Route: GET /api/feedback/patterns', () => {
   let cleanupDir: string;
   let originalCwd: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     originalCwd = process.cwd();
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
@@ -390,12 +413,14 @@ describe('Route: GET /api/feedback/patterns', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     process.chdir(originalCwd);
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDbWithFs(db));
 
   it('returns empty array when no patterns file exists', async () => {
     const res = await server.inject({ method: 'GET', url: '/api/feedback/patterns' });
@@ -457,7 +482,7 @@ describe('Route: GET /api/tasks/:id/report', () => {
   let cleanupDir: string;
   let originalCwd: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     originalCwd = process.cwd();
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
@@ -470,12 +495,14 @@ describe('Route: GET /api/tasks/:id/report', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     process.chdir(originalCwd);
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
+
+  beforeEach(() => resetDbWithFs(db));
 
   it('returns 404 when report directory does not exist', async () => {
     const res = await server.inject({ method: 'GET', url: '/api/tasks/550e8400-e29b-41d4-a716-446655440099/report' });

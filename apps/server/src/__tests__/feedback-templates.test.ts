@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { buildServer } from '../server.js';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -21,7 +21,7 @@ describe('Route: GET /api/feedback/patterns (extended)', () => {
   let cleanupDir: string;
   let originalCwd: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     originalCwd = process.cwd();
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
@@ -31,11 +31,16 @@ describe('Route: GET /api/feedback/patterns (extended)', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     process.chdir(originalCwd);
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  beforeEach(() => {
+    const feedbackDir = join('data', 'feedback');
+    try { rmSync(feedbackDir, { recursive: true, force: true }); } catch { /* ignore */ }
   });
 
   it('returns multiple patterns from JSONL file', async () => {
@@ -154,7 +159,7 @@ describe('Route: GET /api/templates', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -162,10 +167,14 @@ describe('Route: GET /api/templates', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  beforeEach(() => {
+    db.prepare('DELETE FROM templates WHERE built_in = 0').run();
   });
 
   it('returns built-in templates on fresh database', async () => {
@@ -262,7 +271,7 @@ describe('Route: GET /api/templates/:id', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -270,10 +279,14 @@ describe('Route: GET /api/templates/:id', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  beforeEach(() => {
+    db.prepare('DELETE FROM templates WHERE built_in = 0').run();
   });
 
   it('returns a built-in template by id', async () => {
@@ -337,7 +350,7 @@ describe('Route: POST /api/templates', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -345,10 +358,14 @@ describe('Route: POST /api/templates', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  beforeEach(() => {
+    db.prepare('DELETE FROM templates WHERE built_in = 0').run();
   });
 
   const validBody = {
@@ -538,7 +555,7 @@ describe('Route: PUT /api/templates/:id', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -546,10 +563,14 @@ describe('Route: PUT /api/templates/:id', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  beforeEach(() => {
+    db.prepare('DELETE FROM templates WHERE built_in = 0').run();
   });
 
   function insertCustomTemplate(id = 'custom-update') {
@@ -704,7 +725,7 @@ describe('Route: DELETE /api/templates/:id', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -712,10 +733,14 @@ describe('Route: DELETE /api/templates/:id', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  beforeEach(() => {
+    db.prepare('DELETE FROM templates WHERE built_in = 0').run();
   });
 
   function insertCustomTemplate(id = 'custom-delete') {
@@ -794,7 +819,7 @@ describe('Templates: Full CRUD integration', () => {
   let db: Database.Database;
   let cleanupDir: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { dbPath, cleanupDir: dir } = createTempDbPath();
     cleanupDir = dir;
     const bundle = await buildServer({ databasePath: dbPath });
@@ -802,10 +827,14 @@ describe('Templates: Full CRUD integration', () => {
     db = bundle.db;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await server.close();
     db.close();
     try { rmSync(cleanupDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  beforeEach(() => {
+    db.prepare('DELETE FROM templates WHERE built_in = 0').run();
   });
 
   it('create -> get -> update -> delete lifecycle', async () => {
