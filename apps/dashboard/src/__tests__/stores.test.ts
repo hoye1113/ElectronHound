@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { api } from '../lib/api.js';
 import { useTaskStore } from '../stores/taskStore.js';
 import type { Task } from '@eata/shared-types';

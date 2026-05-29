@@ -106,7 +106,6 @@ export default function CreateTaskForm({ open, onOpenChange, onSuccess }: Create
   // Reset form when dialog is closed (handles controlled open prop changes)
   useEffect(() => {
     if (!open) reset();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const providers = providersConfig?.providers ?? [];

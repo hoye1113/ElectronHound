@@ -20,8 +20,6 @@ vi.mock('../lib/api', () => ({
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
-type BatchStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
-
 function makeBatchData(overrides: Record<string, unknown> = {}) {
   return {
     id: 'batch-001',
