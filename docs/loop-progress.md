@@ -27,6 +27,7 @@
 | W19 | C | 重复代码合并 + 错误处理 | 86.63% | 2306 | ~25s | - | `1c3325a` | 2026-05-29 |
 | W20 | A | TaskDetail 组件测试 x12 | 86.99% | 2318 | ~28s | - | - | 2026-05-29 |
 | W21 | A | Wave 21 覆盖率优化 x6 | ~88% | 2367 | ~18s | - | - | 2026-05-29 |
+| W22 | A+C | 覆盖率补全 x3 + TS strict | ~89% | 2375 | ~20s | - | - | 2026-05-29 |
 
 ---
 
@@ -34,9 +35,9 @@
 
 | 指标 | 基线 | 当前 | 目标 | 差距 |
 |------|------|------|------|------|
-| 覆盖率 (stmts) | ~68% | ~88% | 80% | 达标 |
-| 测试数量 | 1280 | 2367 | 持续增长 | - |
-| 测试时间 | ~65s | ~18s | <30s | 达标 |
+| 覆盖率 (stmts) | ~68% | ~89% | 80% | 达标 |
+| 测试数量 | 1280 | 2375 | 持续增长 | - |
+| 测试时间 | ~65s | ~20s | <30s | 达标 |
 | ESLint 错误 | 110 | 0 | 0 | 达标 |
 | 裸 catch 块 | 73+ | 0 | 0 | 达标 |
 | `as unknown as` | 12 | 0 | 0 | 达标 |
@@ -77,7 +78,7 @@
 |------|------|------|------|
 | A: 覆盖率提升 | 0% 文件测试补充 | 已达标 | 72% → ~88% |
 | B: 测试性能 | 慢测试优化 | 已达标 | 85s → 18s (目标 <30s) |
-| C: 代码质量 | ESLint/类型/日志 | 已完成 | 0 错误 |
+| C: 代码质量 | ESLint/类型/日志/strict | 已完成 | 0 错误, strict=true |
 | D: 安全加固 | CVE/验证/敏感信息 | 已完成 | 1 CVE (dev) |
 
 ---
@@ -93,8 +94,14 @@
 - Wave E: server.ts 71.32% → 83.08% (6 tests)
 - Wave F: CreateTaskForm.tsx 79.43% → 97.66% (5 tests)
 
+### Wave 22 完成 — 覆盖率补全 + TypeScript strict
+
+- health.ts 错误路径测试 → 100% stmts
+- templates.ts 验证测试 → 100% stmts
+- batches.ts 500 错误测试 → 100% stmts
+- Dashboard tsconfig.app.json + tsconfig.node.json 启用 `strict: true`（0 errors）
+
 ### 后续方向
 
-- TypeScript strict 模式评估（需人工决策）
 - Skipped 测试审查（已标记 Deferred）
 - FlowyClaw e2e 测试（受阻于 electron-updater 崩溃）

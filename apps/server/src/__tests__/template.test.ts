@@ -235,6 +235,57 @@ describe('Template Routes', () => {
     });
   });
 
+  describe('PUT /api/templates/:id — validation', () => {
+    it('returns 400 when name is empty string', async () => {
+      const createRes = await server.inject({
+        method: 'POST',
+        url: '/api/templates',
+        payload: { name: 'To Validate', category: 'custom', goal: 'Test' },
+      });
+      const created = JSON.parse(createRes.body);
+
+      const res = await server.inject({
+        method: 'PUT',
+        url: `/api/templates/${created.id}`,
+        payload: { name: '' },
+      });
+
+      expect(res.statusCode).toBe(400);
+      const body = JSON.parse(res.body);
+      expect(body.error).toBe('Validation failed');
+    });
+
+    it('returns 400 when category is invalid', async () => {
+      const createRes = await server.inject({
+        method: 'POST',
+        url: '/api/templates',
+        payload: { name: 'Cat Test', category: 'custom', goal: 'Test' },
+      });
+      const created = JSON.parse(createRes.body);
+
+      const res = await server.inject({
+        method: 'PUT',
+        url: `/api/templates/${created.id}`,
+        payload: { category: 'not-a-valid-category' },
+      });
+
+      expect(res.statusCode).toBe(400);
+      const body = JSON.parse(res.body);
+      expect(body.error).toBe('Validation failed');
+    });
+  });
+
+  describe('GET /api/templates — filter fallback', () => {
+    it('returns all templates when category filter is invalid', async () => {
+      const res = await server.inject({ method: 'GET', url: '/api/templates?category=invalid-cat' });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      // Should fall back to unfiltered results
+      expect(body.data.length).toBe(6);
+    });
+  });
+
   describe('DELETE /api/templates/:id', () => {
     it('deletes a custom template', async () => {
       // First create a custom template

@@ -226,6 +226,37 @@ describe('Route: GET /health', () => {
     expect(res.statusCode).toBe(200);
     expect(JSON.parse(res.body).status).toBe('ok');
   });
+
+  it('reports database error when db.prepare throws', async () => {
+    const originalPrepare = db.prepare.bind(db);
+    db.prepare = () => { throw new Error('DB connection lost'); };
+
+    const res = await server.inject({ method: 'GET', url: '/health' });
+    const body = JSON.parse(res.body);
+
+    expect(body.checks.database.status).toBe('error');
+    expect(body.checks.database.message).toContain('DB connection lost');
+    expect(body.status).toBe('error');
+
+    db.prepare = originalPrepare;
+  });
+
+  it('reports worker pool error when pool.getRunningCount throws', async () => {
+    const pool = (server as unknown as Record<string, unknown>).workerPool as Record<string, unknown> | undefined;
+    if (!pool) return; // skip if pool not decorated
+
+    const original = pool.getRunningCount as () => number;
+    pool.getRunningCount = () => { throw new Error('Pool destroyed'); };
+
+    const res = await server.inject({ method: 'GET', url: '/health' });
+    const body = JSON.parse(res.body);
+
+    expect(body.checks.workerPool.status).toBe('error');
+    expect(body.checks.workerPool.message).toBe('Worker pool unavailable');
+    expect(body.status).toBe('error');
+
+    pool.getRunningCount = original;
+  });
 });
 
 // ─────────────────────────────────────────────────────────────

@@ -160,6 +160,28 @@ describe('Route: POST /api/tasks/batch', () => {
 
     expect(res.statusCode).toBe(400);
   });
+
+  it('returns 500 when batch service throws', async () => {
+    const originalDb = server.db;
+    const mockDb = {
+      ...originalDb,
+      prepare: () => { throw new Error('DB connection lost'); },
+      transaction: () => { throw new Error('DB connection lost'); },
+    } as unknown as Database.Database;
+    (server as unknown as Record<string, unknown>).db = mockDb;
+
+    const res = await server.inject({
+      method: 'POST',
+      url: '/api/tasks/batch',
+      payload: { tasks: [{ goal: 'Test' }] },
+    });
+
+    expect(res.statusCode).toBe(500);
+    const body = JSON.parse(res.body);
+    expect(body.error).toBe('Failed to create batch');
+
+    (server as unknown as Record<string, unknown>).db = originalDb;
+  });
 });
 
 describe('Route: GET /api/tasks/batch/:batchId', () => {
@@ -234,6 +256,26 @@ describe('Route: GET /api/tasks/batch/:batchId', () => {
     expect(res.statusCode).toBe(400);
     const body = JSON.parse(res.body);
     expect(body.error).toBe('Invalid batch ID format');
+  });
+
+  it('returns 500 when batch service throws on get', async () => {
+    const originalDb = server.db;
+    const mockDb = {
+      ...originalDb,
+      prepare: () => { throw new Error('DB read error'); },
+    } as unknown as Database.Database;
+    (server as unknown as Record<string, unknown>).db = mockDb;
+
+    const res = await server.inject({
+      method: 'GET',
+      url: '/api/tasks/batch/550e8400-e29b-41d4-a716-446655440000',
+    });
+
+    expect(res.statusCode).toBe(500);
+    const body = JSON.parse(res.body);
+    expect(body.error).toBe('Failed to get batch status');
+
+    (server as unknown as Record<string, unknown>).db = originalDb;
   });
 
   it('calculates progress percentage correctly', async () => {
@@ -343,6 +385,26 @@ describe('Route: POST /api/tasks/batch/:batchId/cancel', () => {
     });
 
     expect(res.statusCode).toBe(400);
+  });
+
+  it('returns 500 when batch service throws on cancel', async () => {
+    const originalDb = server.db;
+    const mockDb = {
+      ...originalDb,
+      prepare: () => { throw new Error('DB write error'); },
+    } as unknown as Database.Database;
+    (server as unknown as Record<string, unknown>).db = mockDb;
+
+    const res = await server.inject({
+      method: 'POST',
+      url: '/api/tasks/batch/550e8400-e29b-41d4-a716-446655440000/cancel',
+    });
+
+    expect(res.statusCode).toBe(500);
+    const body = JSON.parse(res.body);
+    expect(body.error).toBe('Failed to cancel batch');
+
+    (server as unknown as Record<string, unknown>).db = originalDb;
   });
 
   it('returns 409 for already completed batch', async () => {
