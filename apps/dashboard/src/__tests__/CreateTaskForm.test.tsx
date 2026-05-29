@@ -154,4 +154,113 @@ describe('CreateTaskForm', () => {
     rerender(<CreateTaskForm open={true} onOpenChange={defaultProps.onOpenChange} />);
     expect((screen.getByLabelText('Goal') as HTMLTextAreaElement).value).toBe('');
   });
+
+  it('renders provider selector when providers are loaded', async () => {
+    vi.stubGlobal('fetch', vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          version: 1,
+          providers: [
+            { id: 'p1', name: 'Provider 1', model: 'gpt-4o', type: 'openai-compatible', apiKey: '', baseURL: '' },
+            { id: 'p2', name: 'Provider 2', model: 'claude-3', type: 'openai-compatible', apiKey: '', baseURL: '' },
+          ],
+          activeId: 'p1',
+        }),
+      }),
+    ));
+
+    render(<CreateTaskForm {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('LLM Provider')).toBeInTheDocument();
+    });
+  });
+
+  it('handles provider loading failure gracefully', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('Network error'))));
+
+    render(<CreateTaskForm {...defaultProps} />);
+
+    // Form should still render and be functional
+    await waitFor(() => {
+      expect(screen.getByLabelText('Goal')).toBeInTheDocument();
+      expect(screen.getByLabelText('Target App Path')).toBeInTheDocument();
+    });
+  });
+
+  it('displays error message when createTask fails', async () => {
+    mockCreateTask.mockRejectedValueOnce(new Error('Server error'));
+
+    render(<CreateTaskForm {...defaultProps} />);
+
+    fireEvent.change(screen.getByLabelText('Goal'), {
+      target: { value: 'Test' },
+    });
+    fireEvent.change(screen.getByLabelText('Target App Path'), {
+      target: { value: '/app' },
+    });
+    fireEvent.click(screen.getByText('Create Task'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Failed to create task/)).toBeInTheDocument();
+    });
+  });
+
+  it('disables submit button while submitting', async () => {
+    let resolveCreate: (v: unknown) => void;
+    mockCreateTask.mockReturnValueOnce(new Promise((r) => { resolveCreate = r; }));
+
+    render(<CreateTaskForm {...defaultProps} />);
+
+    fireEvent.change(screen.getByLabelText('Goal'), {
+      target: { value: 'Test' },
+    });
+    fireEvent.change(screen.getByLabelText('Target App Path'), {
+      target: { value: '/app' },
+    });
+    fireEvent.click(screen.getByText('Create Task'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Creating...')).toBeDisabled();
+    });
+
+    resolveCreate!(undefined);
+  });
+
+  it('includes providerId in submission when provider is auto-selected via activeId', async () => {
+    vi.stubGlobal('fetch', vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          version: 1,
+          providers: [
+            { id: 'p1', name: 'Provider 1', model: 'gpt-4o', type: 'openai-compatible', apiKey: '', baseURL: '' },
+          ],
+          activeId: 'p1',
+        }),
+      }),
+    ));
+
+    render(<CreateTaskForm {...defaultProps} />);
+
+    // Wait for providers to load and auto-select activeId
+    await waitFor(() => {
+      expect(screen.getByText('LLM Provider')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText('Goal'), {
+      target: { value: 'Test with provider' },
+    });
+    fireEvent.change(screen.getByLabelText('Target App Path'), {
+      target: { value: '/app' },
+    });
+    fireEvent.click(screen.getByText('Create Task'));
+
+    await waitFor(() => {
+      expect(mockCreateTask).toHaveBeenCalledWith(
+        expect.objectContaining({ providerId: 'p1' }),
+      );
+    });
+  });
 });

@@ -13,12 +13,11 @@ describe('buildServer', () => {
   let cleanupDirs: string[] = [];
 
   afterEach(async () => {
-    // Cleanup temp directories
     for (const dir of cleanupDirs) {
       try {
         rmSync(dir, { recursive: true, force: true });
       } catch {
-        // Ignore cleanup errors
+        /* ignore */
       }
     }
     cleanupDirs = [];
@@ -108,6 +107,118 @@ describe('buildServer', () => {
     expect(indexNames).toContain('idx_steps_task_id');
     expect(indexNames).toContain('idx_logs_task_id');
     expect(indexNames).toContain('idx_tasks_status');
+
+    await server.close();
+    db.close();
+  });
+});
+
+describe('API key authentication', () => {
+  let cleanupDirs: string[] = [];
+
+  afterEach(async () => {
+    for (const dir of cleanupDirs) {
+      try {
+        rmSync(dir, { recursive: true, force: true });
+      } catch {
+        /* ignore */
+      }
+    }
+    cleanupDirs = [];
+  });
+
+  it('allows all requests when no apiKey is configured', async () => {
+    const dbPath = createTempDbPath();
+    cleanupDirs.push(dbPath.replace(/[^/\\]+$/, ''));
+    const { server, db } = await buildServer({ databasePath: dbPath });
+
+    const res = await server.inject({ method: 'GET', url: '/health' });
+    expect(res.statusCode).toBe(200);
+
+    await server.close();
+    db.close();
+  });
+
+  it('returns 401 when apiKey is set but no header provided', async () => {
+    const dbPath = createTempDbPath();
+    cleanupDirs.push(dbPath.replace(/[^/\\]+$/, ''));
+    const { server, db } = await buildServer({ databasePath: dbPath, apiKey: 'test-secret' });
+
+    const res = await server.inject({ method: 'GET', url: '/api/tasks' });
+    expect(res.statusCode).toBe(401);
+    const body = JSON.parse(res.body);
+    expect(body.error).toBe('Unauthorized');
+
+    await server.close();
+    db.close();
+  });
+
+  it('allows request when correct x-api-key header is provided', async () => {
+    const dbPath = createTempDbPath();
+    cleanupDirs.push(dbPath.replace(/[^/\\]+$/, ''));
+    const { server, db } = await buildServer({ databasePath: dbPath, apiKey: 'test-secret' });
+
+    const res = await server.inject({
+      method: 'GET',
+      url: '/api/tasks',
+      headers: { 'x-api-key': 'test-secret' },
+    });
+    expect(res.statusCode).toBe(200);
+
+    await server.close();
+    db.close();
+  });
+
+  it('skips auth for /health even when apiKey is set', async () => {
+    const dbPath = createTempDbPath();
+    cleanupDirs.push(dbPath.replace(/[^/\\]+$/, ''));
+    const { server, db } = await buildServer({ databasePath: dbPath, apiKey: 'test-secret' });
+
+    const res = await server.inject({ method: 'GET', url: '/health' });
+    expect(res.statusCode).toBe(200);
+
+    await server.close();
+    db.close();
+  });
+
+  it('skips auth for /api/stream paths even when apiKey is set', async () => {
+    const dbPath = createTempDbPath();
+    cleanupDirs.push(dbPath.replace(/[^/\\]+$/, ''));
+    const { server, db } = await buildServer({ databasePath: dbPath, apiKey: 'test-secret' });
+
+    // SSE endpoint with invalid UUID should get 400 (validation), not 401 (auth)
+    const res = await server.inject({
+      method: 'GET',
+      url: '/api/stream/tasks/not-a-uuid',
+    });
+    expect(res.statusCode).toBe(400);
+
+    await server.close();
+    db.close();
+  });
+});
+
+describe('config overrides', () => {
+  let cleanupDirs: string[] = [];
+
+  afterEach(async () => {
+    for (const dir of cleanupDirs) {
+      try {
+        rmSync(dir, { recursive: true, force: true });
+      } catch {
+        /* ignore */
+      }
+    }
+    cleanupDirs = [];
+  });
+
+  it('starts successfully with minimal config', async () => {
+    const dbPath = createTempDbPath();
+    cleanupDirs.push(dbPath.replace(/[^/\\]+$/, ''));
+
+    const { server, db } = await buildServer({ databasePath: dbPath });
+    const res = await server.inject({ method: 'GET', url: '/health' });
+    expect(res.statusCode).toBe(200);
 
     await server.close();
     db.close();
