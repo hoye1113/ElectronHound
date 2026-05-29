@@ -111,7 +111,9 @@ export const api = {
       });
     },
     delete(id: string): Promise<void> {
-      return fetch(`${API_BASE}/api/tasks/${id}`, { method: 'DELETE' }).then(() => undefined);
+      return fetch(`${API_BASE}/api/tasks/${id}`, { method: 'DELETE' }).then(res => {
+        if (!res.ok) throw new Error(`Delete task failed: ${res.status}`);
+      });
     },
     cancel(id: string): Promise<Task> {
       return fetchJson(`${API_BASE}/api/tasks/${id}/cancel`, { method: 'POST' });
@@ -149,7 +151,9 @@ export const api = {
       });
     },
     delete(id: string): Promise<void> {
-      return fetch(`${API_BASE}/api/providers/${id}`, { method: 'DELETE' }).then(() => undefined);
+      return fetch(`${API_BASE}/api/providers/${id}`, { method: 'DELETE' }).then(res => {
+        if (!res.ok) throw new Error(`Delete provider failed: ${res.status}`);
+      });
     },
     test(id: string): Promise<{ success: boolean; error?: string; message?: string }> {
       return fetchJson(`${API_BASE}/api/providers/${id}/test`, {
@@ -180,7 +184,9 @@ export const api = {
       });
     },
     delete(id: string): Promise<void> {
-      return fetch(`${API_BASE}/api/templates/${id}`, { method: 'DELETE' }).then(() => undefined);
+      return fetch(`${API_BASE}/api/templates/${id}`, { method: 'DELETE' }).then(res => {
+        if (!res.ok) throw new Error(`Delete template failed: ${res.status}`);
+      });
     },
   },
   health: {

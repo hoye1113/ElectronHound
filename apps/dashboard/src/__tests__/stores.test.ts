@@ -100,7 +100,7 @@ describe('api', () => {
 
   describe('tasks.delete', () => {
     it('deletes a task', async () => {
-      mockFetch.mockResolvedValueOnce({ json: () => Promise.resolve({}) });
+      mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
 
       await api.tasks.delete(mockTask.id);
 
@@ -184,7 +184,7 @@ describe('taskStore', () => {
   it('deleteTask removes task from list', async () => {
     // First add a task
     useTaskStore.setState({ tasks: [mockTask] });
-    mockFetch.mockResolvedValueOnce({ json: () => Promise.resolve({}) });
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
 
     await useTaskStore.getState().deleteTask(mockTask.id);
 

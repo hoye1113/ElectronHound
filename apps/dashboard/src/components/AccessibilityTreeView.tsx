@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, type TFunction } from 'react-i18next';
 import { ChevronRight, ChevronDown, TreePine } from 'lucide-react';
 
 interface AccessibilityTreeNode {
@@ -45,8 +45,7 @@ export default function AccessibilityTreeView({ snapshot }: AccessibilityTreeVie
 interface TreeNodeProps {
   node: AccessibilityTreeNode;
   depth: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  t: any;
+  t: TFunction;
 }
 
 function TreeNode({ node, depth, t }: TreeNodeProps) {

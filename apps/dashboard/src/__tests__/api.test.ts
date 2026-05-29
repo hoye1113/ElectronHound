@@ -272,11 +272,10 @@ describe('api.tasks', () => {
       expect(result).toBeUndefined();
     });
 
-    it('silently swallows non-OK response (resolves to undefined)', async () => {
+    it('throws on non-OK response', async () => {
       mockFetch.mockResolvedValueOnce(errorResponse({ error: 'Not found' }, 404));
 
-      const result = await api.tasks.delete('task-1');
-      expect(result).toBeUndefined();
+      await expect(api.tasks.delete('task-1')).rejects.toThrow('Delete task failed: 404');
     });
   });
 
@@ -414,11 +413,10 @@ describe('api.providers', () => {
     );
   });
 
-  it('delete silently swallows non-OK response (resolves to undefined)', async () => {
+  it('delete throws on non-OK response', async () => {
     mockFetch.mockResolvedValueOnce(errorResponse({ error: 'Forbidden' }, 403));
 
-    const result = await api.providers.delete('p1');
-    expect(result).toBeUndefined();
+    await expect(api.providers.delete('p1')).rejects.toThrow('Delete provider failed: 403');
   });
 
   it('test sends POST to test endpoint', async () => {
@@ -517,11 +515,10 @@ describe('api.templates', () => {
     );
   });
 
-  it('delete silently swallows non-OK response (resolves to undefined)', async () => {
+  it('delete throws on non-OK response', async () => {
     mockFetch.mockResolvedValueOnce(errorResponse({ error: 'Not found' }, 404));
 
-    const result = await api.templates.delete('t1');
-    expect(result).toBeUndefined();
+    await expect(api.templates.delete('t1')).rejects.toThrow('Delete template failed: 404');
   });
 });
 
