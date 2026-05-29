@@ -28,7 +28,8 @@
 | W20 | A | TaskDetail 组件测试 x12 | 86.99% | 2318 | ~28s | - | - | 2026-05-29 |
 | W21 | A | Wave 21 覆盖率优化 x6 | ~88% | 2367 | ~18s | - | - | 2026-05-29 |
 | W22 | A+C | 覆盖率补全 x3 + TS strict | ~89% | 2375 | ~20s | - | - | 2026-05-29 |
-| W23 | F | FewShot 持久化 + BatchList API + 代码清理 | ~89% | 2410 | ~18s | - | - | 2026-05-29 |
+| W23 | F | FewShot 持久化 + BatchList API + 代码清理 | ~89% | 2410 | ~18s | - | `01fd998` | 2026-05-29 |
+| W24 | ALL | 性能基准 + 测试调度 + Dashboard 高级 + Agent 增强 | ~89% | 2483 | ~22s | - | 多个 | 2026-05-29 |
 
 ---
 
@@ -37,8 +38,8 @@
 | 指标 | 基线 | 当前 | 目标 | 差距 |
 |------|------|------|------|------|
 | 覆盖率 (stmts) | ~68% | ~89% | 80% | 达标 |
-| 测试数量 | 1280 | 2410 | 持续增长 | - |
-| 测试时间 | ~65s | ~18s | <30s | 达标 |
+| 测试数量 | 1280 | 2483 | 持续增长 | - |
+| 测试时间 | ~65s | ~22s | <30s | 达标 |
 | ESLint 错误 | 110 | 0 | 0 | 达标 |
 | 裸 catch 块 | 73+ | 0 | 0 | 达标 |
 | `as unknown as` | 12 | 0 | 0 | 达标 |
@@ -122,8 +123,30 @@
 - 删除未使用的 api.templates.get(id) 方法
 - 更新 Direction G 文档
 
+### Wave 24 完成 — 全栈功能扩展
+
+**性能基准系统：**
+- vitest bench 微基准测试覆盖 API/数据库/Agent/测试套件 4 层
+- 22 个 benchmark 通过
+- CI 回归检测（10% 阈值）集成到 GitHub Actions
+
+**测试调度系统：**
+- Cron 表达式定时运行测试模板
+- schedules + schedule_runs 数据库表
+- CRUD API + 立即执行 + 执行历史
+- ScheduleService（setTimeout 调度）+ NotificationService（Webhook + SSE）
+
+**Dashboard 高级功能：**
+- 测试结果对比视图（CompareView 页面）
+- recharts 趋势图表（PassRateChart, TaskStatusChart, ExecutionTimeChart）
+- 趋势数据 API（GET /api/tasks/trends）
+
+**Agent 增强：**
+- 5 个新 electron-helper 操作（screenshot, console, eval, network, window）
+- 并行 audit-chain（Promise.allSettled）
+- CheckpointManager 断点续传
+
 ### 后续方向
 
 - Skipped 测试审查（已标记 Deferred）
 - FlowyClaw e2e 测试（受阻于 electron-updater 崩溃）
-- 测试调度 + 对比 + 通知功能
