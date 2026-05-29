@@ -59,3 +59,10 @@ jobs:
           files: ./coverage/lcov.info
           fail_ci_if_error: false
         continue-on-error: true
+
+      - name: Run benchmarks
+        run: pnpm bench
+
+      - name: Check benchmark regression
+        run: pnpm bench:check
+        continue-on-error: true
