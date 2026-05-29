@@ -248,6 +248,25 @@
     "exportHtml": "导出 HTML",
     "loadError": "加载任务详情失败"
   },
+  "reportView": {
+    "loading": "加载报告...",
+    "notFound": "未找到报告",
+    "backToTasks": "← 返回任务列表",
+    "export": "导出 JSON",
+    "totalSteps": "总步骤",
+    "passedSteps": "通过",
+    "failedSteps": "失败",
+    "retriedSteps": "重试",
+    "startTime": "开始",
+    "endTime": "结束",
+    "stepsSection": "时间线",
+    "screenshotsSection": "截图 ({{count}})",
+    "status_completed": "已完成",
+    "status_failed": "已失败",
+    "status_cancelled": "已取消",
+    "status_aborted": "已中止",
+    "loadError": "加载报告失败"
+  },
   "batch": {
     "title": "批量测试",
     "newBatch": "新建批量",

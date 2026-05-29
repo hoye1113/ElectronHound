@@ -248,6 +248,25 @@
     "exportHtml": "Export HTML",
     "loadError": "Failed to load task details"
   },
+  "reportView": {
+    "loading": "Loading report...",
+    "notFound": "Report not found",
+    "backToTasks": "← Back to tasks",
+    "export": "Export JSON",
+    "totalSteps": "Total Steps",
+    "passedSteps": "Passed",
+    "failedSteps": "Failed",
+    "retriedSteps": "Retried",
+    "startTime": "Start",
+    "endTime": "End",
+    "stepsSection": "Timeline",
+    "screenshotsSection": "Screenshots ({{count}})",
+    "status_completed": "Completed",
+    "status_failed": "Failed",
+    "status_cancelled": "Cancelled",
+    "status_aborted": "Aborted",
+    "loadError": "Failed to load report"
+  },
   "batch": {
     "title": "Batch Testing",
     "newBatch": "New Batch",
