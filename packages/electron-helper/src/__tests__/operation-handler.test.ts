@@ -2,6 +2,9 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { OperationHandler } from '../operation-handler.js';
 import type { Operation } from '../operation-handler.js';
 
+type HandlerWithElectron = OperationHandler & { electron: unknown };
+type DataRecord = Record<string, unknown>;
+
 describe('OperationHandler', () => {
   let handler: OperationHandler;
 
@@ -56,7 +59,7 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({ type: 'health_check' });
 
@@ -141,7 +144,7 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'execute_main',
@@ -162,7 +165,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'execute_main',
@@ -170,7 +173,7 @@ describe('OperationHandler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect((result.data as any).result).toBe(3);
+      expect((result.data as DataRecord).result).toBe(3);
     });
 
     it('should use custom timeout', async () => {
@@ -184,7 +187,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'execute_main',
@@ -206,7 +209,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       // Use a short timeout via payload to avoid waiting 5s
       // But we test the default path by not providing timeout
@@ -233,7 +236,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'execute_main',
@@ -247,7 +250,7 @@ describe('OperationHandler', () => {
     it('should handle executeJavaScript throwing non-Error', async () => {
       const mockWebContents = {
         executeJavaScript: async () => {
-          throw 'string throw'; // eslint-disable-line no-throw-literal
+          throw 'string throw';  
         },
       };
       const mockElectron = {
@@ -256,7 +259,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'execute_main',
@@ -333,7 +336,7 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'send_ipc',
@@ -353,7 +356,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'send_ipc',
@@ -361,9 +364,9 @@ describe('OperationHandler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect((result.data as any).sent).toBe(true);
-      expect((result.data as any).channel).toBe('my-channel');
-      expect((result.data as any).argCount).toBe(2);
+      expect((result.data as DataRecord).sent).toBe(true);
+      expect((result.data as DataRecord).channel).toBe('my-channel');
+      expect((result.data as DataRecord).argCount).toBe(2);
       expect(sendMock).toHaveBeenCalledWith('my-channel', 'arg1', 'arg2');
     });
 
@@ -376,7 +379,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'send_ipc',
@@ -384,7 +387,7 @@ describe('OperationHandler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect((result.data as any).argCount).toBe(0);
+      expect((result.data as DataRecord).argCount).toBe(0);
       expect(sendMock).toHaveBeenCalledWith('no-args');
     });
 
@@ -397,7 +400,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'send_ipc',
@@ -405,7 +408,7 @@ describe('OperationHandler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect((result.data as any).argCount).toBe(0);
+      expect((result.data as DataRecord).argCount).toBe(0);
       expect(sendMock).toHaveBeenCalledWith('bad-args');
     });
 
@@ -421,7 +424,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'send_ipc',
@@ -435,7 +438,7 @@ describe('OperationHandler', () => {
     it('should handle send throwing non-Error', async () => {
       const mockWebContents = {
         send: () => {
-          throw 42; // eslint-disable-line no-throw-literal
+          throw 42;  
         },
       };
       const mockElectron = {
@@ -444,7 +447,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'send_ipc',
@@ -600,12 +603,12 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({ type: 'get_menu_items' });
 
       expect(result.success).toBe(true);
-      expect((result.data as any).items).toEqual([]);
+      expect((result.data as DataRecord).items).toEqual([]);
     });
 
     it('should return flattened menu items when menu exists', async () => {
@@ -630,12 +633,12 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => mockMenu },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({ type: 'get_menu_items' });
 
       expect(result.success).toBe(true);
-      const items = (result.data as any).items;
+      const items = (result.data as DataRecord).items;
       expect(items).toHaveLength(2);
       expect(items[0]).toEqual({
         label: 'File',
@@ -691,12 +694,12 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => mockMenu },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({ type: 'get_menu_items' });
 
       expect(result.success).toBe(true);
-      const items = (result.data as any).items;
+      const items = (result.data as DataRecord).items;
       // 1 parent (File) + 2 children (New, Open) + 1 sibling (Help) = 4
       expect(items).toHaveLength(4);
       expect(items[0].label).toBe('File');
@@ -742,12 +745,12 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => mockMenu },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({ type: 'get_menu_items' });
 
       expect(result.success).toBe(true);
-      const items = (result.data as any).items;
+      const items = (result.data as DataRecord).items;
       expect(items).toHaveLength(3);
       expect(items[0].label).toBe('Level1');
       expect(items[1].label).toBe('Level2');
@@ -771,12 +774,12 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => mockMenu },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({ type: 'get_menu_items' });
 
       expect(result.success).toBe(true);
-      const items = (result.data as any).items;
+      const items = (result.data as DataRecord).items;
       expect(items).toHaveLength(1);
       expect(items[0].label).toBe('Simple');
     });
@@ -797,12 +800,12 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => mockMenu },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({ type: 'get_menu_items' });
 
       expect(result.success).toBe(true);
-      const items = (result.data as any).items;
+      const items = (result.data as DataRecord).items;
       expect(items).toHaveLength(1);
       expect(items[0].label).toBe('Weird');
     });
@@ -813,12 +816,12 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => mockMenu },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({ type: 'get_menu_items' });
 
       expect(result.success).toBe(true);
-      expect((result.data as any).items).toEqual([]);
+      expect((result.data as DataRecord).items).toEqual([]);
     });
 
     it('should return error when getApplicationMenu throws', async () => {
@@ -830,7 +833,7 @@ describe('OperationHandler', () => {
           },
         },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({ type: 'get_menu_items' });
 
@@ -843,11 +846,11 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: {
           getApplicationMenu: () => {
-            throw 'string error'; // eslint-disable-line no-throw-literal
+            throw 'string error';  
           },
         },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const result = await handler.handle({ type: 'get_menu_items' });
 
@@ -860,7 +863,7 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as HandlerWithElectron).electron = mockElectron;
 
       const r1 = await handler.handle({ type: 'get_menu_items' });
       const r2 = await handler.handle({ type: 'get_menu_items' });
@@ -868,8 +871,8 @@ describe('OperationHandler', () => {
       expect(r1.success).toBe(true);
       expect(r2.success).toBe(true);
       // Both should succeed using the cached module
-      expect((r1.data as any).items).toEqual([]);
-      expect((r2.data as any).items).toEqual([]);
+      expect((r1.data as DataRecord).items).toEqual([]);
+      expect((r2.data as DataRecord).items).toEqual([]);
     });
   });
 
