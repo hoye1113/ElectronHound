@@ -44,6 +44,7 @@
 | main.tsx | 0% | 入口文件，难测试 |
 | AccessibilityTreeView.tsx | 100% | 已覆盖 |
 | AuditTreeView.tsx | 100% | 已覆盖 |
+| AuditReportView.tsx | 0% | 待测试 |
 | ReportView.tsx | 99.64% | 已覆盖 |
 | CreateTaskForm.tsx | 79.81% | 已覆盖 |
 | ThemeSwitcher.tsx | 100% | 已覆盖 |
