@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { Task, CreateTaskRequest } from '@eata/shared-types';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Task } from '@eata/shared-types';
 import type { SSECallbacks } from '../lib/sse.js';
 
 // Mock api module

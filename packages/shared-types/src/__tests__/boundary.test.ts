@@ -1,13 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { CreateTaskRequestSchema, TaskSchema, TaskStatusEnum } from '../task.js';
+import { TaskSchema, TaskStatusEnum } from '../task.js';
 import { StepRecordSchema, StepPhaseEnum, StepStatusEnum } from '../step.js';
-import { ManifestSchema, TimelineEntrySchema } from '../report.js';
+import { ManifestSchema } from '../report.js';
 import { FeedbackPatternSchema } from '../feedback.js';
-import { JsonRpcNotificationSchema, JsonRpcControlSchema } from '../ipc.js';
 import {
   ObservationResultSchema,
-  PlanResultSchema,
-  ExecResultSchema,
   VerdictResultSchema,
   SafetyReportSchema,
   PerformanceReportSchema,

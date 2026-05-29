@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
-  loadProvidersConfig,
   saveProvidersConfig,
   addProvider,
   setActiveProvider,

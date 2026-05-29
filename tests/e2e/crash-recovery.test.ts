@@ -3,7 +3,6 @@ import { AgentLoop } from '../../packages/agent-core/src/runtime/agentLoop.js';
 import { SessionManager } from '../../packages/agent-core/src/session/sessionManager.js';
 import { MCPClient } from '../../packages/agent-core/src/mcp/client.js';
 import type { LLMProvider } from '../../packages/agent-core/src/llm/types.js';
-import type { Observation } from '../../packages/agent-core/src/runtime/types.js';
 
 /**
  * Creates a mock LLM provider that always returns the given observation.

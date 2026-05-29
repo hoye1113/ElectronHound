@@ -30,7 +30,7 @@ describe.skipIf(!hasApiKey)('Real LLM E2E tests', () => {
   afterEach(async () => {
     await server.close();
     db.close();
-    try { rmSync(dataDir, { recursive: true, force: true }); } catch {}
+    try { rmSync(dataDir, { recursive: true, force: true }); } catch { /* ignore cleanup errors */ }
   });
 
   it('creates task and runs AI loop with fixture app', async () => {

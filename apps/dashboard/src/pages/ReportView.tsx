@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   XCircle,
   AlertTriangle,
-  ChevronDown,
   ChevronRight,
   Image as ImageIcon,
   FileText,
