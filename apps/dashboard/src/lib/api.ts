@@ -76,6 +76,77 @@ export interface Template {
   builtin: boolean;
 }
 
+export type ReportSectionType =
+  | 'summary'
+  | 'steps'
+  | 'screenshots'
+  | 'errors'
+  | 'performance'
+  | 'suggestions'
+  | 'raw';
+
+export interface ReportSection {
+  id: string;
+  type: ReportSectionType;
+  title: string;
+  enabled: boolean;
+  order: number;
+  config?: Record<string, unknown>;
+}
+
+export type ReportTheme = 'light' | 'dark' | 'auto';
+
+export interface ReportStyling {
+  theme: ReportTheme;
+  primaryColor: string;
+  logoUrl?: string;
+  companyName?: string;
+  footerText?: string;
+}
+
+export interface ReportTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  sections: ReportSection[];
+  styling: ReportStyling;
+  isDefault: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Schedule {
+  id: string;
+  name: string;
+  templateId: string;
+  cronExpression: string;
+  enabled: boolean;
+  lastRunAt: string | null;
+  nextRunAt: string | null;
+  runCount: number;
+  lastStatus: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateScheduleRequest {
+  name: string;
+  templateId: string;
+  cronExpression: string;
+  enabled: boolean;
+}
+
+export interface ScheduleRun {
+  id: string;
+  scheduleId: string;
+  taskId: string | null;
+  startedAt: string;
+  completedAt: string | null;
+  status: string;
+  summary: string | null;
+  error: string | null;
+}
+
 export interface HealthResponse {
   status: 'ok' | 'degraded' | 'error';
   timestamp: string;
@@ -197,6 +268,38 @@ export const api = {
       });
     },
   },
+  reportTemplates: {
+    list(): Promise<{ data: ReportTemplate[] }> {
+      return fetchJson(`${API_BASE}/api/report-templates`);
+    },
+    get(id: string): Promise<ReportTemplate> {
+      return fetchJson(`${API_BASE}/api/report-templates/${id}`);
+    },
+    create(data: {
+      name: string;
+      description?: string;
+      sections: ReportSection[];
+      styling: ReportStyling;
+    }): Promise<ReportTemplate> {
+      return fetchJson(`${API_BASE}/api/report-templates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    },
+    update(id: string, data: Partial<Pick<ReportTemplate, 'name' | 'description' | 'sections' | 'styling' | 'isDefault'>>): Promise<ReportTemplate> {
+      return fetchJson(`${API_BASE}/api/report-templates/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    },
+    delete(id: string): Promise<void> {
+      return fetch(`${API_BASE}/api/report-templates/${id}`, { method: 'DELETE' }).then(res => {
+        if (!res.ok) throw new Error(`Delete report template failed: ${res.status}`);
+      });
+    },
+  },
   health: {
     check(): Promise<HealthResponse> {
       return fetchJson(`${API_BASE}/health`);
@@ -254,6 +357,41 @@ export const api = {
       if (params?.page) query.set('page', String(params.page));
       if (params?.limit) query.set('limit', String(params.limit));
       return fetchJson(`${API_BASE}/api/tasks/batches?${query}`);
+    },
+  },
+  schedules: {
+    list(): Promise<{ data: Schedule[]; total: number }> {
+      return fetchJson(`${API_BASE}/api/schedules`);
+    },
+    get(id: string): Promise<Schedule> {
+      return fetchJson(`${API_BASE}/api/schedules/${id}`);
+    },
+    create(data: CreateScheduleRequest): Promise<Schedule> {
+      return fetchJson(`${API_BASE}/api/schedules`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    },
+    update(id: string, data: Partial<CreateScheduleRequest>): Promise<Schedule> {
+      return fetchJson(`${API_BASE}/api/schedules/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    },
+    delete(id: string): Promise<void> {
+      return fetch(`${API_BASE}/api/schedules/${id}`, { method: 'DELETE' }).then(res => {
+        if (!res.ok) throw new Error(`Delete schedule failed: ${res.status}`);
+      });
+    },
+    run(id: string): Promise<{ taskId: string; runId: string; message: string }> {
+      return fetchJson(`${API_BASE}/api/schedules/${id}/run`, {
+        method: 'POST',
+      });
+    },
+    history(id: string): Promise<{ data: ScheduleRun[]; total: number }> {
+      return fetchJson(`${API_BASE}/api/schedules/${id}/history`);
     },
   },
   compare: {

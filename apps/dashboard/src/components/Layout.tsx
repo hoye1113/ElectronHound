@@ -9,14 +9,18 @@ import {
   LayoutTemplate,
   Heart,
   Layers,
+  FileText,
+  Clock,
 } from 'lucide-react';
 
 const navItems = [
   { to: '/', labelKey: 'nav.tasks', icon: ListTodo },
   { to: '/batches', labelKey: 'nav.batches', icon: Layers },
+  { to: '/schedules', labelKey: 'nav.schedules', icon: Clock },
   { to: '/monitor', labelKey: 'nav.monitor', icon: Activity },
   { to: '/feedback', labelKey: 'nav.feedback', icon: MessageSquare },
   { to: '/templates', labelKey: 'nav.templates', icon: LayoutTemplate },
+  { to: '/report-templates', labelKey: 'nav.reportTemplates', icon: FileText },
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },
   { to: '/health', labelKey: 'nav.system', icon: Heart },
 ];
