@@ -62,6 +62,7 @@
 | W54 | C | ESLint 21→0 errors in test files | ~94% | 3393 | ~27s | - | `f8f9a43` | 2026-05-30 |
 | W55 | A | api.ts coverage 65% → 85%+ | ~95% | 3481 | ~28s | - | `724d856` | 2026-05-30 |
 | W56 | A | 任务生命周期集成测试 x26 | ~95% | 3507 | ~28s | - | `61399ec` | 2026-05-30 |
+| W57 | A | 覆盖率补全 x3 (scheduleService/runner/operation-handler) | ~96% | 3529 | ~28s | - | `4ff55e5` | 2026-05-30 |
 
 ---
 
