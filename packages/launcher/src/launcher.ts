@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process';
+import { detectElectronVersion } from './version-detect.js';
 
 export interface SpawnOptions {
   targetAppPath: string;
@@ -8,6 +9,12 @@ export interface SpawnOptions {
   timeout?: number;
   /** Extra Chromium/Electron CLI flags (e.g. ['--no-sandbox'] for CI). */
   electronFlags?: string[];
+  /**
+   * Skip version compatibility check.
+   * When false (default), the launcher detects the Electron version
+   * and warns if it's outside the supported range.
+   */
+  skipVersionCheck?: boolean;
 }
 
 export interface ElectronProcess {
@@ -55,9 +62,20 @@ export async function spawnElectron(options: SpawnOptions): Promise<ElectronProc
     env,
     timeout = DEFAULT_TIMEOUT,
     electronFlags,
+    skipVersionCheck = false,
   } = options;
 
   const electronPath = await resolveElectronPath();
+
+  // Version compatibility check (PR-16)
+  if (!skipVersionCheck) {
+    const versionInfo = await detectElectronVersion({ electronPath });
+    if (versionInfo && !versionInfo.isSupported) {
+      process.stderr.write(
+        `[launcher] WARNING: Detected Electron v${versionInfo.major} which is outside the supported range.\n`,
+      );
+    }
+  }
 
   const args: string[] = [
     targetAppPath,

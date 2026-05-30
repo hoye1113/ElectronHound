@@ -49,3 +49,18 @@ export {
   TRUST_CONFIGS,
 } from './trust.js';
 export type { TrustLevel, TrustConfig } from './trust.js';
+
+// Electron version compatibility matrix (PR-16)
+export {
+  ElectronVersionSchema,
+  CompatibilityResultSchema,
+  SUPPORTED_ELECTRON_VERSIONS,
+  ELECTRON_VERSION_RANGE,
+  FEATURE_VERSION_MAP,
+  parseElectronVersion,
+  isVersionSupported,
+  isFeatureSupported,
+  checkCompatibility,
+  getAvailableFeatures,
+} from './electron-compat.js';
+export type { ElectronVersion, CompatibilityResult } from './electron-compat.js';

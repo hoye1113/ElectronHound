@@ -18,6 +18,16 @@ vi.mock('node:module', () => ({
   }),
 }));
 
+// Mock version-detect module to avoid actual version detection
+vi.mock('../version-detect.js', () => ({
+  detectElectronVersion: vi.fn().mockResolvedValue(null),
+  checkCompatibility: vi.fn().mockReturnValue({ compatible: true, warnings: [], errors: [] }),
+  parseElectronVersion: vi.fn(),
+  isVersionSupported: vi.fn(),
+  SUPPORTED_ELECTRON_VERSIONS: [28, 30, 32, 39],
+  ELECTRON_VERSION_RANGE: { min: 28, max: 39 },
+}));
+
 import { spawn } from 'node:child_process';
 
 const mockSpawn = vi.mocked(spawn);
