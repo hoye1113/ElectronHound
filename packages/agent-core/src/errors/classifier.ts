@@ -1,4 +1,4 @@
-import { ErrorCodes, ErrorDomain, type EataError } from '@eata/shared-types';
+import { ErrorCodes, type EataError } from '@eata/shared-types';
 
 interface HttpErrorLike {
   status?: number;
