@@ -28,6 +28,8 @@ export interface AgentLoopConfig {
   stuckThreshold?: number;
   /** Optional callback invoked after each step completes. Used for checkpoint persistence. */
   onStepComplete?: (stepCount: number, state: AgentLoopState) => void;
+  /** Absolute path to the feedback patterns JSONL file. When set, relevant failure patterns are injected on verify FAIL. */
+  patternsPath?: string;
 }
 
 /**

@@ -120,6 +120,7 @@ export async function taskRoutes(server: FastifyInstance) {
       contextInjection,
       providerId,
       priority: 'medium',
+      dataDir: server.dataDir,
     });
 
     reply.code(201);

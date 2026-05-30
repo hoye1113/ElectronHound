@@ -79,6 +79,14 @@ function calculateDurationMs(observeTs: string, verifyTs: string): number {
 // ── Public API ──────────────────────────────────────────────────────────────
 
 /**
+ * Artifact paths for a single step — screenshot and/or accessibility snapshot.
+ */
+export interface StepArtifactPath {
+  screenshotPath?: string;
+  accessibilitySnapshotPath?: string;
+}
+
+/**
  * Convert session entries to StepRecords.
  *
  * Follows the deterministic 4-entry-per-step pattern written by AgentLoop.
@@ -87,11 +95,13 @@ function calculateDurationMs(observeTs: string, verifyTs: string): number {
  *
  * @param entries - All session entries from SessionManager.getSession()
  * @param taskId  - The task ID to embed in each StepRecord
+ * @param stepArtifactPaths - Optional map of stepIndex → screenshot/accessibility paths
  * @returns Ordered StepRecord array
  */
 export function entriesToStepRecords(
   entries: SessionEntry[],
   taskId: string,
+  stepArtifactPaths?: Map<number, StepArtifactPath>,
 ): StepRecord[] {
   // Need at least 1 (user) + 4 (one full step) entries
   if (entries.length < 5) {
@@ -110,7 +120,14 @@ export function entriesToStepRecords(
       SessionEntry, // execute
       SessionEntry, // verify
     ];
-    const step = buildStepRecord(chunk, taskId, steps.length);
+    const artifacts = stepArtifactPaths?.get(steps.length);
+    const step = buildStepRecord(
+      chunk,
+      taskId,
+      steps.length,
+      artifacts?.screenshotPath,
+      artifacts?.accessibilitySnapshotPath,
+    );
     if (step) {
       steps.push(step);
     }
@@ -195,11 +212,16 @@ export function extractLastStep(steps: StepRecord[]): {
 /**
  * Build a single StepRecord from a 4-entry chunk [observe, plan, execute, verify].
  * Returns null if the chunk is malformed and cannot be parsed at all.
+ *
+ * @param screenshotPath - Optional path to a screenshot file captured during this step
+ * @param accessibilitySnapshotPath - Optional path to an accessibility tree snapshot file
  */
 function buildStepRecord(
   chunk: [SessionEntry, SessionEntry, SessionEntry, SessionEntry],
   taskId: string,
   stepIndex: number,
+  screenshotPath?: string,
+  accessibilitySnapshotPath?: string,
 ): StepRecord | null {
   const [observeEntry, planEntry, execEntry, verifyEntry] = chunk;
 
@@ -291,6 +313,8 @@ function buildStepRecord(
       : undefined,
     result: execData ?? undefined,
     reasoning: planData?.reasoning,
+    screenshotPath: screenshotPath || undefined,
+    accessibilitySnapshotPath: accessibilitySnapshotPath || undefined,
     timestamp: verifyEntry.timestamp,
     duration,
   };

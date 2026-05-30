@@ -136,13 +136,14 @@ export async function buildServer(config?: Partial<ServerConfig>): Promise<Serve
     streamRoutes(server),
   ]);
 
-  // Decorate sseHub
+  // Decorate sseHub and dataDir
   server.decorate('sseHub', sseHub);
+  server.decorate('dataDir', validatedConfig.dataDir);
 
   // Initialize worker pool and decorate server
   const workerPool = getWorkerPool({ maxConcurrency: validatedConfig.maxConcurrency, logger: server.log });
   server.decorate('workerPool', workerPool);
-  attachPoolEventListeners(db);
+  attachPoolEventListeners(db, validatedConfig.dataDir);
 
   // Shutdown pool on server close
   server.addHook('onClose', async () => {

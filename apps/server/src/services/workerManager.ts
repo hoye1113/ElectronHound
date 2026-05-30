@@ -14,6 +14,8 @@ export interface WorkerOptions {
   maxSteps?: number;
   contextInjection?: string;
   providerId?: string;
+  /** Base directory for saving reports, screenshots, etc. */
+  dataDir?: string;
 }
 
 export type WorkerStatus =
@@ -246,6 +248,10 @@ export class WorkerManager {
 
     if (options.providerId) {
       args.push('--provider-id', options.providerId);
+    }
+
+    if (options.dataDir) {
+      args.push('--data-dir', options.dataDir);
     }
 
     return args;

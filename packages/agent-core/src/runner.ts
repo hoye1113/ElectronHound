@@ -1,10 +1,12 @@
+import { mkdir, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { MCPClient } from './mcp/client.js';
 import { createLLMProviderAdapter, createLLMProviderAdapterForProvider } from './llm/adapter.js';
 import { loadProvidersConfig } from './config-manager.js';
 import { AgentLoop } from './runtime/agentLoop.js';
 import { SessionManager } from './session/sessionManager.js';
 import { CheckpointManager } from './session/checkpointManager.js';
-import { entriesToStepRecords, extractLastStep } from './session/entryConverter.js';
+import { entriesToStepRecords, extractLastStep, type StepArtifactPath } from './session/entryConverter.js';
 import { runAuditChain } from './sub-agents/audit-chain.js';
 import type { RunTestResult } from './runner-types.js';
 import { toErrorMessage } from './utils/error.js';
@@ -21,6 +23,8 @@ export interface RunTestOptions {
   checkpointPath?: string;
   cdpUrl?: string;
   providerId?: string;
+  /** Base directory for saving reports, screenshots, etc. Defaults to './data'. */
+  dataDir?: string;
 }
 
 export async function runTest(
@@ -73,28 +77,41 @@ export async function runTest(
     }
   }
 
-  // Create AgentLoop with per-step checkpoint callback
+  // Track screenshot/accessibility artifact paths per step
+  const stepArtifactPaths = new Map<number, StepArtifactPath>();
+  const dataDir = options.dataDir ?? './data';
+
+  // Create AgentLoop with per-step checkpoint + screenshot callback
   const agentLoop = new AgentLoop({
     llmProvider,
     sessionManager,
     mcpClient,
     maxSteps: options.maxSteps ?? 50,
-    onStepComplete: checkpointManager
-      ? (stepCount, state) => {
-          checkpointManager.save({
-            sessionId: state.sessionId,
-            currentStep: stepCount,
-            maxSteps: options.maxSteps ?? 50,
-            taskPrompt: state.taskPrompt,
-            config: { maxSteps: options.maxSteps ?? 50 },
-            lastObservation: state.currentObservation as unknown as Record<string, unknown> | null,
-            lastPlan: state.lastPlan as unknown as Record<string, unknown> | null,
-            lastExecutionResult: state.lastExecution as unknown as Record<string, unknown> | null,
-            sessionEntries: [],
-            timestamp: new Date().toISOString(),
+    onStepComplete: (stepCount, state) => {
+      // Checkpoint save (if manager available)
+      if (checkpointManager) {
+        checkpointManager.save({
+          sessionId: state.sessionId,
+          currentStep: stepCount,
+          maxSteps: options.maxSteps ?? 50,
+          taskPrompt: state.taskPrompt,
+          config: { maxSteps: options.maxSteps ?? 50 },
+          lastObservation: state.currentObservation as unknown as Record<string, unknown> | null,
+          lastPlan: state.lastPlan as unknown as Record<string, unknown> | null,
+          lastExecutionResult: state.lastExecution as unknown as Record<string, unknown> | null,
+          sessionEntries: sessionManager.getSession(state.sessionId)?.entries ?? [],
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // Capture screenshot and accessibility snapshot (fire-and-forget)
+      if (mcpClient) {
+        captureStepArtifacts(mcpClient, dataDir, taskId, stepCount, stepArtifactPaths)
+          .catch((err: unknown) => {
+            logger.warn(`Screenshot capture failed for step ${stepCount}: ${toErrorMessage(err)}`);
           });
-        }
-      : undefined,
+      }
+    },
   });
 
   const taskId = options.taskId ?? crypto.randomUUID();
@@ -114,10 +131,25 @@ export async function runTest(
     result = await agentLoop.run(goalWithContext);
   }
 
-  // Read session entries and convert to StepRecords
+  // Read session entries and convert to StepRecords (with screenshot paths)
   const session = sessionManager.getSession(result.sessionId);
-  const history = session ? entriesToStepRecords(session.entries, taskId) : [];
+  const history = session ? entriesToStepRecords(session.entries, taskId, stepArtifactPaths) : [];
   const lastStep = history.length > 0 ? extractLastStep(history) : null;
+
+  // Persist step records to disk for server consumption
+  if (history.length > 0) {
+    try {
+      const stepsDir = join(dataDir, 'reports', taskId);
+      await mkdir(stepsDir, { recursive: true });
+      await writeFile(
+        join(stepsDir, 'steps.json'),
+        JSON.stringify(history, null, 2),
+        'utf-8',
+      );
+    } catch (err: unknown) {
+      logger.warn(`Failed to write step records: ${toErrorMessage(err)}`);
+    }
+  }
 
   // Run audit chain (4-role sub-agent pipeline)
   let auditChainResult = null;
@@ -162,4 +194,84 @@ export async function runTest(
   };
 
   return runTestResult;
+}
+
+// ── Screenshot / Accessibility capture ─────────────────────────────────────
+
+/**
+ * Capture a screenshot and accessibility snapshot for a completed step.
+ *
+ * Uses the MCP client to call `browser_snapshot` (screenshot format) and
+ * `browser_snapshot` (aria format), saves the results to disk, and records
+ * the paths in the provided map.
+ *
+ * Errors are caught and logged — screenshot capture is best-effort and must
+ * never abort the agent loop.
+ */
+async function captureStepArtifacts(
+  mcpClient: MCPClient,
+  dataDir: string,
+  taskId: string,
+  stepIndex: number,
+  paths: Map<number, StepArtifactPath>,
+): Promise<void> {
+  const screenshotDir = join(dataDir, 'reports', taskId, 'screenshots');
+  const accessibilityDir = join(dataDir, 'reports', taskId, 'accessibility');
+
+  const artifact: StepArtifactPath = {};
+
+  // ── Screenshot ────────────────────────────────────────────────────────────
+  try {
+    const screenshotResult = await mcpClient.callTool(
+      'playwright',
+      'browser_snapshot',
+      { format: 'screenshot' },
+    );
+
+    if (screenshotResult.success && screenshotResult.result) {
+      const data = screenshotResult.result as Record<string, unknown>;
+      // The MCP result may contain base64 image data or a buffer
+      const imageBase64 = typeof data === 'string'
+        ? data
+        : typeof data.data === 'string'
+          ? data.data
+          : null;
+
+      if (imageBase64) {
+        await mkdir(screenshotDir, { recursive: true });
+        const filepath = join(screenshotDir, `step-${stepIndex}.png`);
+        const buffer = Buffer.from(imageBase64, 'base64');
+        await writeFile(filepath, buffer);
+        artifact.screenshotPath = filepath;
+      }
+    }
+  } catch (err: unknown) {
+    logger.warn(`Screenshot capture failed for step ${stepIndex}: ${toErrorMessage(err)}`);
+  }
+
+  // ── Accessibility snapshot ────────────────────────────────────────────────
+  try {
+    const ariaResult = await mcpClient.callTool(
+      'playwright',
+      'browser_snapshot',
+      { format: 'aria' },
+    );
+
+    if (ariaResult.success && ariaResult.result) {
+      await mkdir(accessibilityDir, { recursive: true });
+      const filepath = join(accessibilityDir, `step-${stepIndex}.json`);
+      const jsonStr = typeof ariaResult.result === 'string'
+        ? ariaResult.result
+        : JSON.stringify(ariaResult.result, null, 2);
+      await writeFile(filepath, jsonStr, 'utf-8');
+      artifact.accessibilitySnapshotPath = filepath;
+    }
+  } catch (err: unknown) {
+    logger.warn(`Accessibility snapshot failed for step ${stepIndex}: ${toErrorMessage(err)}`);
+  }
+
+  // Store paths if at least one artifact was captured
+  if (artifact.screenshotPath || artifact.accessibilitySnapshotPath) {
+    paths.set(stepIndex, artifact);
+  }
 }

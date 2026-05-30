@@ -10,6 +10,8 @@ export interface PoolTask {
   contextInjection?: string;
   providerId?: string;
   priority: TaskPriority;
+  /** Base directory for saving reports, screenshots, etc. */
+  dataDir?: string;
 }
 
 export interface PoolTaskHandle {

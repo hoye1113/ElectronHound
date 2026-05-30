@@ -529,3 +529,94 @@ describe('extractLastStep', () => {
     expect(result.execution!.error).toBe('Element not found');
   });
 });
+
+// ── Screenshot / Accessibility path population ────────────────────────────
+
+describe('entriesToStepRecords with stepArtifactPaths', () => {
+  const TASK_ID = '550e8400-e29b-41d4-a716-446655440000';
+
+  it('populates screenshotPath when provided in stepArtifactPaths', () => {
+    const entries = [makeUserEntry(), ...makeStep()];
+    const paths = new Map([
+      [0, { screenshotPath: '/data/reports/task-1/screenshots/step-0.png' }],
+    ]);
+
+    const steps = entriesToStepRecords(entries, TASK_ID, paths);
+
+    expect(steps).toHaveLength(1);
+    expect(steps[0].screenshotPath).toBe('/data/reports/task-1/screenshots/step-0.png');
+  });
+
+  it('populates accessibilitySnapshotPath when provided in stepArtifactPaths', () => {
+    const entries = [makeUserEntry(), ...makeStep()];
+    const paths = new Map([
+      [0, { accessibilitySnapshotPath: '/data/reports/task-1/accessibility/step-0.json' }],
+    ]);
+
+    const steps = entriesToStepRecords(entries, TASK_ID, paths);
+
+    expect(steps).toHaveLength(1);
+    expect(steps[0].accessibilitySnapshotPath).toBe('/data/reports/task-1/accessibility/step-0.json');
+  });
+
+  it('populates both screenshotPath and accessibilitySnapshotPath', () => {
+    const entries = [makeUserEntry(), ...makeStep()];
+    const paths = new Map([
+      [0, {
+        screenshotPath: '/data/reports/task-1/screenshots/step-0.png',
+        accessibilitySnapshotPath: '/data/reports/task-1/accessibility/step-0.json',
+      }],
+    ]);
+
+    const steps = entriesToStepRecords(entries, TASK_ID, paths);
+
+    expect(steps).toHaveLength(1);
+    expect(steps[0].screenshotPath).toBe('/data/reports/task-1/screenshots/step-0.png');
+    expect(steps[0].accessibilitySnapshotPath).toBe('/data/reports/task-1/accessibility/step-0.json');
+  });
+
+  it('leaves screenshotPath undefined when no paths provided', () => {
+    const entries = [makeUserEntry(), ...makeStep()];
+
+    const steps = entriesToStepRecords(entries, TASK_ID);
+
+    expect(steps).toHaveLength(1);
+    expect(steps[0].screenshotPath).toBeUndefined();
+    expect(steps[0].accessibilitySnapshotPath).toBeUndefined();
+  });
+
+  it('maps paths to correct step indices with multiple steps', () => {
+    const entries = [
+      makeUserEntry(),
+      ...makeStep('test-session', 'pass', 0),
+      ...makeStep('test-session', 'pass', 1),
+    ];
+    const paths = new Map([
+      [0, { screenshotPath: '/screenshots/step-0.png' }],
+      [1, { screenshotPath: '/screenshots/step-1.png' }],
+    ]);
+
+    const steps = entriesToStepRecords(entries, TASK_ID, paths);
+
+    expect(steps).toHaveLength(2);
+    expect(steps[0].screenshotPath).toBe('/screenshots/step-0.png');
+    expect(steps[1].screenshotPath).toBe('/screenshots/step-1.png');
+  });
+
+  it('only populates paths for steps present in the map', () => {
+    const entries = [
+      makeUserEntry(),
+      ...makeStep('test-session', 'pass', 0),
+      ...makeStep('test-session', 'pass', 1),
+    ];
+    const paths = new Map([
+      [1, { screenshotPath: '/screenshots/step-1.png' }],
+    ]);
+
+    const steps = entriesToStepRecords(entries, TASK_ID, paths);
+
+    expect(steps).toHaveLength(2);
+    expect(steps[0].screenshotPath).toBeUndefined();
+    expect(steps[1].screenshotPath).toBe('/screenshots/step-1.png');
+  });
+});

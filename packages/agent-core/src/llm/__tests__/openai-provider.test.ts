@@ -288,12 +288,14 @@ describe('openai-provider error handling', () => {
   });
 
   it('includes error text body in thrown message', async () => {
-    fetchSpy.mockResolvedValueOnce(
+    // 429 is retryable, so the retry mechanism will call fetch multiple times
+    // before finally throwing. This test needs extra time for retry delays.
+    fetchSpy.mockResolvedValue(
       new Response('Rate limit exceeded', { status: 429, statusText: 'Too Many Requests' }),
     );
     const provider = createOpenAIProvider(TEST_CONFIG);
-    await expect(provider.generateText({ prompt: 'test' })).rejects.toThrow('429');
-  });
+    await expect(provider.generateText({ prompt: 'test', maxTokens: 10 })).rejects.toThrow('429');
+  }, 15000);
 
   it('generateObject also throws on non-OK response', async () => {
     fetchSpy.mockResolvedValueOnce(

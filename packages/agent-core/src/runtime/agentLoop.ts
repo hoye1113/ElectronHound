@@ -26,7 +26,12 @@ import type {
 } from './types.js';
 import { fingerprintObservation } from './stuckDetection.js';
 import { toErrorMessage } from '../utils/error.js';
+import { LLMError } from '../llm/retry.js';
 import { createStderrLogger } from '../utils/logger.js';
+import {
+  loadRelevantPatterns,
+  formatPatternsForPrompt,
+} from '../prompts/feedbackLoader.js';
 
 // ── Defaults ──────────────────────────────────────────────────────────────
 
@@ -207,6 +212,7 @@ export class AgentLoop {
   private readonly maxSteps: number;
   private readonly stuckThreshold: number;
   private readonly onStepComplete?: (stepCount: number, state: AgentLoopState) => void;
+  private readonly patternsPath: string | undefined;
   private readonly logger = createStderrLogger('agentLoop');
 
   constructor(config: AgentLoopConfig) {
@@ -216,6 +222,7 @@ export class AgentLoop {
     this.maxSteps = config.maxSteps ?? DEFAULT_MAX_STEPS;
     this.stuckThreshold = config.stuckThreshold ?? DEFAULT_STUCK_THRESHOLD;
     this.onStepComplete = config.onStepComplete;
+    this.patternsPath = config.patternsPath;
   }
 
   /**
@@ -255,90 +262,117 @@ export class AgentLoop {
 
     try {
       while (state.stepCount < this.maxSteps) {
-        // ── 1. Observe ──────────────────────────────────────────────
-        this.logger.info(`[resume] Step ${state.stepCount + 1}: Observing...`);
-        const observation = await this.observe(state);
-        state.currentObservation = observation;
+        try {
+          // ── 1. Observe ──────────────────────────────────────────────
+          this.logger.info(`[resume] Step ${state.stepCount + 1}: Observing...`);
+          const observation = await this.observe(state);
+          state.currentObservation = observation;
 
-        this.session.addEntry(sessionId, {
-          role: 'assistant',
-          content: JSON.stringify(observation),
-          type: 'assistant',
-        });
+          this.session.addEntry(sessionId, {
+            role: 'assistant',
+            content: JSON.stringify(observation),
+            type: 'assistant',
+          });
 
-        // ── Stuck detection ─────────────────────────────────────────
-        const fp = fingerprintObservation(observation);
-        fingerprintWindow.push(fp);
-        if (fingerprintWindow.length > this.stuckThreshold) {
-          fingerprintWindow.shift();
-        }
+          // ── Stuck detection ─────────────────────────────────────────
+          const fp = fingerprintObservation(observation);
+          fingerprintWindow.push(fp);
+          if (fingerprintWindow.length > this.stuckThreshold) {
+            fingerprintWindow.shift();
+          }
 
-        if (
-          fingerprintWindow.length >= this.stuckThreshold &&
-          fingerprintWindow.every((f) => f === fingerprintWindow[0])
-        ) {
-          state.stuckCount = this.stuckThreshold;
-          const stuckVerdict: Verdict = {
-            verdict: 'stuck',
-            reasoning: `Stuck: ${this.stuckThreshold} consecutive identical observations detected.`,
+          if (
+            fingerprintWindow.length >= this.stuckThreshold &&
+            fingerprintWindow.every((f) => f === fingerprintWindow[0])
+          ) {
+            state.stuckCount = this.stuckThreshold;
+            const stuckVerdict: Verdict = {
+              verdict: 'stuck',
+              reasoning: `Stuck: ${this.stuckThreshold} consecutive identical observations detected.`,
+            };
+
+            this.session.addEntry(sessionId, {
+              role: 'system',
+              content: stuckVerdict.reasoning,
+              type: 'system',
+            });
+
+            const report = await this.report(state, stuckVerdict);
+            return { verdict: 'stuck', report, sessionId };
+          }
+
+          // ── 2. Plan ─────────────────────────────────────────────────
+          this.logger.info(`Observation: ${observation.summary.substring(0, 100)}`);
+          this.logger.info('Planning...');
+          const plan = await this.plan(observation, state, pendingFeedback);
+          // Clear feedback after it has been consumed
+          pendingFeedback = undefined;
+          state.lastPlan = plan;
+
+          this.session.addEntry(sessionId, {
+            role: 'assistant',
+            content: JSON.stringify(plan),
+            type: 'assistant',
+          });
+
+          // ── 3. Execute ──────────────────────────────────────────────
+          this.logger.info(`Plan: ${plan.action} (tool: ${plan.toolName})`);
+          this.logger.info(`Executing ${plan.toolName}...`);
+          const execution = await this.execute(plan);
+          state.lastExecution = execution;
+          state.stepCount++;
+
+          this.session.addEntry(sessionId, {
+            role: 'system',
+            content: JSON.stringify(execution),
+            type: 'system',
+          });
+
+          // ── Checkpoint save ─────────────────────────────────────────
+          this.onStepComplete?.(state.stepCount, state);
+
+          // ── 4. Verify ───────────────────────────────────────────────
+          this.logger.info(`Execution result: success=${execution.success}, error=${execution.error ?? 'none'}`);
+          this.logger.info('Verifying...');
+          const verdict = await this.verify(execution, plan, state);
+
+          this.session.addEntry(sessionId, {
+            role: 'assistant',
+            content: JSON.stringify(verdict),
+            type: 'assistant',
+          });
+
+          // ── Terminal verdict → 5. Report ────────────────────────────
+          if (verdict.verdict === 'pass' || verdict.verdict === 'fail' || verdict.verdict === 'stuck') {
+            const report = await this.report(state, verdict);
+            return { verdict: verdict.verdict, report, sessionId };
+          }
+
+          // verdict === 'retry': continue to next iteration
+        } catch (err: unknown) {
+          const errorMessage = toErrorMessage(err);
+          const statusCode = err instanceof LLMError ? err.statusCode : 0;
+          this.logger.error(`LLM call failed during resume (status=${statusCode}): ${errorMessage}`);
+
+          const errorVerdict: Verdict = {
+            verdict: 'fail',
+            reasoning: `LLM API error after retries exhausted: ${errorMessage}`,
           };
 
           this.session.addEntry(sessionId, {
             role: 'system',
-            content: stuckVerdict.reasoning,
+            content: JSON.stringify({
+              type: 'llm_error',
+              message: errorMessage,
+              statusCode,
+              stepCount: state.stepCount,
+            }),
             type: 'system',
           });
 
-          const report = await this.report(state, stuckVerdict);
-          return { verdict: 'stuck', report, sessionId };
+          const report = await this.report(state, errorVerdict);
+          return { verdict: 'fail', report, sessionId };
         }
-
-        // ── 2. Plan ─────────────────────────────────────────────────
-        this.logger.info(`Observation: ${observation.summary.substring(0, 100)}`);
-        this.logger.info('Planning...');
-        const plan = await this.plan(observation, state);
-        state.lastPlan = plan;
-
-        this.session.addEntry(sessionId, {
-          role: 'assistant',
-          content: JSON.stringify(plan),
-          type: 'assistant',
-        });
-
-        // ── 3. Execute ──────────────────────────────────────────────
-        this.logger.info(`Plan: ${plan.action} (tool: ${plan.toolName})`);
-        this.logger.info(`Executing ${plan.toolName}...`);
-        const execution = await this.execute(plan);
-        state.lastExecution = execution;
-        state.stepCount++;
-
-        this.session.addEntry(sessionId, {
-          role: 'system',
-          content: JSON.stringify(execution),
-          type: 'system',
-        });
-
-        // ── Checkpoint save ─────────────────────────────────────────
-        this.onStepComplete?.(state.stepCount, state);
-
-        // ── 4. Verify ───────────────────────────────────────────────
-        this.logger.info(`Execution result: success=${execution.success}, error=${execution.error ?? 'none'}`);
-        this.logger.info('Verifying...');
-        const verdict = await this.verify(execution, plan, state);
-
-        this.session.addEntry(sessionId, {
-          role: 'assistant',
-          content: JSON.stringify(verdict),
-          type: 'assistant',
-        });
-
-        // ── Terminal verdict → 5. Report ────────────────────────────
-        if (verdict.verdict === 'pass' || verdict.verdict === 'fail' || verdict.verdict === 'stuck') {
-          const report = await this.report(state, verdict);
-          return { verdict: verdict.verdict, report, sessionId };
-        }
-
-        // verdict === 'retry': continue to next iteration
       }
 
       // ── Exhausted maxSteps ────────────────────────────────────────
@@ -386,6 +420,8 @@ export class AgentLoop {
 
     // Track recent observation fingerprints for stuck detection
     const fingerprintWindow: string[] = [];
+    // Feedback patterns to inject into the next plan attempt (only on FAIL recovery)
+    let pendingFeedback: string | undefined;
 
     this.session.addEntry(sessionId, {
       role: 'user',
@@ -395,90 +431,130 @@ export class AgentLoop {
 
     try {
       while (state.stepCount < this.maxSteps) {
-        // ── 1. Observe ──────────────────────────────────────────────
-        this.logger.info(`Step ${state.stepCount + 1}: Observing...`);
-        const observation = await this.observe(state);
-        state.currentObservation = observation;
+        try {
+          // ── 1. Observe ──────────────────────────────────────────────
+          this.logger.info(`Step ${state.stepCount + 1}: Observing...`);
+          const observation = await this.observe(state);
+          state.currentObservation = observation;
 
-        this.session.addEntry(sessionId, {
-          role: 'assistant',
-          content: JSON.stringify(observation),
-          type: 'assistant',
-        });
+          this.session.addEntry(sessionId, {
+            role: 'assistant',
+            content: JSON.stringify(observation),
+            type: 'assistant',
+          });
 
-        // ── Stuck detection ─────────────────────────────────────────
-        const fp = fingerprintObservation(observation);
-        fingerprintWindow.push(fp);
-        if (fingerprintWindow.length > this.stuckThreshold) {
-          fingerprintWindow.shift();
-        }
+          // ── Stuck detection ─────────────────────────────────────────
+          const fp = fingerprintObservation(observation);
+          fingerprintWindow.push(fp);
+          if (fingerprintWindow.length > this.stuckThreshold) {
+            fingerprintWindow.shift();
+          }
 
-        if (
-          fingerprintWindow.length >= this.stuckThreshold &&
-          fingerprintWindow.every((f) => f === fingerprintWindow[0])
-        ) {
-          state.stuckCount = this.stuckThreshold;
-          const stuckVerdict: Verdict = {
-            verdict: 'stuck',
-            reasoning: `Stuck: ${this.stuckThreshold} consecutive identical observations detected.`,
+          if (
+            fingerprintWindow.length >= this.stuckThreshold &&
+            fingerprintWindow.every((f) => f === fingerprintWindow[0])
+          ) {
+            state.stuckCount = this.stuckThreshold;
+            const stuckVerdict: Verdict = {
+              verdict: 'stuck',
+              reasoning: `Stuck: ${this.stuckThreshold} consecutive identical observations detected.`,
+            };
+
+            this.session.addEntry(sessionId, {
+              role: 'system',
+              content: stuckVerdict.reasoning,
+              type: 'system',
+            });
+
+            const report = await this.report(state, stuckVerdict);
+            return { verdict: 'stuck', report, sessionId };
+          }
+
+          // ── 2. Plan ─────────────────────────────────────────────────
+          this.logger.info(`Observation: ${observation.summary.substring(0, 100)}`);
+          this.logger.info('Planning...');
+          const plan = await this.plan(observation, state);
+          state.lastPlan = plan;
+
+          this.session.addEntry(sessionId, {
+            role: 'assistant',
+            content: JSON.stringify(plan),
+            type: 'assistant',
+          });
+
+          // ── 3. Execute ──────────────────────────────────────────────
+          this.logger.info(`Plan: ${plan.action} (tool: ${plan.toolName})`);
+          this.logger.info(`Executing ${plan.toolName}...`);
+          const execution = await this.execute(plan);
+          state.lastExecution = execution;
+          state.stepCount++;
+
+          this.session.addEntry(sessionId, {
+            role: 'system',
+            content: JSON.stringify(execution),
+            type: 'system',
+          });
+
+          // ── Checkpoint save ─────────────────────────────────────────
+          this.onStepComplete?.(state.stepCount, state);
+
+          // ── 4. Verify ───────────────────────────────────────────────
+          this.logger.info(`Execution result: success=${execution.success}, error=${execution.error ?? 'none'}`);
+          this.logger.info('Verifying...');
+          const verdict = await this.verify(execution, plan, state);
+
+          this.session.addEntry(sessionId, {
+            role: 'assistant',
+            content: JSON.stringify(verdict),
+            type: 'assistant',
+          });
+
+          // ── Feedback recovery on FAIL ───────────────────────────────
+          // When verify returns 'fail' and we have a patternsPath, attempt
+          // recovery by injecting relevant failure patterns into the next
+          // planning step. Only one recovery attempt per fail is allowed.
+          if (verdict.verdict === 'fail' && this.patternsPath && !pendingFeedback) {
+            const patterns = loadRelevantPatterns(this.patternsPath, state.taskPrompt);
+            if (patterns.length > 0) {
+              const feedbackBlock = formatPatternsForPrompt(patterns);
+              this.logger.info("Feedback recovery: " + patterns.length + " relevant pattern(s) found. Retrying with feedback.");
+              pendingFeedback = feedbackBlock;
+              verdict.verdict = 'retry';
+              verdict.reasoning = '[Feedback recovery] ' + verdict.reasoning;
+            }
+          }
+
+          // ── Terminal verdict → 5. Report ────────────────────────────
+          if (verdict.verdict === 'pass' || verdict.verdict === 'fail' || verdict.verdict === 'stuck') {
+            const report = await this.report(state, verdict);
+            return { verdict: verdict.verdict, report, sessionId };
+          }
+
+          // verdict === 'retry': continue to next iteration
+        } catch (err: unknown) {
+          const errorMessage = toErrorMessage(err);
+          const statusCode = err instanceof LLMError ? err.statusCode : 0;
+          this.logger.error(`LLM call failed (status=${statusCode}): ${errorMessage}`);
+
+          const errorVerdict: Verdict = {
+            verdict: 'fail',
+            reasoning: `LLM API error after retries exhausted: ${errorMessage}`,
           };
 
           this.session.addEntry(sessionId, {
             role: 'system',
-            content: stuckVerdict.reasoning,
+            content: JSON.stringify({
+              type: 'llm_error',
+              message: errorMessage,
+              statusCode,
+              stepCount: state.stepCount,
+            }),
             type: 'system',
           });
 
-          const report = await this.report(state, stuckVerdict);
-          return { verdict: 'stuck', report, sessionId };
+          const report = await this.report(state, errorVerdict);
+          return { verdict: 'fail', report, sessionId };
         }
-
-        // ── 2. Plan ─────────────────────────────────────────────────
-        this.logger.info(`Observation: ${observation.summary.substring(0, 100)}`);
-        this.logger.info('Planning...');
-        const plan = await this.plan(observation, state);
-        state.lastPlan = plan;
-
-        this.session.addEntry(sessionId, {
-          role: 'assistant',
-          content: JSON.stringify(plan),
-          type: 'assistant',
-        });
-
-        // ── 3. Execute ──────────────────────────────────────────────
-        this.logger.info(`Plan: ${plan.action} (tool: ${plan.toolName})`);
-        this.logger.info(`Executing ${plan.toolName}...`);
-        const execution = await this.execute(plan);
-        state.lastExecution = execution;
-        state.stepCount++;
-
-        this.session.addEntry(sessionId, {
-          role: 'system',
-          content: JSON.stringify(execution),
-          type: 'system',
-        });
-
-        // ── Checkpoint save ─────────────────────────────────────────
-        this.onStepComplete?.(state.stepCount, state);
-
-        // ── 4. Verify ───────────────────────────────────────────────
-        this.logger.info(`Execution result: success=${execution.success}, error=${execution.error ?? 'none'}`);
-        this.logger.info('Verifying...');
-        const verdict = await this.verify(execution, plan, state);
-
-        this.session.addEntry(sessionId, {
-          role: 'assistant',
-          content: JSON.stringify(verdict),
-          type: 'assistant',
-        });
-
-        // ── Terminal verdict → 5. Report ────────────────────────────
-        if (verdict.verdict === 'pass' || verdict.verdict === 'fail' || verdict.verdict === 'stuck') {
-          const report = await this.report(state, verdict);
-          return { verdict: verdict.verdict, report, sessionId };
-        }
-
-        // verdict === 'retry': continue to next iteration
       }
 
       // ── Exhausted maxSteps ────────────────────────────────────────
@@ -548,14 +624,20 @@ export class AgentLoop {
   /**
    * Plan — generate the next action plan via the LLM.
    */
-  async plan(observation: Observation, state: AgentLoopState): Promise<Plan> {
-    const prompt = [
+  async plan(observation: Observation, state: AgentLoopState, feedbackContext?: string): Promise<Plan> {
+    const parts = [
       `Task: ${state.taskPrompt}`,
       `Current step: ${state.stepCount + 1}`,
       `Current observation: ${observation.summary}`,
       `Details: ${JSON.stringify(observation.details)}`,
       `Decide the next action to make progress toward the goal.`,
-    ].join('\n');
+    ];
+
+    if (feedbackContext) {
+      parts.push('', feedbackContext, '', 'Use the failure patterns above to avoid repeating the same mistakes.');
+    }
+
+    const prompt = parts.join('\n');
 
     const { object: plan } = await this.llm.generateObject<Plan>({
       prompt,

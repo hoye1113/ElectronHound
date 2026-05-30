@@ -7,5 +7,6 @@ declare module 'fastify' {
     sseHub: SSEHub;
     db: Database.Database;
     workerPool: WorkerPoolManager;
+    dataDir: string;
   }
 }
