@@ -73,6 +73,7 @@
 | W65 | C | TypeScript 错误修复 (electron-helper tests) | ~96% | 3618 | ~36s | - | `c63bb06` | 2026-05-30 |
 | W66 | C | ESLint 26→0 no-explicit-any (electron-helper tests) | ~96% | 3618 | ~32s | - | `d2767af` | 2026-05-30 |
 | W67 | C | TypeScript 错误修复 (maestro-adapter + electron-bridge-mcp) | ~96% | 3618 | ~32s | - | `8fd5857` | 2026-05-30 |
+| W68 | C | TypeScript 错误修复 (agent-core tests: checkpoint/axtree/agentLoop) | ~96% | 3618 | ~34s | - | `2f0e17d` | 2026-05-30 |
 
 ---
 
