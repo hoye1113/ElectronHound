@@ -1,4 +1,30 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
+
+// Mock better-sqlite3 for command handler tests
+const { mockDb, mockDatabase } = vi.hoisted(() => {
+  const mockDb = {
+    prepare: vi.fn(),
+    close: vi.fn(),
+  };
+  const mockDatabase = vi.fn(() => mockDb);
+  return { mockDb, mockDatabase };
+});
+
+vi.mock('better-sqlite3', () => ({ default: mockDatabase }));
+
+// Mock ReplayRunner
+const { mockReplay, mockReplayClose } = vi.hoisted(() => ({
+  mockReplay: vi.fn(),
+  mockReplayClose: vi.fn(),
+}));
+
+vi.mock('../replay/replayRunner.js', () => ({
+  ReplayRunner: vi.fn(() => ({
+    replay: mockReplay,
+    close: mockReplayClose,
+  })),
+}));
+
 import {
   parseArgs,
   parseReplayArgs,
@@ -8,6 +34,10 @@ import {
   validateArgs,
   formatStepProgress,
   formatResult,
+  handleExportCommand,
+  handleImportCommand,
+  handleGenerateCommand,
+  handleReplayCommand,
 } from '../cli.js';
 
 // ─── parseReplayArgs ──────────────────────────────────────
@@ -397,5 +427,236 @@ describe('formatResult edge cases', () => {
   it('formats large duration', () => {
     const output = formatResult('completed', 100, 300000);
     expect(output).toContain('300.0s');
+  });
+});
+
+// ─── handleExportCommand ──────────────────────────────────
+
+describe('handleExportCommand', () => {
+  let stdoutSpy: MockInstance<typeof process.stdout.write>;
+
+  beforeEach(() => {
+    stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    stdoutSpy.mockRestore();
+  });
+
+  it('returns 1 for unsupported format', async () => {
+    const code = await handleExportCommand({
+      taskId: 'task-1',
+      format: 'csv',
+    });
+    expect(code).toBe(1);
+  });
+
+  it('returns 0 and writes JSONL on success', async () => {
+    const mockGet = vi.fn().mockReturnValue({
+      id: 'task-1',
+      goal: 'Test',
+      target_app_path: '/app',
+      llm_model: 'gpt-4o',
+      status: 'completed',
+      max_steps: 10,
+      step_count: 2,
+      result_summary: null,
+      context_injection: null,
+      provider_id: null,
+      created_at: '2026-01-01',
+      updated_at: '2026-01-01',
+    });
+    const mockAll = vi.fn().mockReturnValue([]);
+    mockDb.prepare.mockReturnValue({ get: mockGet, all: mockAll });
+
+    const code = await handleExportCommand({
+      taskId: 'task-1',
+      format: 'jsonl',
+      dbPath: ':memory:',
+    });
+
+    expect(code).toBe(0);
+    expect(mockDb.close).toHaveBeenCalled();
+  });
+
+  it('returns 1 when task not found', async () => {
+    mockDb.prepare.mockReturnValue({
+      get: vi.fn().mockReturnValue(undefined),
+      all: vi.fn().mockReturnValue([]),
+    });
+
+    const code = await handleExportCommand({
+      taskId: 'nonexistent',
+      format: 'jsonl',
+      dbPath: ':memory:',
+    });
+
+    expect(code).toBe(1);
+  });
+});
+
+// ─── handleImportCommand ──────────────────────────────────
+
+describe('handleImportCommand', () => {
+  let stdoutSpy: MockInstance<typeof process.stdout.write>;
+
+  beforeEach(() => {
+    stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    stdoutSpy.mockRestore();
+  });
+
+  it('returns 1 when file does not exist', async () => {
+    const code = await handleImportCommand({
+      file: '/nonexistent/file.jsonl',
+      dbPath: ':memory:',
+    });
+    expect(code).toBe(1);
+  });
+});
+
+// ─── handleGenerateCommand ────────────────────────────────
+
+describe('handleGenerateCommand', () => {
+  let stdoutSpy: MockInstance<typeof process.stdout.write>;
+
+  beforeEach(() => {
+    stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    stdoutSpy.mockRestore();
+  });
+
+  it('returns 1 for unsupported format', async () => {
+    const code = await handleGenerateCommand({
+      taskId: 'task-1',
+      format: 'jest',
+    });
+    expect(code).toBe(1);
+  });
+
+  it('returns 0 and generates script on success', async () => {
+    const mockGet = vi.fn().mockReturnValue({
+      id: 'task-1',
+      goal: 'Click login',
+    });
+    const mockAll = vi.fn().mockReturnValue([
+      {
+        step_index: 0,
+        phase: 'execute',
+        status: 'success',
+        action: JSON.stringify({ name: 'browser_click', args: { selector: '#login' } }),
+        observation: null,
+        reasoning: null,
+        timestamp: '2026-01-01',
+        duration: 100,
+      },
+    ]);
+    mockDb.prepare.mockReturnValue({ get: mockGet, all: mockAll });
+
+    const code = await handleGenerateCommand({
+      taskId: 'task-1',
+      format: 'playwright',
+      dbPath: ':memory:',
+    });
+
+    expect(code).toBe(0);
+    expect(mockDb.close).toHaveBeenCalled();
+  });
+
+  it('returns 1 when task not found', async () => {
+    mockDb.prepare.mockReturnValue({
+      get: vi.fn().mockReturnValue(undefined),
+      all: vi.fn().mockReturnValue([]),
+    });
+
+    const code = await handleGenerateCommand({
+      taskId: 'nonexistent',
+      format: 'playwright',
+      dbPath: ':memory:',
+    });
+
+    expect(code).toBe(1);
+  });
+});
+
+// ─── handleReplayCommand ──────────────────────────────────
+
+describe('handleReplayCommand', () => {
+  let stdoutSpy: MockInstance<typeof process.stdout.write>;
+
+  beforeEach(() => {
+    stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    stdoutSpy.mockRestore();
+  });
+
+  it('returns 0 on successful replay', async () => {
+    mockReplay.mockResolvedValue({
+      success: true,
+      totalSteps: 3,
+      passedSteps: 3,
+      failedSteps: 0,
+      steps: [
+        { stepNumber: 1, passed: true, expectedObservation: 'obs', actualObservation: 'obs' },
+      ],
+    });
+
+    const code = await handleReplayCommand({
+      taskId: 'task-1',
+      strict: false,
+      loose: true,
+      dbPath: ':memory:',
+    });
+
+    expect(code).toBe(0);
+    expect(mockReplayClose).toHaveBeenCalled();
+  });
+
+  it('returns 1 on failed replay', async () => {
+    mockReplay.mockResolvedValue({
+      success: false,
+      totalSteps: 2,
+      passedSteps: 1,
+      failedSteps: 1,
+      steps: [
+        {
+          stepNumber: 1,
+          passed: false,
+          expectedObservation: 'expected',
+          actualObservation: 'actual',
+          diff: { differences: [{ path: 'root', type: 'changed' }] },
+        },
+      ],
+    });
+
+    const code = await handleReplayCommand({
+      taskId: 'task-1',
+      strict: true,
+      loose: false,
+    });
+
+    expect(code).toBe(1);
+  });
+
+  it('returns 1 on replay error', async () => {
+    mockReplay.mockRejectedValue(new Error('DB corrupted'));
+
+    const code = await handleReplayCommand({
+      taskId: 'task-1',
+      strict: false,
+      loose: true,
+    });
+
+    expect(code).toBe(1);
   });
 });
