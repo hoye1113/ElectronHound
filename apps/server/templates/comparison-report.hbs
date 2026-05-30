@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comparison Report</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #18181b;
+      color: #e4e4e7;
+      line-height: 1.6;
+      padding: 2rem;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    .header {
+      border-bottom: 1px solid #3f3f46;
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .header h1 { font-size: 1.5rem; font-weight: 700; color: #fafafa; }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 0.75rem;
+    }
+    .meta-item {
+      font-size: 0.8rem;
+      color: #a1a1aa;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .section { margin-bottom: 2rem; }
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .comparison-card {
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 0.5rem;
+      padding: 1.25rem;
+    }
+    .comparison-card h3 {
+      font-size: 1rem;
+      color: #fafafa;
+      margin-bottom: 0.75rem;
+    }
+    .comparison-card p {
+      font-size: 0.85rem;
+      color: #d4d4d8;
+      margin-bottom: 0.25rem;
+    }
+    .comparison-card .stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.3rem 0;
+      border-bottom: 1px solid #3f3f46;
+    }
+    .comparison-card .stat:last-child { border-bottom: none; }
+    .comparison-card .stat-label { color: #a1a1aa; }
+    .comparison-card .stat-value { color: #fafafa; font-weight: 600; }
+    .diff-positive { color: #34d399; }
+    .diff-negative { color: #f87171; }
+    .footer {
+      border-top: 1px solid #3f3f46;
+      padding-top: 1rem;
+      margin-top: 2rem;
+      font-size: 0.75rem;
+      color: #52525b;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>{{title}}</h1>
+      <div class="meta">
+        <span class="meta-item">{{taskCount}} tasks compared</span>
+        <span class="meta-item">Generated: {{formatDate generatedAt}}</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Comparison</div>
+      <div class="comparison-grid">
+        {{#each tasks}}
+        <div class="comparison-card">
+          <h3>{{goal}}</h3>
+          <div class="stat">
+            <span class="stat-label">Task ID</span>
+            <span class="stat-value">{{taskId}}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Status</span>
+            <span class="stat-value">{{statusBadge status}}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Steps</span>
+            <span class="stat-value">{{stepCount}}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Duration</span>
+            <span class="stat-value">{{duration}}</span>
+          </div>
+          {{#if verdict}}
+          <div class="stat">
+            <span class="stat-label">Verdict</span>
+            <span class="stat-value">{{statusBadge verdict}}</span>
+          </div>
+          {{/if}}
+        </div>
+        {{/each}}
+      </div>
+    </div>
+
+    {{#if differences.length}}
+    <div class="section">
+      <div class="section-title">Key Differences</div>
+      {{#each differences}}
+      <div class="comparison-card" style="margin-bottom: 0.5rem">
+        <p><strong>{{field}}</strong>: {{description}}</p>
+      </div>
+      {{/each}}
+    </div>
+    {{/if}}
+
+    <div class="footer">
+      Generated at {{formatDate generatedAt}}
+    </div>
+  </div>
+</body>
+</html>

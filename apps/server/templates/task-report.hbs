@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Report - {{taskId}}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #18181b;
+      color: #e4e4e7;
+      line-height: 1.6;
+      padding: 2rem;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    .header {
+      border-bottom: 1px solid #3f3f46;
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .header h1 { font-size: 1.5rem; font-weight: 700; color: #fafafa; }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 0.75rem;
+    }
+    .meta-item {
+      font-size: 0.8rem;
+      color: #a1a1aa;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .section { margin-bottom: 2rem; }
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+    .summary-card {
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 0.5rem;
+      padding: 1.25rem;
+    }
+    .summary-card p { font-size: 0.9rem; color: #d4d4d8; }
+    .summary-card .error { color: #f87171; margin-top: 0.5rem; }
+    .step {
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 0.5rem;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+    .step-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .step-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #fafafa;
+    }
+    .step-meta {
+      font-size: 0.75rem;
+      color: #71717a;
+    }
+    .step-detail {
+      font-size: 0.8rem;
+      color: #a1a1aa;
+      margin-top: 0.4rem;
+    }
+    .step-detail strong { color: #d4d4d8; }
+    .footer {
+      border-top: 1px solid #3f3f46;
+      padding-top: 1rem;
+      margin-top: 2rem;
+      font-size: 0.75rem;
+      color: #52525b;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>{{goal}}</h1>
+      <div class="meta">
+        {{statusBadge status}}
+        <span class="meta-item">Model: {{llmModel}}</span>
+        <span class="meta-item">Steps: {{stepCount}}</span>
+        <span class="meta-item">Created: {{formatDate createdAt}}</span>
+      </div>
+    </div>
+
+    {{#if resultSummary}}
+    <div class="section">
+      <div class="section-title">Result Summary</div>
+      <div class="summary-card">
+        <p><strong>Success:</strong> {{#if resultSummary.success}}Yes{{else}}No{{/if}}</p>
+        <p>{{resultSummary.summary}}</p>
+        {{#if resultSummary.error}}<p class="error">{{resultSummary.error}}</p>{{/if}}
+      </div>
+    </div>
+    {{/if}}
+
+    <div class="section">
+      <div class="section-title">Steps Timeline</div>
+      {{#if steps.length}}
+        {{#each steps}}
+        <div class="step" style="border-left: 3px solid {{statusColor status}}">
+          <div class="step-header">
+            <span class="step-title">#{{stepNumber @index}} {{phase}}</span>
+            <span class="step-meta">
+              {{statusBadge status}}
+              &middot; {{duration}}ms
+            </span>
+          </div>
+          {{#if observation}}<div class="step-detail"><strong>Observation:</strong> {{observation}}</div>{{/if}}
+          {{#if reasoning}}<div class="step-detail"><strong>Reasoning:</strong> {{reasoning}}</div>{{/if}}
+        </div>
+        {{/each}}
+      {{else}}
+        <p style="color:#71717a">No steps recorded.</p>
+      {{/if}}
+    </div>
+
+    <div class="footer">
+      Generated at {{formatDate updatedAt}} &middot; Task ID: {{taskId}}
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Batch Report - {{batchId}}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #18181b;
+      color: #e4e4e7;
+      line-height: 1.6;
+      padding: 2rem;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    .header {
+      border-bottom: 1px solid #3f3f46;
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .header h1 { font-size: 1.5rem; font-weight: 700; color: #fafafa; }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 0.75rem;
+    }
+    .meta-item {
+      font-size: 0.8rem;
+      color: #a1a1aa;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .section { margin-bottom: 2rem; }
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+    .summary-card {
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 0.5rem;
+      padding: 1.25rem;
+    }
+    .summary-card p { font-size: 0.9rem; color: #d4d4d8; }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 1rem;
+    }
+    .stat-box {
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fafafa;
+    }
+    .stat-label {
+      font-size: 0.75rem;
+      color: #a1a1aa;
+      margin-top: 0.25rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid #3f3f46;
+    }
+    th {
+      font-size: 0.75rem;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    td { font-size: 0.85rem; color: #d4d4d8; }
+    .footer {
+      border-top: 1px solid #3f3f46;
+      padding-top: 1rem;
+      margin-top: 2rem;
+      font-size: 0.75rem;
+      color: #52525b;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>{{name}}</h1>
+      <div class="meta">
+        <span class="meta-item">Batch ID: {{batchId}}</span>
+        <span class="meta-item">Total Tasks: {{totalTasks}}</span>
+        <span class="meta-item">Duration: {{duration}}</span>
+        <span class="meta-item">Created: {{formatDate createdAt}}</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Summary</div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-value">{{totalTasks}}</div>
+          <div class="stat-label">Total Tasks</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" style="color: #34d399">{{passedTasks}}</div>
+          <div class="stat-label">Passed</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" style="color: #f87171">{{failedTasks}}</div>
+          <div class="stat-label">Failed</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">{{duration}}</div>
+          <div class="stat-label">Duration</div>
+        </div>
+      </div>
+    </div>
+
+    {{#if tasks.length}}
+    <div class="section">
+      <div class="section-title">Task Details</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Task ID</th>
+            <th>Goal</th>
+            <th>Status</th>
+            <th>Verdict</th>
+            <th>Duration</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each tasks}}
+          <tr>
+            <td>{{taskId}}</td>
+            <td>{{goal}}</td>
+            <td>{{statusBadge status}}</td>
+            <td>{{statusBadge verdict}}</td>
+            <td>{{duration}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+    {{else}}
+    <div class="section">
+      <p style="color:#71717a">No tasks in this batch.</p>
+    </div>
+    {{/if}}
+
+    <div class="footer">
+      Generated at {{formatDate createdAt}} &middot; Batch ID: {{batchId}}
+    </div>
+  </div>
+</body>
+</html>
