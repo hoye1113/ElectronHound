@@ -75,6 +75,7 @@ export class SessionManager {
       type: SessionEntry['type'];
       id?: string;
       timestamp?: string;
+      compressionRatio?: number;
     },
   ): string {
     return addEntry(this.q, sessionId, entry);

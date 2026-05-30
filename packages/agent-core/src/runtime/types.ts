@@ -42,6 +42,8 @@ export interface Observation {
   details: Record<string, unknown>;
   /** ISO 8601 timestamp of when the observation was made. */
   timestamp: string;
+  /** AXTree compression ratio (0-1). 1.0 means no compression was applied. */
+  compressionRatio?: number;
 }
 
 /**

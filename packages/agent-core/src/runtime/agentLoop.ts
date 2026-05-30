@@ -28,6 +28,7 @@ import { fingerprintObservation } from './stuckDetection.js';
 import { toErrorMessage } from '../utils/error.js';
 import { LLMError } from '../llm/retry.js';
 import { createStderrLogger } from '../utils/logger.js';
+import { compressAXTree, type AXNode } from '../observe/axtreeCompressor.js';
 import {
   loadRelevantPatterns,
   formatPatternsForPrompt,
@@ -272,6 +273,7 @@ export class AgentLoop {
             role: 'assistant',
             content: JSON.stringify(observation),
             type: 'assistant',
+            compressionRatio: observation.compressionRatio,
           });
 
           // ── Stuck detection ─────────────────────────────────────────
@@ -441,6 +443,7 @@ export class AgentLoop {
             role: 'assistant',
             content: JSON.stringify(observation),
             type: 'assistant',
+            compressionRatio: observation.compressionRatio,
           });
 
           // ── Stuck detection ─────────────────────────────────────────
@@ -584,10 +587,44 @@ export class AgentLoop {
   // ── Loop phases ────────────────────────────────────────────────────────
 
   /**
+   * Detect if a value is an AXTree node (has role and optionally children).
+   */
+  private isAXTreeNode(value: unknown): value is AXNode {
+    if (!value || typeof value !== 'object') return false;
+    const obj = value as Record<string, unknown>;
+    return typeof obj.role === 'string';
+  }
+
+  /**
+   * Detect if execution result contains AXTree data.
+   */
+  private extractAXTree(result: unknown): AXNode | null {
+    if (!result || typeof result !== 'object') return null;
+
+    const obj = result as Record<string, unknown>;
+
+    // Check if result itself is an AXTree
+    if (this.isAXTreeNode(obj)) return obj as AXNode;
+
+    // Check common wrapper patterns
+    if (obj.axtree && this.isAXTreeNode(obj.axtree)) return obj.axtree as AXNode;
+    if (obj.tree && this.isAXTreeNode(obj.tree)) return obj.tree as AXNode;
+    if (obj.snapshot && this.isAXTreeNode(obj.snapshot)) return obj.snapshot as AXNode;
+    if (obj.accessibilityTree && this.isAXTreeNode(obj.accessibilityTree))
+      return obj.accessibilityTree as AXNode;
+
+    return null;
+  }
+
+  /**
    * Observe — gather the current state via the LLM.
+   *
+   * When the previous execution result contains an AXTree (from browser_snapshot),
+   * it is compressed before sending to the LLM to reduce token consumption.
    */
   async observe(state: AgentLoopState): Promise<Observation> {
     const contextParts: string[] = [];
+    let compressionRatio = 1.0;
 
     contextParts.push(`Task: ${state.taskPrompt}`);
 
@@ -595,8 +632,23 @@ export class AgentLoop {
       contextParts.push(`Last action: ${state.lastPlan.action} (tool: ${state.lastPlan.toolName})`);
     }
     if (state.lastExecution) {
+      let resultStr: string;
+
+      // Compress AXTree if present in execution result
+      const axtree = this.extractAXTree(state.lastExecution.result);
+      if (axtree) {
+        const compressed = compressAXTree(axtree, state.taskPrompt);
+        compressionRatio = compressed.compressionRatio;
+        resultStr = JSON.stringify(compressed.compressed);
+        this.logger.info(
+          `AXTree compressed: ${compressed.originalNodeCount} -> ${compressed.compressedNodeCount} nodes (${(compressionRatio * 100).toFixed(1)}% retained)`,
+        );
+      } else {
+        resultStr = JSON.stringify(state.lastExecution.result);
+      }
+
       contextParts.push(
-        `Last result: ${state.lastExecution.success ? 'success' : 'failure'} — ${JSON.stringify(state.lastExecution.result)}`,
+        `Last result: ${state.lastExecution.success ? 'success' : 'failure'} — ${resultStr}`,
       );
     }
 
@@ -616,6 +668,7 @@ export class AgentLoop {
       summary: parsed?.summary ? String(parsed.summary) : text,
       details: (parsed?.details ?? {}) as Record<string, unknown>,
       timestamp: new Date().toISOString(),
+      compressionRatio,
     };
 
     return observation;

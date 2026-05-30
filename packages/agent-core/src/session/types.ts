@@ -21,6 +21,8 @@ export interface SessionEntry {
   timestamp: string;
   /** Semantic type — compaction entries are summaries rather than raw messages */
   type: 'user' | 'assistant' | 'system' | 'compaction';
+  /** AXTree compression ratio (0-1) if applicable */
+  compressionRatio?: number;
 }
 
 // ── Compaction types ─────────────────────────────────────────────────────────

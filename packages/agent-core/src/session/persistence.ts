@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS entries (
   content TEXT NOT NULL,
   timestamp TEXT NOT NULL,
   type TEXT NOT NULL,
+  compression_ratio REAL,
   UNIQUE(id, session_id)
 );
 
@@ -77,6 +78,7 @@ interface EntryRow {
   content: string;
   timestamp: string;
   type: string;
+  compression_ratio: number | null;
 }
 
 interface CompactionRow {
@@ -109,7 +111,23 @@ export function initSessionDb(dbPath?: string): Database.Database {
 
   db.exec(SCHEMA_SQL);
 
+  // Run migrations for schema upgrades
+  migrateSchema(db);
+
   return db;
+}
+
+/**
+ * Run incremental schema migrations.
+ * Uses ALTER TABLE ADD COLUMN for non-destructive upgrades.
+ */
+function migrateSchema(db: Database.Database): void {
+  // Migration: Add compression_ratio column to entries table if it doesn't exist
+  try {
+    db.exec('ALTER TABLE entries ADD COLUMN compression_ratio REAL');
+  } catch {
+    // Column already exists — ignore error
+  }
 }
 
 // ── Prepared-statements cache (bound to a single Database) ───────────────────
@@ -122,7 +140,7 @@ export function createSessionQueries(db: Database.Database): SessionQueries {
     'SELECT * FROM sessions WHERE id = ?'
   );
   const insertEntry = db.prepare(
-    'INSERT INTO entries (id, session_id, role, content, timestamp, type) VALUES (?, ?, ?, ?, ?, ?)'
+    'INSERT INTO entries (id, session_id, role, content, timestamp, type, compression_ratio) VALUES (?, ?, ?, ?, ?, ?, ?)'
   );
   const selectEntriesBySession = db.prepare(
     'SELECT * FROM entries WHERE session_id = ? ORDER BY timestamp ASC'
@@ -163,6 +181,7 @@ function rowToEntry(row: EntryRow): SessionEntry {
     content: row.content,
     timestamp: row.timestamp,
     type: row.type as SessionEntry['type'],
+    compressionRatio: row.compression_ratio ?? undefined,
   };
 }
 
@@ -254,7 +273,7 @@ export function addEntry(
 ): string {
   const id = entry.id ?? generateId();
   const timestamp = entry.timestamp ?? nowISO();
-  q.insertEntry.run(id, sessionId, entry.role, entry.content, timestamp, entry.type);
+  q.insertEntry.run(id, sessionId, entry.role, entry.content, timestamp, entry.type, entry.compressionRatio ?? null);
   return id;
 }
 
