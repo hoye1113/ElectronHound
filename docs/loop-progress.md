@@ -59,6 +59,7 @@
 | W51 | A | 覆盖率补全 x3 (cli/agentLoop/electron-compat) | ~92% | 3229 | ~27s | - | `8d178a6` | 2026-05-30 |
 | W52 | A | 覆盖率补全 x4 (store/notifications/runner/TaskList) | ~93% | 3325 | ~27s | - | `95eb645` | 2026-05-30 |
 | W53 | A | 覆盖率补全 x3 (few-shot/api/runner) | ~94% | 3393 | ~27s | - | `e4c0c9a` | 2026-05-30 |
+| W54 | C | ESLint 21→0 errors in test files | ~94% | 3393 | ~27s | - | `f8f9a43` | 2026-05-30 |
 
 ---
 
