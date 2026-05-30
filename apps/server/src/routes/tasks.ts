@@ -6,6 +6,7 @@ import { sseHub } from '../streams/sseHub.js';
 import { getWorkerPool } from '../tasks/runner.js';
 import { dbRowToTask, dbRowToStep } from '../utils/dbMappers.js';
 import { IdParam } from '../utils/validation.js';
+import { checkDiskQuota } from '../services/cleanup.js';
 
 // ── Validation schemas ──────────────────────────────────────────────
 
@@ -98,6 +99,20 @@ export async function taskRoutes(server: FastifyInstance) {
       return {
         error: 'Validation failed',
         details: parseResult.error.issues,
+      };
+    }
+
+    // Check disk quota before creating task
+    const dataDir = server.dataDir as string;
+    const quota = await checkDiskQuota(`${dataDir}/reports`);
+    if (quota.isOverQuota) {
+      reply.code(507); // Insufficient Storage
+      return {
+        error: 'Disk quota exceeded',
+        details: {
+          usage: quota.usage,
+          quota: quota.quota,
+        },
       };
     }
 

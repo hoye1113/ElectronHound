@@ -450,5 +450,18 @@
     "saveConfig": "保存配置",
     "configSaved": "配置已保存",
     "loadError": "加载通知设置失败"
+  },
+  "storage": {
+    "title": "存储",
+    "subtitle": "管理截图和无障碍快照的磁盘使用",
+    "totalSize": "总大小",
+    "fileCount": "文件数",
+    "quota": "配额",
+    "statusOk": "配额内",
+    "statusOver": "超出配额",
+    "cleanupNow": "立即清理",
+    "cleanupDone": "已清理 {{count}} 个文件",
+    "cleanupNone": "没有需要清理的旧文件",
+    "loading": "加载存储信息..."
   }
 }

@@ -16,6 +16,8 @@ import {
   Zap,
   CircleDot,
   ChevronDown,
+  HardDrive,
+  Trash,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import type { LLMProviderConfig, ProvidersConfig } from '../lib/api';
@@ -485,6 +487,116 @@ function ProviderCard({
   );
 }
 
+// ─── Storage Section ───────────────────────────────────────────────────
+
+interface StorageInfo {
+  totalSize: number;
+  fileCount: number;
+  quota: number;
+  isOverQuota: boolean;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+}
+
+interface StorageSectionProps {
+  info: StorageInfo | null;
+  loading: boolean;
+  cleaningUp: boolean;
+  cleanupResult: number | null;
+  onCleanup: () => void;
+}
+
+function StorageSection({ info, loading, cleaningUp, cleanupResult, onCleanup }: StorageSectionProps) {
+  const { t } = useTranslation();
+
+  if (loading && !info) {
+    return (
+      <div className="mt-8 flex items-center justify-center p-8">
+        <Loader2 className="size-5 animate-spin text-zinc-400" />
+        <span className="ml-2 text-sm text-zinc-400">{t('storage.loading')}</span>
+      </div>
+    );
+  }
+
+  if (!info) return null;
+
+  const usagePercent = info.quota > 0 ? Math.min(100, (info.totalSize / info.quota) * 100) : 0;
+
+  return (
+    <div className="mt-8 rounded-lg border border-zinc-800 bg-zinc-900 p-5">
+      <div className="flex items-center gap-2.5 mb-4">
+        <HardDrive className="size-4 text-zinc-400" />
+        <h2 className="text-sm font-semibold text-zinc-100">{t('storage.title')}</h2>
+      </div>
+      <p className="text-xs text-zinc-500 mb-4">{t('storage.subtitle')}</p>
+
+      <div className="space-y-3">
+        {/* Usage bar */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs text-zinc-400">{t('storage.totalSize')}</span>
+            <span className="text-xs text-zinc-300 font-mono">
+              {formatBytes(info.totalSize)} / {formatBytes(info.quota)}
+            </span>
+          </div>
+          <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${
+                info.isOverQuota ? 'bg-red-500' : usagePercent > 80 ? 'bg-amber-500' : 'bg-indigo-500'
+              }`}
+              style={{ width: `${Math.min(100, usagePercent)}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="flex items-center gap-6">
+          <div>
+            <span className="text-xs text-zinc-500">{t('storage.fileCount')}: </span>
+            <span className="text-xs text-zinc-300 font-mono">{info.fileCount.toLocaleString()}</span>
+          </div>
+          <div>
+            <span className="text-xs text-zinc-500">{t('storage.quota')}: </span>
+            <span className={`text-xs font-medium ${info.isOverQuota ? 'text-red-400' : 'text-emerald-400'}`}>
+              {info.isOverQuota ? t('storage.statusOver') : t('storage.statusOk')}
+            </span>
+          </div>
+        </div>
+
+        {/* Cleanup button and result */}
+        <div className="flex items-center gap-3 pt-1">
+          <button
+            type="button"
+            onClick={onCleanup}
+            disabled={cleaningUp}
+            className="inline-flex items-center gap-1.5 rounded-md bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700 disabled:opacity-50"
+          >
+            {cleaningUp ? (
+              <Loader2 className="size-3 animate-spin" />
+            ) : (
+              <Trash className="size-3" />
+            )}
+            {t('storage.cleanupNow')}
+          </button>
+          {cleanupResult !== null && (
+            <span className="text-xs text-zinc-400">
+              {cleanupResult > 0
+                ? t('storage.cleanupDone', { count: cleanupResult })
+                : t('storage.cleanupNone')}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -497,6 +609,10 @@ export default function SettingsPage() {
   const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({});
   const [testStatus, setTestStatus] = useState<Record<string, TestStatus>>({});
   const [deleteTarget, setDeleteTarget] = useState<LLMProviderConfig | null>(null);
+  const [storageInfo, setStorageInfo] = useState<StorageInfo | null>(null);
+  const [storageLoading, setStorageLoading] = useState(true);
+  const [cleaningUp, setCleaningUp] = useState(false);
+  const [cleanupResult, setCleanupResult] = useState<number | null>(null);
 
   // ─── Load providers from API ────────────────────────────────────────────────
 
@@ -515,6 +631,38 @@ export default function SettingsPage() {
   useEffect(() => {
     void refreshProviders();
   }, [refreshProviders]);
+
+  // ─── Load storage info ────────────────────────────────────────────────────
+
+  const refreshStorage = useCallback(async () => {
+    try {
+      const data = await api.storage.getInfo();
+      setStorageInfo(data);
+    } catch {
+      // Silently fail - storage info is non-critical
+    } finally {
+      setStorageLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshStorage();
+  }, [refreshStorage]);
+
+  const handleCleanup = async () => {
+    setCleaningUp(true);
+    setCleanupResult(null);
+    try {
+      const data = await api.storage.cleanup();
+      setCleanupResult(data.deletedCount);
+      // Refresh storage info after cleanup
+      void refreshStorage();
+    } catch {
+      setCleanupResult(0);
+    } finally {
+      setCleaningUp(false);
+    }
+  };
 
   // ─── CRUD operations ────────────────────────────────────────────────────────
 
@@ -630,6 +778,15 @@ export default function SettingsPage() {
         <Plus className="size-4" />
         {t('settings.addNew')}
       </button>
+
+      {/* Storage Section */}
+      <StorageSection
+        info={storageInfo}
+        loading={storageLoading}
+        cleaningUp={cleaningUp}
+        cleanupResult={cleanupResult}
+        onCleanup={handleCleanup}
+      />
 
       {/* Add/Edit Dialog */}
       <ProviderFormDialog

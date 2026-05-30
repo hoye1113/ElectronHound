@@ -496,5 +496,18 @@
     "saveConfig": "Save Configuration",
     "configSaved": "Configuration saved",
     "loadError": "Failed to load notification settings"
+  },
+  "storage": {
+    "title": "Storage",
+    "subtitle": "Manage disk usage for screenshots and accessibility snapshots",
+    "totalSize": "Total Size",
+    "fileCount": "Files",
+    "quota": "Quota",
+    "statusOk": "Within quota",
+    "statusOver": "Over quota",
+    "cleanupNow": "Cleanup Now",
+    "cleanupDone": "Cleaned up {{count}} files",
+    "cleanupNone": "No old files to clean up",
+    "loading": "Loading storage info..."
   }
 }

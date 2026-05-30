@@ -927,8 +927,9 @@ describe('Route: GET /api/stream/tasks/:id', () => {
   it('stream route is registered in the server route table', () => {
     // Verify the route exists by checking Fastify's registered routes
     const routes = server.printRoutes();
-    // Fastify printRoutes() groups by common prefix — 'stream' shares 's' with 'schedules'
-    expect(routes).toMatch(/tream\/tasks/);
+    // Fastify printRoutes() groups by common prefix — 'stream' shares 'st' with 'storage'
+    // so the tree may render as 'ream/tasks/' under 't' node
+    expect(routes).toMatch(/ream\/tasks/);
   });
 
   it('other routes remain functional when stream route is registered', async () => {

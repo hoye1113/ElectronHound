@@ -493,4 +493,14 @@ export const api = {
       });
     },
   },
+  storage: {
+    getInfo(): Promise<{ totalSize: number; fileCount: number; quota: number; isOverQuota: boolean }> {
+      return fetchJson(`${API_BASE}/api/storage`);
+    },
+    cleanup(): Promise<{ deletedCount: number; totalSize: number; fileCount: number }> {
+      return fetchJson(`${API_BASE}/api/storage/cleanup`, {
+        method: 'POST',
+      });
+    },
+  },
 };
