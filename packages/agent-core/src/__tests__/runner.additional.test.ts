@@ -3,8 +3,8 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 // ── Hoisted mocks ──────────────────────────────────────────────────────────
 
 const {
-  mockGenerateText,
-  mockGenerateObject,
+  mockGenerateText: _mockGenerateText,
+  mockGenerateObject: _mockGenerateObject,
   mockProvider,
   mockMCPCtor,
   mockSessionManagerCtor,
@@ -351,7 +351,7 @@ describe('runTest additional coverage', () => {
         close: vi.fn(),
       }));
 
-      const result = await runTest({
+      await runTest({
         goal: 'Fresh run test',
         targetAppPath: '/test/app',
         checkpointPath: '/tmp/cp.sqlite3',

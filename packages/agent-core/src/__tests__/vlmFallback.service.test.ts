@@ -12,10 +12,10 @@
  * - Custom threshold and prompt options
  * - Error handling in screenshot capture
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { VLMFallbackService } from '../observe/vlmFallback.js';
 import type { AXNode } from '../observe/axtreeCompressor.js';
-import type { VLMProvider, ImageContent } from '../llm/vlm-provider.js';
+import type { VLMProvider } from '../llm/vlm-provider.js';
 import type { MCPClient } from '../mcp/client.js';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────

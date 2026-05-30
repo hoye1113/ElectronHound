@@ -1,9 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { AgentLoop } from '../runtime/agentLoop.js';
 import type { LLMProvider } from '../llm/types.js';
 import type { SessionManager } from '../session/sessionManager.js';
 import type { MCPClient } from '../mcp/client.js';
-import type { AgentLoopState, Observation, Verdict } from '../runtime/types.js';
 import { LLMError } from '../llm/retry.js';
 
 // ─── Mock factories ───────────────────────────────────────
@@ -220,7 +219,7 @@ describe('AgentLoop.run() scenarios', () => {
   it('returns fail on generic error during plan', async () => {
     let objectCallCount = 0;
     const llm = createMockLLM({
-      generateObject: vi.fn().mockImplementation(async (opts: { prompt: string }) => {
+      generateObject: vi.fn().mockImplementation(async (_opts: { prompt: string }) => {
         objectCallCount++;
         if (objectCallCount === 1) {
           // First call = plan, throw error
@@ -384,9 +383,7 @@ describe('AgentLoop stuck detection', () => {
 describe('AgentLoop.execute() MCP routing', () => {
   it('routes browser_* tools to playwright server', async () => {
     const mcp = createMockMCP();
-    let capturedPlan: unknown = null;
 
-    // Capture the plan from execute
     const llm = createMockLLM({
       generateObject: vi.fn().mockImplementation(async (opts: { prompt: string }) => {
         if (opts.prompt.includes('Evaluate whether')) {
@@ -961,11 +958,9 @@ describe('AgentLoop session entry recording', () => {
 
 describe('AgentLoop.resume()', () => {
   it('resumes from a checkpoint and continues the loop', async () => {
-    let verifyCount = 0;
     const llm = createMockLLM({
       generateObject: vi.fn().mockImplementation(async (opts: { prompt: string }) => {
         if (opts.prompt.includes('Evaluate whether')) {
-          verifyCount++;
           return { object: { verdict: 'pass', reasoning: 'Resumed and passed' } };
         }
         return {

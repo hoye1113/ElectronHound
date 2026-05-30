@@ -35,7 +35,6 @@ import {
   closeWorkerPool,
   attachPoolEventListeners,
 } from '../tasks/runner.js';
-import { sseHub } from '../streams/sseHub.js';
 import type { PoolEvent } from '../services/workerPool/types.js';
 
 // ── Helpers ─────────────────────────────────────────────────────────────

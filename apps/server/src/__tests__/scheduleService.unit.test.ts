@@ -7,7 +7,7 @@
  * - compareResults (result comparison)
  * - cron expression parsing via scheduleNext
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import Database from 'better-sqlite3';
 import { ScheduleService } from '../services/scheduleService.js';
 import { randomUUID } from 'node:crypto';

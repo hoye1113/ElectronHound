@@ -5,11 +5,11 @@
  * - GET  /api/storage          (disk usage stats)
  * - POST /api/storage/cleanup  (cleanup old files)
  */
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { buildServer } from '../server.js';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import type Database from 'better-sqlite3';
 import type { FastifyInstance } from 'fastify';
 
