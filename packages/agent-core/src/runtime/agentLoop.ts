@@ -23,6 +23,7 @@ import type {
   Verdict,
   Report,
   AgentRunResult,
+  VisionFallbackConfig,
 } from './types.js';
 import { fingerprintObservation } from './stuckDetection.js';
 import { toErrorMessage } from '../utils/error.js';
@@ -33,6 +34,7 @@ import {
   loadRelevantPatterns,
   formatPatternsForPrompt,
 } from '../prompts/feedbackLoader.js';
+import { VLMFallbackService, type AccessibilityReport } from '../observe/vlmFallback.js';
 
 // ── Defaults ──────────────────────────────────────────────────────────────
 
@@ -214,6 +216,8 @@ export class AgentLoop {
   private readonly stuckThreshold: number;
   private readonly onStepComplete?: (stepCount: number, state: AgentLoopState) => void;
   private readonly patternsPath: string | undefined;
+  private readonly visionFallback: VisionFallbackConfig | undefined;
+  private readonly vlmFallbackService: VLMFallbackService | undefined;
   private readonly logger = createStderrLogger('agentLoop');
 
   constructor(config: AgentLoopConfig) {
@@ -224,6 +228,15 @@ export class AgentLoop {
     this.stuckThreshold = config.stuckThreshold ?? DEFAULT_STUCK_THRESHOLD;
     this.onStepComplete = config.onStepComplete;
     this.patternsPath = config.patternsPath;
+    this.visionFallback = config.visionFallback;
+
+    // Initialize VLM fallback service if enabled
+    if (config.visionFallback?.enabled && config.visionFallback.vlmProvider) {
+      this.vlmFallbackService = new VLMFallbackService(
+        config.visionFallback.vlmProvider,
+        config.mcpClient,
+      );
+    }
   }
 
   /**
@@ -621,10 +634,13 @@ export class AgentLoop {
    *
    * When the previous execution result contains an AXTree (from browser_snapshot),
    * it is compressed before sending to the LLM to reduce token consumption.
+   *
+   * If vision fallback is enabled and AXTree is insufficient, uses VLM analysis.
    */
   async observe(state: AgentLoopState): Promise<Observation> {
     const contextParts: string[] = [];
     let compressionRatio = 1.0;
+    let vlmReport: AccessibilityReport | null = null;
 
     contextParts.push(`Task: ${state.taskPrompt}`);
 
@@ -643,6 +659,34 @@ export class AgentLoop {
         this.logger.info(
           `AXTree compressed: ${compressed.originalNodeCount} -> ${compressed.compressedNodeCount} nodes (${(compressionRatio * 100).toFixed(1)}% retained)`,
         );
+
+        // Check if VLM fallback should be used
+        if (this.vlmFallbackService && compressed.compressedNodeCount < (this.visionFallback?.threshold ?? 3)) {
+          this.logger.info('AXTree insufficient, attempting VLM fallback...');
+          vlmReport = await this.vlmFallbackService.analyze(
+            axtree,
+            state.taskPrompt,
+            { threshold: this.visionFallback?.threshold },
+          );
+
+          if (vlmReport) {
+            this.logger.info(`VLM fallback detected ${vlmReport.elements.length} UI elements`);
+            // Add VLM report to context
+            contextParts.push(
+              `VLM Analysis: ${vlmReport.summary}`,
+            );
+            // Add individual elements to details
+            const vlmDetails: Record<string, unknown> = {
+              vlmElements: vlmReport.elements,
+              vlmSummary: vlmReport.summary,
+            };
+            // Merge with existing context
+            resultStr = JSON.stringify({
+              axTree: compressed.compressed,
+              vlmAnalysis: vlmDetails,
+            });
+          }
+        }
       } else {
         resultStr = JSON.stringify(state.lastExecution.result);
       }
@@ -666,7 +710,10 @@ export class AgentLoop {
 
     const observation: Observation = {
       summary: parsed?.summary ? String(parsed.summary) : text,
-      details: (parsed?.details ?? {}) as Record<string, unknown>,
+      details: {
+        ...(parsed?.details ?? {}),
+        ...(vlmReport ? { vlmReport } : {}),
+      },
       timestamp: new Date().toISOString(),
       compressionRatio,
     };

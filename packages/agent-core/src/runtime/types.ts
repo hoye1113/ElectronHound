@@ -9,6 +9,7 @@
  */
 
 import type { LLMProvider } from '../llm/types.js';
+import type { VLMProvider } from '../llm/vlm-provider.js';
 import type { SessionManager } from '../session/sessionManager.js';
 import type { MCPClient } from '../mcp/client.js';
 
@@ -30,6 +31,23 @@ export interface AgentLoopConfig {
   onStepComplete?: (stepCount: number, state: AgentLoopState) => void;
   /** Absolute path to the feedback patterns JSONL file. When set, relevant failure patterns are injected on verify FAIL. */
   patternsPath?: string;
+  /**
+   * Vision fallback configuration for Canvas/WebGL apps.
+   * When enabled, uses VLM analysis if AXTree has insufficient nodes.
+   */
+  visionFallback?: VisionFallbackConfig;
+}
+
+/**
+ * Configuration for vision fallback.
+ */
+export interface VisionFallbackConfig {
+  /** Enable vision fallback. @default false */
+  enabled: boolean;
+  /** VLM provider for image analysis. Required if enabled is true. */
+  vlmProvider?: VLMProvider;
+  /** Minimum AXTree node count threshold. @default 3 */
+  threshold?: number;
 }
 
 /**
