@@ -9,6 +9,7 @@ import type {
 import {
   mkdirSync,
   writeFileSync,
+  readFileSync,
   appendFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
@@ -43,6 +44,18 @@ interface ReplayCliArgs {
   taskId: string;
   strict: boolean;
   loose: boolean;
+  dbPath?: string;
+}
+
+interface ExportCliArgs {
+  taskId: string;
+  format: string;
+  output?: string;
+  dbPath?: string;
+}
+
+interface ImportCliArgs {
+  file: string;
   dbPath?: string;
 }
 
@@ -115,6 +128,80 @@ export function parseReplayArgs(argv: string[]): ReplayCliArgs | null {
     taskId: raw.taskId,
     strict: raw.strict === 'true',
     loose: raw.loose === 'true',
+    dbPath: raw.db || undefined,
+  };
+}
+
+/**
+ * Parse export CLI arguments from process.argv.
+ * Supports: export --taskId <id> [--format jsonl] [--output <file>] [--db <path>]
+ */
+export function parseExportArgs(argv: string[]): ExportCliArgs | null {
+  const exportIndex = argv.findIndex((arg) => arg === 'export');
+  if (exportIndex === -1) {
+    return null;
+  }
+
+  const raw: Record<string, string> = {};
+
+  for (let i = exportIndex + 1; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg.startsWith('--')) {
+      const key = arg.slice(2);
+      const next = argv[i + 1];
+      if (next !== undefined && !next.startsWith('--')) {
+        raw[key] = next;
+        i++;
+      } else {
+        raw[key] = 'true';
+      }
+    }
+  }
+
+  if (!raw.taskId) {
+    return null;
+  }
+
+  return {
+    taskId: raw.taskId,
+    format: raw.format ?? 'jsonl',
+    output: raw.output || undefined,
+    dbPath: raw.db || undefined,
+  };
+}
+
+/**
+ * Parse import CLI arguments from process.argv.
+ * Supports: import --file <path> [--db <path>]
+ */
+export function parseImportArgs(argv: string[]): ImportCliArgs | null {
+  const importIndex = argv.findIndex((arg) => arg === 'import');
+  if (importIndex === -1) {
+    return null;
+  }
+
+  const raw: Record<string, string> = {};
+
+  for (let i = importIndex + 1; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg.startsWith('--')) {
+      const key = arg.slice(2);
+      const next = argv[i + 1];
+      if (next !== undefined && !next.startsWith('--')) {
+        raw[key] = next;
+        i++;
+      } else {
+        raw[key] = 'true';
+      }
+    }
+  }
+
+  if (!raw.file) {
+    return null;
+  }
+
+  return {
+    file: raw.file,
     dbPath: raw.db || undefined,
   };
 }
@@ -391,6 +478,241 @@ export async function handleReplayCommand(args: ReplayCliArgs): Promise<number> 
   }
 }
 
+// ─── Export Command Handler ─────────────────────
+
+/**
+ * Export a task from the database as JSONL.
+ * Self-contained implementation for CLI use (no server dependency).
+ */
+function cliExportTask(db: import('better-sqlite3').Database, taskId: string): string {
+  const taskRow = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as Record<string, unknown> | undefined;
+  if (!taskRow) {
+    throw new Error('Task not found');
+  }
+
+  const stepRows = db.prepare('SELECT * FROM steps WHERE task_id = ? ORDER BY step_index').all(taskId) as Array<Record<string, unknown>>;
+
+  const lines: string[] = [];
+
+  // Task line
+  lines.push(JSON.stringify({
+    type: 'task',
+    data: {
+      id: String(taskRow.id),
+      goal: String(taskRow.goal),
+      target_app_path: String(taskRow.target_app_path),
+      llm_model: String(taskRow.llm_model),
+      status: String(taskRow.status),
+      max_steps: Number(taskRow.max_steps),
+      step_count: Number(taskRow.step_count),
+      result_summary: taskRow.result_summary ?? null,
+      context_injection: taskRow.context_injection ?? null,
+      provider_id: taskRow.provider_id ?? null,
+      created_at: String(taskRow.created_at),
+      updated_at: String(taskRow.updated_at),
+    },
+  }));
+
+  // Step lines
+  for (const row of stepRows) {
+    lines.push(JSON.stringify({
+      type: 'step',
+      data: {
+        step_number: Number(row.step_index),
+        phase: String(row.phase),
+        status: String(row.status),
+        observation: row.observation ?? null,
+        action: row.action ? JSON.parse(row.action as string) : null,
+        result: row.result ? JSON.parse(row.result as string) : null,
+        reasoning: row.reasoning ?? null,
+        screenshot_path: row.screenshot_path ?? null,
+        accessibility_snapshot_path: row.accessibility_snapshot_path ?? null,
+        timestamp: String(row.timestamp),
+        duration: Number(row.duration),
+      },
+    }));
+  }
+
+  return lines.join('\n') + '\n';
+}
+
+/**
+ * Handle the export subcommand.
+ * Returns process exit code.
+ */
+export async function handleExportCommand(args: ExportCliArgs): Promise<number> {
+  const logger = getLogger({ source: 'export' });
+
+  if (args.format !== 'jsonl') {
+    logger.error(`Unsupported format: ${args.format}. Only "jsonl" is supported.`);
+    return 1;
+  }
+
+  const dbPath = args.dbPath ?? join('data', 'eata.db');
+
+  logger.info(`Exporting task ${args.taskId} as ${args.format}`);
+
+  const spinner = new Spinner({ text: `Exporting task ${args.taskId}...` });
+  spinner.start();
+
+  try {
+    const Database = (await import('better-sqlite3')).default;
+    const db = new Database(dbPath);
+
+    try {
+      const jsonl = cliExportTask(db, args.taskId);
+
+      spinner.stop();
+
+      if (args.output) {
+        writeFileSync(args.output, jsonl, 'utf-8');
+        process.stdout.write(`Exported task ${args.taskId} to ${args.output}\n`);
+      } else {
+        process.stdout.write(jsonl);
+      }
+
+      return 0;
+    } finally {
+      db.close();
+    }
+  } catch (err: unknown) {
+    spinner.fail('Export failed');
+    logger.error(`Export failed: ${err instanceof Error ? err.message : String(err)}`);
+    return 1;
+  }
+}
+
+// ─── Import Command Handler ─────────────────────
+
+/**
+ * Import a task from JSONL content into the database.
+ * Self-contained implementation for CLI use (no server dependency).
+ */
+function cliImportTask(db: import('better-sqlite3').Database, jsonl: string): { taskId: string; stepCount: number } {
+  const lines = jsonl.trim().split('\n').filter((l) => l.trim());
+  if (lines.length === 0) {
+    throw new Error('JSONL content is empty');
+  }
+
+  let taskData: Record<string, unknown> | null = null;
+  const stepDataList: Array<Record<string, unknown>> = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    let obj: Record<string, unknown>;
+    try {
+      obj = JSON.parse(lines[i].trim());
+    } catch {
+      throw new Error(`line ${i + 1}: invalid JSON`);
+    }
+
+    if (!obj.type || !obj.data) {
+      throw new Error(`line ${i + 1}: missing "type" or "data" field`);
+    }
+
+    if (obj.type !== 'task' && obj.type !== 'step') {
+      throw new Error(`line ${i + 1}: invalid type "${obj.type}"`);
+    }
+
+    if (obj.type === 'task') {
+      taskData = obj.data as Record<string, unknown>;
+    } else if (obj.type === 'step') {
+      if (!taskData) {
+        throw new Error(`line ${i + 1}: "step" line found before "task" line`);
+      }
+      stepDataList.push(obj.data as Record<string, unknown>);
+    }
+  }
+
+  if (!taskData) {
+    throw new Error('No task line found in JSONL');
+  }
+
+  // Handle duplicate IDs
+  let taskId = String(taskData.id);
+  const existing = db.prepare('SELECT id FROM tasks WHERE id = ?').get(taskId);
+  if (existing) {
+    taskId = crypto.randomUUID();
+  }
+
+  // Insert task
+  db.prepare(
+    `INSERT INTO tasks (id, goal, target_app_path, llm_model, status, max_steps, step_count, result_summary, context_injection, provider_id, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(
+    taskId,
+    String(taskData.goal),
+    String(taskData.target_app_path),
+    String(taskData.llm_model),
+    String(taskData.status),
+    Number(taskData.max_steps),
+    Number(taskData.step_count),
+    taskData.result_summary ?? null,
+    taskData.context_injection ?? null,
+    taskData.provider_id ?? null,
+    String(taskData.created_at),
+    String(taskData.updated_at),
+  );
+
+  // Insert steps
+  for (const stepData of stepDataList) {
+    db.prepare(
+      `INSERT INTO steps (id, task_id, step_index, phase, status, observation, action, result, reasoning, screenshot_path, accessibility_snapshot_path, timestamp, duration)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      crypto.randomUUID(),
+      taskId,
+      Number(stepData.step_number),
+      String(stepData.phase),
+      String(stepData.status),
+      stepData.observation ?? null,
+      stepData.action ? JSON.stringify(stepData.action) : null,
+      stepData.result ? JSON.stringify(stepData.result) : null,
+      stepData.reasoning ?? null,
+      stepData.screenshot_path ?? null,
+      stepData.accessibility_snapshot_path ?? null,
+      String(stepData.timestamp),
+      Number(stepData.duration),
+    );
+  }
+
+  return { taskId, stepCount: stepDataList.length };
+}
+
+/**
+ * Handle the import subcommand.
+ * Returns process exit code.
+ */
+export async function handleImportCommand(args: ImportCliArgs): Promise<number> {
+  const logger = getLogger({ source: 'import' });
+
+  const dbPath = args.dbPath ?? join('data', 'eata.db');
+
+  logger.info(`Importing task from ${args.file}`);
+
+  const spinner = new Spinner({ text: `Importing from ${args.file}...` });
+  spinner.start();
+
+  try {
+    const Database = (await import('better-sqlite3')).default;
+    const db = new Database(dbPath);
+
+    try {
+      const jsonl = readFileSync(args.file, 'utf-8');
+      const result = cliImportTask(db, jsonl);
+
+      spinner.succeed('Import completed');
+      process.stdout.write(`Imported task ${result.taskId} with ${result.stepCount} steps\n`);
+      return 0;
+    } finally {
+      db.close();
+    }
+  } catch (err: unknown) {
+    spinner.fail('Import failed');
+    logger.error(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
+    return 1;
+  }
+}
+
 // ─── Main CLI Flow ──────────────────────────────────────
 
 /**
@@ -429,6 +751,18 @@ export async function cliMain(
   const replayArgs = parseReplayArgs(process.argv);
   if (replayArgs) {
     return handleReplayCommand(replayArgs);
+  }
+
+  // Handle export command
+  const exportArgs = parseExportArgs(process.argv);
+  if (exportArgs) {
+    return handleExportCommand(exportArgs);
+  }
+
+  // Handle import command
+  const importArgs = parseImportArgs(process.argv);
+  if (importArgs) {
+    return handleImportCommand(importArgs);
   }
 
   // Parse and validate arguments

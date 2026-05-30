@@ -7,6 +7,7 @@ import { getWorkerPool } from '../tasks/runner.js';
 import { dbRowToTask, dbRowToStep } from '../utils/dbMappers.js';
 import { IdParam } from '../utils/validation.js';
 import { checkDiskQuota } from '../services/cleanup.js';
+import { exportTaskToJSONL, importTaskFromJSONL } from '../services/taskExport.js';
 
 // ── Validation schemas ──────────────────────────────────────────────
 
@@ -213,5 +214,57 @@ export async function taskRoutes(server: FastifyInstance) {
 
     reply.code(204);
     return;
+  });
+
+  // GET /tasks/:id/export — export task as JSONL file download
+  server.get('/tasks/:id/export', async (request, reply) => {
+    const parsed = IdParam.safeParse(request.params);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Invalid task ID format', details: parsed.error.issues });
+    }
+    const { id } = parsed.data;
+
+    try {
+      const jsonl = exportTaskToJSONL(server.db, id);
+
+      reply
+        .header('Content-Type', 'application/jsonl; charset=utf-8')
+        .header('Content-Disposition', `attachment; filename="task-${id}.jsonl"`)
+        .code(200);
+
+      return jsonl;
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message === 'Task not found') {
+        reply.code(404);
+        return { error: 'Task not found' };
+      }
+      throw err;
+    }
+  });
+
+  // POST /tasks/import — import task from JSONL content
+  const ImportBodySchema = z.object({
+    jsonl: z.string().min(1, 'JSONL content is required'),
+  });
+
+  server.post('/tasks/import', async (request, reply) => {
+    const parsed = ImportBodySchema.safeParse(request.body);
+    if (!parsed.success) {
+      reply.code(400);
+      return { error: 'Validation failed', details: parsed.error.issues };
+    }
+
+    try {
+      const result = importTaskFromJSONL(server.db, parsed.data.jsonl);
+
+      reply.code(201);
+      return result;
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        reply.code(400);
+        return { error: err.message };
+      }
+      throw err;
+    }
   });
 }
