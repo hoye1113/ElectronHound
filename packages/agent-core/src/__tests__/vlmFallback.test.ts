@@ -201,3 +201,36 @@ describe('VLM prompt generation', () => {
     expect(prompt).toContain('Analyze this screenshot and describe all UI elements visible');
   });
 });
+
+// ── isVLMProvider ─────────────────────────────────────────────────────────
+
+describe('isVLMProvider', () => {
+  it('should return true for a provider with generateWithVision', async () => {
+    const { isVLMProvider } = await import('../llm/vlm-provider.js');
+    const provider = {
+      generateText: async () => ({ text: 'hi' }),
+      generateObject: async () => ({ object: {} }),
+      generateWithVision: async () => ({ text: 'vision result' }),
+    };
+    expect(isVLMProvider(provider as never)).toBe(true);
+  });
+
+  it('should return false for a provider without generateWithVision', async () => {
+    const { isVLMProvider } = await import('../llm/vlm-provider.js');
+    const provider = {
+      generateText: async () => ({ text: 'hi' }),
+      generateObject: async () => ({ object: {} }),
+    };
+    expect(isVLMProvider(provider as never)).toBe(false);
+  });
+
+  it('should return false when generateWithVision is not a function', async () => {
+    const { isVLMProvider } = await import('../llm/vlm-provider.js');
+    const provider = {
+      generateText: async () => ({ text: 'hi' }),
+      generateObject: async () => ({ object: {} }),
+      generateWithVision: 'not a function',
+    };
+    expect(isVLMProvider(provider as never)).toBe(false);
+  });
+});
