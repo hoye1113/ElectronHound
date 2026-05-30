@@ -271,5 +271,63 @@ describe('Launcher', () => {
       const userDataDirArg = args.find((a: string) => a.startsWith('--user-data-dir='));
       expect(userDataDirArg).toBeUndefined();
     });
+
+    it('should append electronFlags to spawn args', async () => {
+      const mockChild = createMockChildProcess();
+      mockSpawn.mockReturnValue(mockChild as never);
+
+      const options: SpawnOptions = {
+        targetAppPath: '/path/to/app',
+        electronFlags: ['--no-sandbox', '--disable-gpu'],
+        timeout: 100,
+      };
+
+      const promise = spawnElectron(options);
+
+      setTimeout(() => {
+        mockChild.stderr.emit('data', Buffer.from('DevTools listening on ws://127.0.0.1:9222/devtools/browser/abc\n'));
+      }, 10);
+
+      await promise;
+
+      const spawnArgs = mockSpawn.mock.calls[0];
+      const args = spawnArgs[1] as string[];
+      expect(args).toContain('--no-sandbox');
+      expect(args).toContain('--disable-gpu');
+    });
+
+    it('should append ELECTRON_FLAGS env var to spawn args', async () => {
+      const mockChild = createMockChildProcess();
+      mockSpawn.mockReturnValue(mockChild as never);
+
+      // Set ELECTRON_FLAGS env var
+      const originalEnv = process.env.ELECTRON_FLAGS;
+      process.env.ELECTRON_FLAGS = '--headless,--disable-dev-shm-usage';
+
+      const options: SpawnOptions = {
+        targetAppPath: '/path/to/app',
+        timeout: 100,
+      };
+
+      const promise = spawnElectron(options);
+
+      setTimeout(() => {
+        mockChild.stderr.emit('data', Buffer.from('DevTools listening on ws://127.0.0.1:9222/devtools/browser/abc\n'));
+      }, 10);
+
+      await promise;
+
+      const spawnArgs = mockSpawn.mock.calls[0];
+      const args = spawnArgs[1] as string[];
+      expect(args).toContain('--headless');
+      expect(args).toContain('--disable-dev-shm-usage');
+
+      // Restore env
+      if (originalEnv === undefined) {
+        delete process.env.ELECTRON_FLAGS;
+      } else {
+        process.env.ELECTRON_FLAGS = originalEnv;
+      }
+    });
   });
 });
