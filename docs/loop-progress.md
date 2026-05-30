@@ -68,6 +68,7 @@
 | W60 | C | ESLint cleanup in scheduleService test | ~96% | 3565 | ~28s | - | `82c0bf7` | 2026-05-30 |
 | W61 | F | FlowyClaw 自举 e2e 测试 x23 (ELECTRON_RUN_AS_NODE fix) | ~96% | 3588 | ~31s | - | `8198281` | 2026-05-30 |
 | W62 | A | Schedule 组件测试 x27 (ScheduleList/CreateScheduleForm/ScheduleHistory) | ~96% | 3615 | ~33s | - | `529ed9b` | 2026-05-30 |
+| W63 | A | NotificationSettings 错误状态测试 | ~96% | 3616 | ~32s | - | `127a26f` | 2026-05-30 |
 
 ---
 
