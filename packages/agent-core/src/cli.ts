@@ -26,6 +26,9 @@ import {
   runConfigWizard,
 } from './dx/index.js';
 
+// Replay imports
+import { ReplayRunner } from './replay/replayRunner.js';
+
 // ─── Types ───────────────────────────────────────────────
 
 interface CliArgs {
@@ -34,6 +37,13 @@ interface CliArgs {
   llmModel: string;
   maxSteps: number;
   providerId?: string;
+}
+
+interface ReplayCliArgs {
+  taskId: string;
+  strict: boolean;
+  loose: boolean;
+  dbPath?: string;
 }
 
 // ─── Argument Parsing ────────────────────────────────────
@@ -65,6 +75,47 @@ export function parseArgs(argv: string[]): CliArgs {
     llmModel: raw.model ?? 'gpt-4o',
     maxSteps: raw.maxSteps !== undefined ? parseInt(raw.maxSteps, 10) : 50,
     providerId: raw.provider || undefined,
+  };
+}
+
+/**
+ * Parse replay CLI arguments from process.argv.
+ * Supports: replay --taskId <id> [--strict] [--loose] [--db <path>]
+ */
+export function parseReplayArgs(argv: string[]): ReplayCliArgs | null {
+  // Find the 'replay' subcommand
+  const replayIndex = argv.findIndex((arg) => arg === 'replay');
+  if (replayIndex === -1) {
+    return null;
+  }
+
+  const raw: Record<string, string> = {};
+
+  // Parse arguments after 'replay'
+  for (let i = replayIndex + 1; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg.startsWith('--')) {
+      const key = arg.slice(2);
+      const next = argv[i + 1];
+      if (next !== undefined && !next.startsWith('--')) {
+        raw[key] = next;
+        i++;
+      } else {
+        raw[key] = 'true';
+      }
+    }
+  }
+
+  // Validate required taskId
+  if (!raw.taskId) {
+    return null;
+  }
+
+  return {
+    taskId: raw.taskId,
+    strict: raw.strict === 'true',
+    loose: raw.loose === 'true',
+    dbPath: raw.db || undefined,
   };
 }
 
@@ -256,6 +307,90 @@ export function savePatterns(
   }
 }
 
+// ─── Replay Command Handler ─────────────────────────────
+
+/**
+ * Handle the replay subcommand.
+ * Returns process exit code.
+ */
+export async function handleReplayCommand(args: ReplayCliArgs): Promise<number> {
+  const logger = getLogger({ source: 'replay' });
+
+  // Determine mode (default to loose)
+  const mode: 'strict' | 'loose' = args.strict ? 'strict' : 'loose';
+
+  // Determine database path
+  const dbPath = args.dbPath ?? join('data', 'replay.db');
+
+  logger.info(`Replaying task ${args.taskId} in ${mode} mode`);
+
+  const spinner = new Spinner({ text: `Replaying task ${args.taskId}...` });
+  spinner.start();
+
+  let runner: ReplayRunner | null = null;
+
+  try {
+    runner = new ReplayRunner(dbPath);
+    const result = await runner.replay(args.taskId, mode);
+
+    spinner.stop();
+
+    // Print results
+    process.stdout.write('\n');
+    process.stdout.write(`${'='.repeat(60)}\n`);
+    process.stdout.write(`  Replay Results: ${args.taskId}\n`);
+    process.stdout.write(`${'='.repeat(60)}\n\n`);
+
+    process.stdout.write(`Mode: ${mode}\n`);
+    process.stdout.write(`Total Steps: ${result.totalSteps}\n`);
+    process.stdout.write(`Passed: ${result.passedSteps}\n`);
+    process.stdout.write(`Failed: ${result.failedSteps}\n\n`);
+
+    // Print step details
+    for (const step of result.steps) {
+      const icon = step.passed ? '\x1b[32m✓\x1b[0m' : '\x1b[31m✗\x1b[0m';
+      process.stdout.write(`${icon} Step ${step.stepNumber}: ${step.passed ? 'PASSED' : 'FAILED'}\n`);
+
+      if (!step.passed && step.diff) {
+        process.stdout.write(`  Expected: ${step.expectedObservation.slice(0, 80)}...\n`);
+        process.stdout.write(`  Actual:   ${step.actualObservation.slice(0, 80)}...\n`);
+
+        if (step.diff.differences.length > 0) {
+          process.stdout.write(`  Differences:\n`);
+          for (const diff of step.diff.differences.slice(0, 3)) {
+            process.stdout.write(`    - ${diff.path}: ${diff.type}\n`);
+          }
+          if (step.diff.differences.length > 3) {
+            process.stdout.write(`    ... and ${step.diff.differences.length - 3} more\n`);
+          }
+        }
+      }
+
+      process.stdout.write('\n');
+    }
+
+    // Print summary
+    process.stdout.write(`${'─'.repeat(60)}\n`);
+    if (result.success) {
+      process.stdout.write('\x1b[32m✓ Replay PASSED\x1b[0m\n');
+    } else {
+      process.stdout.write('\x1b[31m✗ Replay FAILED\x1b[0m\n');
+    }
+    process.stdout.write(`${'─'.repeat(60)}\n\n`);
+
+    return result.success ? 0 : 1;
+  } catch (err: unknown) {
+    spinner.fail('Replay failed');
+
+    const eataError = wrapError(err, ErrorCode.TASK_EXECUTION_FAILED);
+    logger.error('Replay failed', eataError);
+
+    return 1;
+  } finally {
+    runner?.close();
+  }
+}
+
 // ─── Main CLI Flow ──────────────────────────────────────
 
 /**
@@ -288,6 +423,12 @@ export async function cliMain(
       interactive: !argv.includes('--non-interactive'),
     });
     return result.success ? 0 : 1;
+  }
+
+  // Handle replay command
+  const replayArgs = parseReplayArgs(process.argv);
+  if (replayArgs) {
+    return handleReplayCommand(replayArgs);
   }
 
   // Parse and validate arguments
