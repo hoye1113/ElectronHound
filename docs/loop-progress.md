@@ -92,6 +92,7 @@
 | W86 | A | NotificationSettings error state tests (failed/pending log, test error) | ~87.6% | 3729 | ~33s | - | `89c21aa` | 2026-05-31 |
 | W87 | A | Settings.tsx Token Usage Audit filter handler tests | ~87.6% | 3734 | ~33s | - | `89c21aa` | 2026-05-31 |
 | W89 | C | registry.ts streamInvoke error path coverage | ~88% | 3740 | ~33s | - | `44d9aef` | 2026-05-31 |
+| W90 | A | NotificationSettings coverage (removeWebhook/toggleEvent/saveConfig/error) | ~88% | 3744 | ~33s | - | `8970f54` | 2026-05-31 |
 
 ---
 
