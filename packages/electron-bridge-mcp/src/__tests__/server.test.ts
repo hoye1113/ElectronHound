@@ -159,7 +159,8 @@ describe('electron_close tool', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     processRegistry = new Map();
-    killSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
+    killSpy = vi.spyOn(process, 'kill') as unknown as ReturnType<typeof vi.spyOn>;
+    (killSpy as unknown as { mockImplementation: (fn: () => boolean) => void }).mockImplementation(() => true);
   });
 
   afterEach(() => {
@@ -742,7 +743,8 @@ describe('MCP tool handler callbacks (via createServer)', () => {
     let killSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
-      killSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
+      killSpy = vi.spyOn(process, 'kill') as unknown as ReturnType<typeof vi.spyOn>;
+      (killSpy as unknown as { mockImplementation: (fn: () => boolean) => void }).mockImplementation(() => true);
     });
 
     afterEach(() => {
