@@ -1,0 +1,30 @@
+{
+  "name": "@eata/maestro-adapter",
+  "version": "0.1.0",
+  "description": "ElectronHound maestro adapter - Maps EATA data structures to recastory-maestro format",
+  "type": "module",
+  "main": "src/index.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hoye1113/ElectronHound.git",
+    "directory": "packages/maestro-adapter"
+  },
+  "keywords": ["electron", "testing", "maestro", "adapter", "orchestration"],
+  "author": { "name": "hoye1113" },
+  "license": "MIT",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@eata/shared-types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}

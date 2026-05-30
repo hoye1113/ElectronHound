@@ -64,3 +64,15 @@ export {
   getAvailableFeatures,
 } from './electron-compat.js';
 export type { ElectronVersion, CompatibilityResult } from './electron-compat.js';
+
+// Maestro adapter types and functions (PR-20)
+export {
+  MaestroNodeSchema,
+  MaestroStatusMap,
+  EataStatusMap,
+  MaestroPhaseMap,
+  EataPhaseMap,
+  convertStepToNode,
+  convertNodeToStep,
+} from './maestroAdapter.js';
+export type { MaestroNode } from './maestroAdapter.js';
