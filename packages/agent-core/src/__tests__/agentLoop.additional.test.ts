@@ -987,6 +987,8 @@ describe('AgentLoop.resume()', () => {
       sessionId: 'resumed-session',
       taskPrompt: 'Resume test',
       currentStep: 3,
+      maxSteps: 10,
+      config: { maxSteps: 10 },
       lastObservation: {
         summary: 'Previous observation',
         details: {},
@@ -995,9 +997,10 @@ describe('AgentLoop.resume()', () => {
       lastPlan: null,
       lastExecutionResult: null,
       sessionEntries: [
-        { role: 'user', content: 'Resume test', type: 'user' as const, id: 'e1', timestamp: Date.now() },
-        { role: 'assistant', content: '{"summary":"obs"}', type: 'assistant' as const, id: 'e2', timestamp: Date.now() },
+        { role: 'user' as const, content: 'Resume test', type: 'user' as const, id: 'e1', sessionId: 'resumed-session', timestamp: new Date().toISOString() },
+        { role: 'assistant' as const, content: '{"summary":"obs"}', type: 'assistant' as const, id: 'e2', sessionId: 'resumed-session', timestamp: new Date().toISOString() },
       ],
+      timestamp: new Date().toISOString(),
     };
 
     const result = await loop.resume(checkpoint);
@@ -1040,10 +1043,13 @@ describe('AgentLoop.resume()', () => {
       sessionId: 'resume-stuck',
       taskPrompt: 'Stuck test',
       currentStep: 0,
+      maxSteps: 20,
+      config: { maxSteps: 20, stuckThreshold: 3 },
       lastObservation: null,
       lastPlan: null,
       lastExecutionResult: null,
       sessionEntries: [],
+      timestamp: new Date().toISOString(),
     };
 
     const result = await loop.resume(checkpoint);
@@ -1073,10 +1079,13 @@ describe('AgentLoop.resume()', () => {
       sessionId: 'resume-error',
       taskPrompt: 'Error test',
       currentStep: 0,
+      maxSteps: 10,
+      config: { maxSteps: 10 },
       lastObservation: null,
       lastPlan: null,
       lastExecutionResult: null,
       sessionEntries: [],
+      timestamp: new Date().toISOString(),
     };
 
     const result = await loop.resume(checkpoint);
@@ -1113,10 +1122,13 @@ describe('AgentLoop.resume()', () => {
       sessionId: 'resume-exhaust',
       taskPrompt: 'Exhaust test',
       currentStep: 0,
+      maxSteps: 5,
+      config: { maxSteps: 5 },
       lastObservation: null,
       lastPlan: null,
       lastExecutionResult: null,
       sessionEntries: [],
+      timestamp: new Date().toISOString(),
     };
 
     const result = await loop.resume(checkpoint);

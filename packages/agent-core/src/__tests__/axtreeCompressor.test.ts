@@ -152,16 +152,16 @@ describe('compressAXTree', () => {
       const tree = createWideTree();
       const result = compressAXTree(tree, 'login form');
 
-      const compressed = result.compressed;
+      const compressed = result.compressed!;
       // Should keep the form-related nodes
       expect(compressed.name).toBe('MyApp');
 
       // Find the main content area
-      const mainNode = compressed.children.find((c) => c.role === 'main');
+      const mainNode = compressed.children!.find((c) => c.role === 'main');
       expect(mainNode).toBeDefined();
 
       // Should contain the form
-      const formNode = mainNode!.children.find((c) => c.role === 'form');
+      const formNode = mainNode!.children!.find((c) => c.role === 'form');
       expect(formNode).toBeDefined();
     });
 
@@ -169,9 +169,9 @@ describe('compressAXTree', () => {
       const tree = createWideTree();
       const result = compressAXTree(tree, 'save document');
 
-      const compressed = result.compressed;
+      const compressed = result.compressed!;
       // Should keep toolbar (has Save button)
-      const toolbar = compressed.children.find((c) => c.role === 'toolbar');
+      const toolbar = compressed.children!.find((c) => c.role === 'toolbar');
       expect(toolbar).toBeDefined();
 
       // The menubar and form may be pruned or kept based on relevance
@@ -192,15 +192,15 @@ describe('compressAXTree', () => {
       ]);
 
       const result = compressAXTree(tree, 'search settings');
-      const compressed = result.compressed;
+      const compressed = result.compressed!;
 
       // Ancestor path should be preserved: App -> Main -> Form -> Search
       expect(compressed.name).toBe('App');
-      const main = compressed.children.find((c) => c.role === 'main');
+      const main = compressed.children!.find((c) => c.role === 'main');
       expect(main).toBeDefined();
-      const form = main!.children.find((c) => c.role === 'form');
+      const form = main!.children!.find((c) => c.role === 'form');
       expect(form).toBeDefined();
-      const search = form!.children.find((c) => c.name === 'Search');
+      const search = form!.children!.find((c) => c.name === 'Search');
       expect(search).toBeDefined();
     });
   });
@@ -210,36 +210,36 @@ describe('compressAXTree', () => {
       const tree = createLargeListTree(20);
       const result = compressAXTree(tree, 'find item');
 
-      const compressed = result.compressed;
+      const compressed = result.compressed!;
       // Root list should be kept
       expect(compressed.role).toBe('list');
 
       // Should have sampled children (first 3 + separator + last 1 = 5)
       // or fewer if compression removed others
-      expect(compressed.children.length).toBeLessThan(20);
+      expect(compressed.children!.length).toBeLessThan(20);
     });
 
     it('should not sample small lists (10 or fewer)', () => {
       const tree = createLargeListTree(8);
       const result = compressAXTree(tree, 'find item');
 
-      const compressed = result.compressed;
+      const compressed = result.compressed!;
       // All items should be kept
-      expect(compressed.children.length).toBe(8);
+      expect(compressed.children!.length).toBe(8);
     });
 
     it('should add ellipsis marker when sampling', () => {
       const tree = createLargeListTree(15);
       const result = compressAXTree(tree, 'find item');
 
-      const compressed = result.compressed;
+      const compressed = result.compressed!;
       // Should contain an ellipsis or marker node
-      const hasMarker = compressed.children.some(
+      const hasMarker = compressed.children!.some(
         (c) => c.role === 'separator' || c.name?.includes('...') || c.name?.includes('more'),
       );
       // Either has a marker or the sampling removed items
       expect(hasMarker).toBe(true);
-      expect(compressed.children.length).toBeLessThan(15);
+      expect(compressed.children!.length).toBeLessThan(15);
     });
   });
 
@@ -279,7 +279,7 @@ describe('compressAXTree', () => {
       const result = compressAXTree(tree, 'item');
 
       const totalOriginal = countNodes(tree);
-      const totalCompressed = countNodes(result.compressed);
+      const totalCompressed = countNodes(result.compressed!);
       const expectedRatio = totalCompressed / totalOriginal;
 
       expect(result.compressionRatio).toBeCloseTo(expectedRatio, 2);

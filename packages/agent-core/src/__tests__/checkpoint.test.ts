@@ -9,8 +9,8 @@ function makeCheckpoint(overrides: Partial<AgentCheckpoint> = {}): AgentCheckpoi
     maxSteps: 20,
     taskPrompt: 'Test the login flow',
     config: { maxSteps: 20, stuckThreshold: 3 },
-    lastObservation: { summary: 'App is running', details: {} },
-    lastPlan: { toolName: 'browser_click', action: 'Click login button' },
+    lastObservation: { summary: 'App is running', details: {}, timestamp: '2026-01-01T00:00:00.000Z' },
+    lastPlan: { reasoning: 'User needs to log in', action: 'Click login button', toolName: 'browser_click', toolArgs: {}, expectedOutcome: 'Login form submitted' },
     lastExecutionResult: { success: true, result: null },
     sessionEntries: [
       {
