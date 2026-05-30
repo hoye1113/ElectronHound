@@ -17,10 +17,12 @@ import { trendsRoutes } from './trends.js';
 import { notificationRoutes } from './notifications.js';
 import { storageRoutes } from './storage.js';
 import { auditRoutes } from './audit.js';
+import { authRoutes } from './auth.js';
 
 export async function registerRoutes(server: FastifyInstance) {
   await server.register(healthRoutes);
   await server.register(metricsRoutes);
+  await server.register(authRoutes, { prefix: '/api' });
   await server.register(taskRoutes, { prefix: '/api' });
   await server.register(batchRoutes, { prefix: '/api' });
   await server.register(reportRoutes, { prefix: '/api' });

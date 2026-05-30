@@ -9,6 +9,8 @@ import { IdParam } from '../utils/validation.js';
 import { checkDiskQuota } from '../services/cleanup.js';
 import { exportTaskToJSONL, importTaskFromJSONL } from '../services/taskExport.js';
 import { generatePlaywrightFromDb } from '../services/codegen.js';
+import { UserService } from '../services/userService.js';
+import { authenticate } from '../middleware/auth.js';
 
 // ── Validation schemas ──────────────────────────────────────────────
 
@@ -28,16 +30,23 @@ const TaskListQuery = z.object({
 });
 
 export async function taskRoutes(server: FastifyInstance) {
+  const userService = new UserService(server.db);
+
+  // Optional authentication hook - attaches user if credentials provided
+  server.addHook('onRequest', async (request, reply) => {
+    await authenticate(request, reply, userService);
+  });
+
   // Hoisted prepared statements
   const getTaskByIdStmt = server.db.prepare('SELECT * FROM tasks WHERE id = ?');
   const getStepsByTaskIdStmt = server.db.prepare('SELECT * FROM steps WHERE task_id = ? ORDER BY step_index');
   const updateStatusStmt = server.db.prepare("UPDATE tasks SET status = ?, updated_at = datetime('now') WHERE id = ?");
   const insertTaskStmt = server.db.prepare(
-    `INSERT INTO tasks (id, goal, target_app_path, llm_model, status, max_steps, context_injection, step_count, created_at, updated_at, provider_id)
-     VALUES (?, ?, ?, ?, 'queued', ?, ?, 0, ?, ?, ?)`
+    `INSERT INTO tasks (id, goal, target_app_path, llm_model, status, max_steps, context_injection, step_count, created_at, updated_at, provider_id, user_id)
+     VALUES (?, ?, ?, ?, 'queued', ?, ?, 0, ?, ?, ?, ?)`
   );
 
-  // GET /tasks — list with optional status filter + pagination
+  // GET /tasks — list with optional status filter + pagination + user isolation
   server.get('/tasks', async (request) => {
     const parsed = TaskListQuery.safeParse(request.query);
     const statusFilter = parsed.success ? (parsed.data.status || null) : null;
@@ -47,19 +56,27 @@ export async function taskRoutes(server: FastifyInstance) {
       : 20;
     const offset = (page - 1) * limit;
 
-    const countSql =
-      'SELECT COUNT(*) as total FROM tasks WHERE (@status IS NULL OR status = @status)';
-    const countResult = server.db.prepare(countSql).get({
-      status: statusFilter,
-    }) as { total: number };
+    const user = request.user;
+    const isAdminUser = user?.role === 'admin';
 
-    const dataSql =
-      'SELECT * FROM tasks WHERE (@status IS NULL OR status = @status) ORDER BY created_at DESC LIMIT @limit OFFSET @offset';
-    const rows = server.db.prepare(dataSql).all({
-      status: statusFilter,
-      limit,
-      offset,
-    }) as Array<Record<string, unknown>>;
+    let countSql: string;
+    let dataSql: string;
+    let params: Record<string, unknown>;
+
+    if (isAdminUser || !user) {
+      // Admin or unauthenticated: see all tasks
+      countSql = 'SELECT COUNT(*) as total FROM tasks WHERE (@status IS NULL OR status = @status)';
+      dataSql = 'SELECT * FROM tasks WHERE (@status IS NULL OR status = @status) ORDER BY created_at DESC LIMIT @limit OFFSET @offset';
+      params = { status: statusFilter, limit, offset };
+    } else {
+      // Regular user: see only own tasks
+      countSql = 'SELECT COUNT(*) as total FROM tasks WHERE (@status IS NULL OR status = @status) AND user_id = @userId';
+      dataSql = 'SELECT * FROM tasks WHERE (@status IS NULL OR status = @status) AND user_id = @userId ORDER BY created_at DESC LIMIT @limit OFFSET @offset';
+      params = { status: statusFilter, limit, offset, userId: user.id };
+    }
+
+    const countResult = server.db.prepare(countSql).get(params) as { total: number };
+    const rows = server.db.prepare(dataSql).all(params) as Array<Record<string, unknown>>;
 
     return {
       data: rows.map(dbRowToTask),
@@ -69,7 +86,7 @@ export async function taskRoutes(server: FastifyInstance) {
     };
   });
 
-  // GET /tasks/:id — task detail with steps
+  // GET /tasks/:id — task detail with steps (with user isolation)
   server.get('/tasks/:id', async (request, reply) => {
     const parsed = IdParam.safeParse(request.params);
     if (!parsed.success) {
@@ -82,6 +99,13 @@ export async function taskRoutes(server: FastifyInstance) {
     if (!taskRow) {
       reply.code(404);
       return { error: 'Task not found' };
+    }
+
+    // Check user access (admin can see all, users can only see own tasks)
+    const user = request.user;
+    if (user && user.role !== 'admin' && taskRow.user_id && taskRow.user_id !== user.id) {
+      reply.code(403);
+      return { error: 'Access denied' };
     }
 
     const stepRows = getStepsByTaskIdStmt.all(id) as Array<Record<string, unknown>>;
@@ -121,8 +145,9 @@ export async function taskRoutes(server: FastifyInstance) {
     const { goal, targetAppPath, llmModel, maxSteps, contextInjection, providerId } = parseResult.data;
     const id = randomUUID();
     const now = new Date().toISOString();
+    const userId = request.user?.id ?? null;
 
-    insertTaskStmt.run(id, goal, targetAppPath, llmModel, maxSteps ?? 50, contextInjection ?? null, now, now, providerId ?? null);
+    insertTaskStmt.run(id, goal, targetAppPath, llmModel, maxSteps ?? 50, contextInjection ?? null, now, now, providerId ?? null, userId);
 
     const createdRow = getTaskByIdStmt.get(id) as Record<string, unknown>;
 

@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3';
+import { randomUUID, scryptSync, randomBytes } from 'node:crypto';
 
 const schemaSql = `
 CREATE TABLE IF NOT EXISTS batches (
@@ -173,6 +174,18 @@ CREATE TABLE IF NOT EXISTS token_usage (
 CREATE INDEX IF NOT EXISTS idx_token_usage_task_id ON token_usage(task_id);
 CREATE INDEX IF NOT EXISTS idx_token_usage_created_at ON token_usage(created_at);
 CREATE INDEX IF NOT EXISTS idx_token_usage_provider ON token_usage(provider);
+
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  username TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL CHECK(role IN ('admin', 'user')) DEFAULT 'user',
+  api_token TEXT UNIQUE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_api_token ON users(api_token);
 `;
 
 /**
@@ -206,6 +219,24 @@ export function runMigrations(db: Database.Database): boolean {
   const hasBatchId = columns.some((c) => c.name === 'batch_id');
   if (!hasBatchId) {
     db.exec('ALTER TABLE tasks ADD COLUMN batch_id TEXT REFERENCES batches(id)');
+  }
+
+  // Add user_id column to tasks table if missing
+  const hasUserId = columns.some((c) => c.name === 'user_id');
+  if (!hasUserId) {
+    db.exec('ALTER TABLE tasks ADD COLUMN user_id TEXT REFERENCES users(id)');
+  }
+
+  // Seed default admin user if users table is empty
+  const userCount = db.prepare('SELECT COUNT(*) as cnt FROM users').get() as { cnt: number };
+  if (userCount.cnt === 0) {
+    const salt = randomBytes(16).toString('hex');
+    const hash = scryptSync('admin', salt, 64).toString('hex');
+    const passwordHash = `${salt}:${hash}`;
+    const token = randomBytes(32).toString('hex');
+    db.prepare(
+      'INSERT INTO users (id, username, password_hash, role, api_token) VALUES (?, ?, ?, ?, ?)'
+    ).run(randomUUID(), 'admin', passwordHash, 'admin', token);
   }
 
   return wasNeeded;

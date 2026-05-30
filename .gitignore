@@ -33,3 +33,4 @@ benchmarks/current.json
 *.js.map
 *.d.ts
 *.d.ts.map
+docs/superpowers/
