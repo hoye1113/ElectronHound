@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { writeFileSync, mkdirSync, rmSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
@@ -7,6 +7,8 @@ import {
   formatPatternsForPrompt,
   type FeedbackPattern,
 } from '../prompts/feedbackLoader.js';
+import { savePatterns } from '../cli.js';
+import type { StepRecord } from '@eata/shared-types';
 
 describe('feedbackLoader', () => {
   let testDir: string;
@@ -151,5 +153,124 @@ describe('feedbackLoader', () => {
         `Previous failure patterns to avoid:\n- [${basePattern.errorType}] ${basePattern.targetDescription}: ${basePattern.remediationHint}`,
       );
     });
+  });
+});
+
+describe('savePatterns integration', () => {
+  let testDir: string;
+
+  beforeEach(() => {
+    testDir = join(tmpdir(), `save-patterns-test-${Date.now()}`);
+    mkdirSync(testDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  function createFailedStep(overrides: Partial<StepRecord> = {}): StepRecord {
+    return {
+      id: crypto.randomUUID(),
+      taskId: 'test-task',
+      stepIndex: 0,
+      phase: 'execute',
+      status: 'failed',
+      timestamp: new Date().toISOString(),
+      duration: 100,
+      action: { name: 'browser_click', args: { selector: '#btn' } },
+      reasoning: 'Click the submit button',
+      ...overrides,
+    };
+  }
+
+  it('writes feedback patterns from completed agent runs', () => {
+    const history: StepRecord[] = [
+      createFailedStep(),
+      { ...createFailedStep(), id: crypto.randomUUID(), status: 'success' },
+    ];
+
+    savePatterns(testDir, 'task-1', history, 'Submit the form');
+
+    const patternsPath = join(testDir, 'patterns.jsonl');
+    expect(existsSync(patternsPath)).toBe(true);
+
+    const content = readFileSync(patternsPath, 'utf-8');
+    const lines = content.trim().split('\n');
+    expect(lines).toHaveLength(1);
+
+    const pattern = JSON.parse(lines[0]);
+    expect(pattern.errorType).toBe('browser_click_failure');
+    expect(pattern.targetDescription).toBe('Click the submit button');
+    expect(pattern.similarityKeywords).toContain('browser_click');
+    expect(pattern.similarityKeywords).toContain('execute');
+    expect(pattern.relatedGoalPatterns).toContain('Submit the form');
+  });
+
+  it('deduplicates patterns by errorType and description', () => {
+    const history: StepRecord[] = [
+      createFailedStep({ id: crypto.randomUUID() }),
+      createFailedStep({ id: crypto.randomUUID() }),
+    ];
+
+    savePatterns(testDir, 'task-1', history, 'Test goal');
+
+    const patternsPath = join(testDir, 'patterns.jsonl');
+    const content = readFileSync(patternsPath, 'utf-8');
+    const lines = content.trim().split('\n');
+
+    // Both lines are written (savePatterns doesn't deduplicate,
+    // deduplication happens at load time via keyword scoring)
+    expect(lines).toHaveLength(2);
+
+    // But loadRelevantPatterns returns top matches (deduplication by scoring)
+    const patterns = loadRelevantPatterns(patternsPath, 'browser click failure');
+    expect(patterns.length).toBeGreaterThan(0);
+    expect(patterns.length).toBeLessThanOrEqual(3);
+  });
+
+  it('loads patterns for prompt context with size cap', () => {
+    // Write many patterns
+    const history: StepRecord[] = Array.from({ length: 10 }, (_, i) =>
+      createFailedStep({
+        id: crypto.randomUUID(),
+        stepIndex: i,
+        action: { name: `action_${i}`, args: {} },
+        reasoning: `Step ${i} failed`,
+      }),
+    );
+
+    savePatterns(testDir, 'task-1', history, 'Test goal');
+
+    const patternsPath = join(testDir, 'patterns.jsonl');
+    // loadRelevantPatterns caps at maxPatterns (default 3)
+    const patterns = loadRelevantPatterns(patternsPath, 'action failure step', 3);
+    expect(patterns.length).toBeLessThanOrEqual(3);
+
+    // formatPatternsForPrompt produces injectable output
+    const prompt = formatPatternsForPrompt(patterns);
+    expect(prompt).toContain('Previous failure patterns to avoid:');
+  });
+
+  it('writes patterns with correct structure', () => {
+    const history: StepRecord[] = [
+      createFailedStep({
+        action: { name: 'electron_launch', args: {} },
+        phase: 'observe',
+        reasoning: 'App failed to start',
+      }),
+    ];
+
+    savePatterns(testDir, 'task-1', history, 'Launch the app');
+
+    const patternsPath = join(testDir, 'patterns.jsonl');
+    const content = readFileSync(patternsPath, 'utf-8');
+    const pattern = JSON.parse(content.trim());
+
+    expect(pattern.errorType).toBe('electron_launch_failure');
+    expect(pattern.similarityKeywords).toContain('electron_launch');
+    expect(pattern.similarityKeywords).toContain('observe');
+    expect(pattern.similarityKeywords).toContain('failure');
+    expect(pattern.frequency).toBe(1);
+    expect(pattern.relatedGoalPatterns).toContain('Launch the app');
   });
 });

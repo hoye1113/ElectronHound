@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { spawnElectron, type SpawnOptions } from '../launcher.js';
-import { type EventEmitter } from 'node:events';
+import { EventEmitter } from 'node:events';
 
 // Mock child_process module
 vi.mock('node:child_process', () => ({
@@ -41,7 +41,6 @@ function createMockChildProcess(): EventEmitter & {
     off: ReturnType<typeof vi.fn>;
   };
 } {
-  const { EventEmitter } = require('node:events'); // eslint-disable-line @typescript-eslint/no-require-imports
   const mockStderr = new EventEmitter() as EventEmitter & {
     on: ReturnType<typeof vi.fn>;
     off: ReturnType<typeof vi.fn>;
@@ -218,6 +217,59 @@ describe('Launcher', () => {
       await expect(spawnElectron(options)).rejects.toThrow(
         'Timeout waiting for CDP port after 100ms',
       );
+    });
+  });
+
+  describe('user-data-dir isolation (PR-4)', () => {
+    it('should pass --user-data-dir flag when taskId is provided', async () => {
+      const mockChild = createMockChildProcess();
+      mockSpawn.mockReturnValue(mockChild as never);
+
+      const options: SpawnOptions = {
+        targetAppPath: '/path/to/app',
+        taskId: 'test-task-123',
+        timeout: 100,
+      };
+
+      // Start the spawn (will timeout, but we can check the args)
+      const promise = spawnElectron(options);
+
+      // Emit CDP port to resolve
+      setTimeout(() => {
+        mockChild.stderr.emit('data', Buffer.from('DevTools listening on ws://127.0.0.1:9222/devtools/browser/abc\n'));
+      }, 10);
+
+      await promise;
+
+      // Verify --user-data-dir was passed
+      const spawnArgs = mockSpawn.mock.calls[0];
+      const args = spawnArgs[1] as string[];
+      const userDataDirArg = args.find((a: string) => a.startsWith('--user-data-dir='));
+      expect(userDataDirArg).toBeDefined();
+      expect(userDataDirArg).toContain('eata-test-task-123-');
+    });
+
+    it('should not pass --user-data-dir when taskId is not provided', async () => {
+      const mockChild = createMockChildProcess();
+      mockSpawn.mockReturnValue(mockChild as never);
+
+      const options: SpawnOptions = {
+        targetAppPath: '/path/to/app',
+        timeout: 100,
+      };
+
+      const promise = spawnElectron(options);
+
+      setTimeout(() => {
+        mockChild.stderr.emit('data', Buffer.from('DevTools listening on ws://127.0.0.1:9222/devtools/browser/abc\n'));
+      }, 10);
+
+      await promise;
+
+      const spawnArgs = mockSpawn.mock.calls[0];
+      const args = spawnArgs[1] as string[];
+      const userDataDirArg = args.find((a: string) => a.startsWith('--user-data-dir='));
+      expect(userDataDirArg).toBeUndefined();
     });
   });
 });

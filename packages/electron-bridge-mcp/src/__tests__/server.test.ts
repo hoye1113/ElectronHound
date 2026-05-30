@@ -405,6 +405,24 @@ describe('execute_main tool', () => {
 
     expect(result.success).toBe(true);
   });
+
+  it('should fall back to APP_CONTEXT_TRUST_CONFIG for unknown trust level', async () => {
+    const bridgeClient = createMockBridgeClient({
+      send: vi.fn().mockResolvedValue({
+        type: 'response',
+        id: '1',
+        payload: { success: true, data: 'ok' },
+      }),
+    });
+
+    const result = await executeMain(
+      { code: 'console.log("test")', trustLevel: 'unknown-level' as 'readonly' | 'app-context' | 'host-full' },
+      { bridgeClient },
+    );
+
+    // Should still work (falls back to APP_CONTEXT config)
+    expect(result.success).toBe(true);
+  });
 });
 
 // ─── trigger_ipc tests ────────────────────────────────────────────────

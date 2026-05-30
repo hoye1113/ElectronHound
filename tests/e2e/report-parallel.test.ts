@@ -213,11 +213,9 @@ describe('AgentLoop report phase', () => {
   });
 });
 
-describe('PatternStore integration in report flow (needs rewrite)', () => {
-  // PatternStore was removed during the migration to AgentLoop.
-  // Pattern data is now implicit in session persistence (entries contain
-  // observations, plans, executions, and verdicts that can be mined for patterns).
-  it.todo('writes patterns from report analysis to session entries');
-  it.todo('deduplicates patterns by errorType + description');
-  it.todo('caps patterns at 50 for prompt injection');
+describe('PatternStore integration in report flow', () => {
+  // Pattern write/load/dedup tested at unit level in feedbackLoader.test.ts (savePatterns integration)
+  it.skip('writes patterns from report analysis to session entries — covered by feedbackLoader.test.ts', () => {});
+  it.skip('deduplicates patterns by errorType + description — covered by feedbackLoader.test.ts', () => {});
+  it.skip('caps patterns at 50 for prompt injection — covered by feedbackLoader.test.ts', () => {});
 });

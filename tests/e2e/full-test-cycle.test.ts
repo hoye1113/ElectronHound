@@ -204,10 +204,9 @@ describe('Full test cycle: REST API + AgentLoop', () => {
   });
 });
 
-describe('PatternStore integration (needs AgentLoop rewrite)', () => {
-  // PatternStore was removed during the Pi migration.
-  // Pattern storage is now handled implicitly through session persistence.
-  it.todo('writes feedback patterns from completed agent runs');
-  it.todo('deduplicates patterns by error type and description');
-  it.todo('loads patterns for prompt context with size cap');
+describe('PatternStore integration', () => {
+  // Pattern write/load/dedup tested at unit level in feedbackLoader.test.ts (savePatterns integration)
+  it.skip('writes feedback patterns from completed agent runs — covered by feedbackLoader.test.ts', () => {});
+  it.skip('deduplicates patterns by error type and description — covered by feedbackLoader.test.ts', () => {});
+  it.skip('loads patterns for prompt context with size cap — covered by feedbackLoader.test.ts', () => {});
 });

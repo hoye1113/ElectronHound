@@ -1,4 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { detectElectronVersion } from './version-detect.js';
 
 export interface SpawnOptions {
@@ -15,6 +18,12 @@ export interface SpawnOptions {
    * and warns if it's outside the supported range.
    */
   skipVersionCheck?: boolean;
+  /**
+   * Task ID for user-data-dir isolation (PR-4).
+   * When set, creates a unique temp directory for Electron's user data,
+   * preventing state conflicts when multiple workers test the same app.
+   */
+  taskId?: string;
 }
 
 export interface ElectronProcess {
@@ -63,6 +72,7 @@ export async function spawnElectron(options: SpawnOptions): Promise<ElectronProc
     timeout = DEFAULT_TIMEOUT,
     electronFlags,
     skipVersionCheck = false,
+    taskId,
   } = options;
 
   const electronPath = await resolveElectronPath();
@@ -81,6 +91,13 @@ export async function spawnElectron(options: SpawnOptions): Promise<ElectronProc
     targetAppPath,
     `--remote-debugging-port=${debuggingPort}`,
   ];
+
+  // PR-4: User-data-dir isolation for concurrent workers
+  let userDataDir: string | null = null;
+  if (taskId) {
+    userDataDir = mkdtempSync(join(tmpdir(), `eata-${taskId}-`));
+    args.push(`--user-data-dir=${userDataDir}`);
+  }
 
   if (helperPath) {
     args.push('--require', helperPath);
@@ -124,9 +141,17 @@ export async function spawnElectron(options: SpawnOptions): Promise<ElectronProc
     console.error(`[launcher] Electron process error: ${err.message}`);
   });
 
-  // Set up exit handler
+  // Set up exit handler with user-data-dir cleanup
   child.on('exit', (code, signal) => {
     console.log(`[launcher] Electron process exited with code ${code}, signal ${signal}`);
+    // PR-4: Clean up temporary user-data-dir after process exits
+    if (userDataDir) {
+      try {
+        rmSync(userDataDir, { recursive: true, force: true });
+      } catch {
+        // Best-effort cleanup; ignore errors
+      }
+    }
   });
 
   // Resolve the actual CDP port from stderr output

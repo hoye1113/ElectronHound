@@ -258,3 +258,31 @@ describe('checkDiskQuota', () => {
     expect(result.isOverQuota).toBe(false);
   });
 });
+
+describe('cleanupOldFiles error handling', () => {
+  let testDir: string;
+
+  beforeEach(() => {
+    testDir = createTestDir();
+    mkdirSync(testDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    try {
+      rmSync(testDir, { recursive: true, force: true });
+    } catch {
+      // Ignore cleanup errors
+    }
+  });
+
+  it('handles errors when processing task directories gracefully', async () => {
+    // Create a file (not a directory) in the reports dir to trigger an error
+    // when trying to read it as a directory
+    const fakeTask = join(testDir, 'not-a-task-dir');
+    writeFileSync(fakeTask, 'not a directory');
+
+    // Should not throw, just log warning and continue
+    const deletedCount = await cleanupOldFiles(testDir, 30);
+    expect(deletedCount).toBe(0);
+  });
+});

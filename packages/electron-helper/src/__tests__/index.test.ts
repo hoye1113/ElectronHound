@@ -7,17 +7,17 @@ import { createRequire } from 'node:module';
 // vitest's vi.mock() system. We patch Node's Module._load directly
 // to intercept require('electron') calls.
 
- 
+
 const nodeRequire = createRequire(import.meta.url);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const NodeModule = nodeRequire('module') as any;
+
+interface NodeModuleWithLoad {
+  _load: (request: string, parent: unknown, isMain: boolean) => unknown;
+}
+
+const NodeModule = nodeRequire('module') as NodeModuleWithLoad;
 
 let mockElectronValue: Record<string, unknown> | null = null;
-const originalModuleLoad = NodeModule._load as (
-  request: string,
-  parent: unknown,
-  isMain: boolean,
-) => unknown;
+const originalModuleLoad = NodeModule._load;
 
 function patchedModuleLoad(
   this: unknown,

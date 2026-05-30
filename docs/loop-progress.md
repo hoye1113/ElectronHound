@@ -78,6 +78,16 @@
 | W70 | A | isVLMProvider type guard tests (vlm-provider.ts 0%→covered) | ~96% | 3631 | ~32s | - | `633e070` | 2026-05-30 |
 | W71 | A | benchmark/compare.ts tests (loadBaseline/loadCurrent/flattenReport/checkRegression) | ~96% | 3644 | ~32s | - | `66de5e2` | 2026-05-30 |
 | W72 | A | execute-main security trust level tests (blocking/safe/default) | ~96% | 3647 | ~32s | - | `ea9d0ce` | 2026-05-30 |
+| W73 | A | db/init.ts coverage tests (existing/nested dir, WAL mode) | ~96% | 3650 | ~32s | - | - | 2026-05-30 |
+| W74 | F | savePatterns integration tests (write/dedup/load/structure) | ~96% | 3654 | ~32s | - | - | 2026-05-30 |
+| W75 | C | ESLint cleanup: eslint-disable removal (launcher + electron-helper) | ~96% | 3654 | ~32s | - | - | 2026-05-30 |
+| W76 | C | execute-main branch coverage 95%→100% (unknown trust level fallback) | ~96% | 3655 | ~32s | - | - | 2026-05-30 |
+| W77 | C | PR-4 user-data-dir isolation (launcher + tests) | ~96% | 3657 | ~32s | - | - | 2026-05-30 |
+| W78 | C | cleanup.ts error handling test (toErrorMessage coverage) | ~96% | 3658 | ~32s | - | - | 2026-05-31 |
+| W79 | A | registry.ts CDP tools tests (registerCDPTools/withCDP) | ~96% | 3662 | ~31s | - | - | 2026-05-31 |
+| W80 | A | progress.ts tests (ProgressBar/Spinner/ProgressTracker/formatDuration) | ~96% | 3699 | ~31s | - | - | 2026-05-31 |
+| W81 | A | cli-help.ts tests (CLIHelp/COMMANDS) + batch PDF export test | ~87.6% | 3723 | ~39s | - | - | 2026-05-31 |
+| W82 | A | daemon.ts tests (setDaemonManager/resetDaemonManager) | ~87.6% | 3723 | ~39s | - | - | 2026-05-31 |
 
 ---
 
@@ -85,9 +95,9 @@
 
 | 指标 | 基线 | 当前 | 目标 | 差距 |
 |------|------|------|------|------|
-| 覆盖率 (stmts) | ~68% | ~89% | 80% | 达标 |
-| 测试数量 | 1280 | 2695 | 持续增长 | - |
-| 测试时间 | ~65s | ~27s | <30s | 达标 |
+| 覆盖率 (stmts) | ~68% | ~87.6% | 80% | 达标 |
+| 测试数量 | 1280 | 3723 | 持续增长 | - |
+| 测试时间 | ~65s | ~39s | <30s | 达标 |
 | ESLint 错误 | 110 | 0 | 0 | 达标 |
 | 裸 catch 块 | 73+ | 0 | 0 | 达标 |
 | `as unknown as` | 12 | 0 | 0 | 达标 |

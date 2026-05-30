@@ -515,6 +515,21 @@ describe('Export API: Batch export', () => {
     expect(res.body).toContain('Completed');
     expect(res.body).toContain('<table>');
   });
+
+  it('exports batch as PDF', async () => {
+    const res = await server.inject({
+      method: 'GET',
+      url: `/api/tasks/batch/${BATCH_ID}/export/pdf`,
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toContain('application/pdf');
+    expect(res.headers['content-disposition']).toContain('.pdf');
+
+    // PDF content is base64-encoded, decode and check for PDF header
+    const buffer = Buffer.from(res.body, 'base64');
+    expect(buffer.slice(0, 5).toString()).toContain('%PDF');
+  });
 });
 
 // ── POST /tasks/batch-export tests ──────────────────────────────────
