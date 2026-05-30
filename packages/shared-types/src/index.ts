@@ -34,3 +34,7 @@ export {
 
 // Provider schemas (v0.3)
 export * from './provider.js';
+
+// Error types and codes
+export { ErrorDomain, ErrorCodes } from './errors.js';
+export type { EataError, ErrorCodeKey } from './errors.js';
