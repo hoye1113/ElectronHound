@@ -17,6 +17,7 @@ import { trendsRoutes } from './trends.js';
 import { notificationRoutes } from './notifications.js';
 import { storageRoutes } from './storage.js';
 import { auditRoutes } from './audit.js';
+import { analyticsRoutes } from './analytics.js';
 import { authRoutes } from './auth.js';
 
 export async function registerRoutes(server: FastifyInstance) {
@@ -39,4 +40,5 @@ export async function registerRoutes(server: FastifyInstance) {
   await server.register(notificationRoutes, { prefix: '/api' });
   await server.register(storageRoutes, { prefix: '/api' });
   await server.register(auditRoutes, { prefix: '/api' });
+  await server.register(analyticsRoutes, { prefix: '/api' });
 }

@@ -16,6 +16,7 @@ const CompareView = React.lazy(() => import('./pages/CompareView'));
 const ReportTemplates = React.lazy(() => import('./pages/ReportTemplates'));
 const ScheduleList = React.lazy(() => import('./pages/ScheduleList'));
 const NotificationSettings = React.lazy(() => import('./pages/NotificationSettings'));
+const Analytics = React.lazy(() => import('./pages/Analytics'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 
 function App() {
@@ -38,6 +39,7 @@ function App() {
               <Route path="/report-templates" element={<ReportTemplates />} />
               <Route path="/schedules" element={<ScheduleList />} />
               <Route path="/notifications" element={<NotificationSettings />} />
+              <Route path="/analytics" element={<Analytics />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

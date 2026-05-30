@@ -208,6 +208,7 @@
     "templates": "模板",
     "reportTemplates": "报告模板",
     "notifications": "通知",
+    "analytics": "分析",
     "system": "系统"
   },
   "templates": {
@@ -495,5 +496,26 @@
     "calls": "次调用",
     "noData": "未找到 Token 用量数据",
     "showing": "显示第 {{from}}-{{to}} 条，共 {{total}} 条"
+  },
+  "analytics": {
+    "title": "仪表盘分析",
+    "subtitle": "任务执行指标和趋势概览",
+    "period": "时间范围：",
+    "days": "天",
+    "completionRate": "任务完成率",
+    "completionRateDesc": "已完成和失败的任务随时间变化",
+    "avgDuration": "平均执行时长",
+    "avgDurationDesc": "每天的平均任务时长",
+    "statusDistribution": "状态分布",
+    "statusDistributionDesc": "任务状态的分布情况",
+    "tokenUsage": "LLM Token 用量",
+    "tokenUsageDesc": "Token 消耗随时间变化",
+    "status_completed": "已完成",
+    "status_failed": "已失败",
+    "status_cancelled": "已取消",
+    "status_queued": "排队中",
+    "tokens": "个 Token",
+    "noData": "此时间段暂无数据",
+    "loadError": "加载分析数据失败"
   }
 }

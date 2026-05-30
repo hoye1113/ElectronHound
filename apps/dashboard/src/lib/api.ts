@@ -504,6 +504,17 @@ export const api = {
       return fetchJson(`${API_BASE}/api/tasks/trends${query}`);
     },
   },
+  analytics: {
+    get(days?: number): Promise<{
+      completionRate: Array<{ date: string; completed: number; failed: number }>;
+      avgDuration: Array<{ date: string; avgSeconds: number }>;
+      statusDistribution: { completed: number; failed: number; cancelled: number; queued: number };
+      tokenUsage: Array<{ date: string; tokens: number }>;
+    }> {
+      const query = days ? `?days=${days}` : '';
+      return fetchJson(`${API_BASE}/api/tasks/analytics${query}`);
+    },
+  },
   fewShot: {
     list(params?: { search?: string; domain?: string }): Promise<{ data: FewShotExample[] }> {
       const query = new URLSearchParams();

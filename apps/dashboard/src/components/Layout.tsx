@@ -12,6 +12,7 @@ import {
   FileText,
   Clock,
   Bell,
+  BarChart3,
 } from 'lucide-react';
 
 const navItems = [
@@ -23,6 +24,7 @@ const navItems = [
   { to: '/templates', labelKey: 'nav.templates', icon: LayoutTemplate },
   { to: '/report-templates', labelKey: 'nav.reportTemplates', icon: FileText },
   { to: '/notifications', labelKey: 'nav.notifications', icon: Bell },
+  { to: '/analytics', labelKey: 'nav.analytics', icon: BarChart3 },
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },
   { to: '/health', labelKey: 'nav.system', icon: Heart },
 ];

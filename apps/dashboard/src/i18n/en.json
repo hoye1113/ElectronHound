@@ -472,6 +472,7 @@
     "templates": "Templates",
     "reportTemplates": "Report Templates",
     "notifications": "Notifications",
+    "analytics": "Analytics",
     "system": "System"
   },
   "notifications": {
@@ -541,5 +542,26 @@
     "calls": "calls",
     "noData": "No token usage data found",
     "showing": "Showing {{from}}-{{to}} of {{total}}"
+  },
+  "analytics": {
+    "title": "Dashboard Analytics",
+    "subtitle": "Overview of task execution metrics and trends",
+    "period": "Period:",
+    "days": "days",
+    "completionRate": "Task Completion Rate",
+    "completionRateDesc": "Completed and failed tasks over time",
+    "avgDuration": "Average Execution Duration",
+    "avgDurationDesc": "Average task duration per day",
+    "statusDistribution": "Status Distribution",
+    "statusDistributionDesc": "Breakdown of task statuses",
+    "tokenUsage": "LLM Token Usage",
+    "tokenUsageDesc": "Token consumption over time",
+    "status_completed": "Completed",
+    "status_failed": "Failed",
+    "status_cancelled": "Cancelled",
+    "status_queued": "Queued",
+    "tokens": "tokens",
+    "noData": "No data available for this period",
+    "loadError": "Failed to load analytics data"
   }
 }
