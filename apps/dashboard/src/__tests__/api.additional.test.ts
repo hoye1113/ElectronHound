@@ -26,15 +26,6 @@ function errorResponse(body: unknown, status = 400, statusText = 'Bad Request') 
   };
 }
 
-function errorResponseNonJson(status = 500, statusText = 'Internal Server Error') {
-  return {
-    ok: false,
-    status,
-    statusText,
-    json: () => Promise.reject(new Error('Invalid JSON')),
-  };
-}
-
 // ─────────────────────────────────────────────────────────────
 // URL helpers – additional coverage
 // ─────────────────────────────────────────────────────────────
