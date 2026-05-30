@@ -174,4 +174,86 @@ describe('NotificationSettings', () => {
       expect(screen.getByText('Failed to load config')).toBeInTheDocument();
     });
   });
+
+  it('shows failed test result with red styling', async () => {
+    mockTest.mockResolvedValue({ success: false, message: 'Webhook unreachable' });
+
+    render(<NotificationSettings />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Send Test Notification')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Send Test Notification'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Webhook unreachable')).toBeInTheDocument();
+    });
+  });
+
+  it('shows error when test API throws', async () => {
+    mockTest.mockRejectedValue(new Error('Network timeout'));
+
+    render(<NotificationSettings />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Send Test Notification')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Send Test Notification'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Network timeout')).toBeInTheDocument();
+    });
+  });
+
+  it('shows failed status in log entries', async () => {
+    mockHistory.mockResolvedValue(
+      makeHistory({
+        data: [
+          {
+            id: 'log-1',
+            eventType: 'test',
+            channel: 'webhook',
+            target: 'https://example.com',
+            status: 'failed',
+            error: 'Connection refused',
+            payload: null,
+            createdAt: '2026-01-01T12:00:00Z',
+          },
+        ],
+      }),
+    );
+
+    render(<NotificationSettings />);
+
+    await waitFor(() => {
+      expect(screen.getByText('failed')).toBeInTheDocument();
+    });
+  });
+
+  it('shows pending status in log entries', async () => {
+    mockHistory.mockResolvedValue(
+      makeHistory({
+        data: [
+          {
+            id: 'log-2',
+            eventType: 'test',
+            channel: 'sse',
+            target: null,
+            status: 'pending',
+            error: null,
+            payload: null,
+            createdAt: '2026-01-01T12:00:00Z',
+          },
+        ],
+      }),
+    );
+
+    render(<NotificationSettings />);
+
+    await waitFor(() => {
+      expect(screen.getByText('pending')).toBeInTheDocument();
+    });
+  });
 });

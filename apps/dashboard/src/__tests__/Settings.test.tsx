@@ -9,6 +9,10 @@ const mockProvidersUpdate = vi.fn();
 const mockProvidersDelete = vi.fn();
 const mockProvidersActivate = vi.fn();
 const mockProvidersTest = vi.fn();
+const mockAuditGetTokenUsage = vi.fn();
+const mockAuditGetProviders = vi.fn();
+const mockStorageGetInfo = vi.fn();
+const mockStorageCleanup = vi.fn();
 
 vi.mock('../lib/api', () => ({
   api: {
@@ -19,6 +23,14 @@ vi.mock('../lib/api', () => ({
       delete: (...args: unknown[]) => mockProvidersDelete(...args),
       activate: (...args: unknown[]) => mockProvidersActivate(...args),
       test: (...args: unknown[]) => mockProvidersTest(...args),
+    },
+    audit: {
+      getTokenUsage: (...args: unknown[]) => mockAuditGetTokenUsage(...args),
+      getProviders: (...args: unknown[]) => mockAuditGetProviders(...args),
+    },
+    storage: {
+      getInfo: (...args: unknown[]) => mockStorageGetInfo(...args),
+      cleanup: (...args: unknown[]) => mockStorageCleanup(...args),
     },
   },
 }));
@@ -62,6 +74,21 @@ describe('SettingsPage', () => {
     mockProvidersDelete.mockResolvedValue(undefined);
     mockProvidersActivate.mockResolvedValue(undefined);
     mockProvidersTest.mockResolvedValue({ success: true, message: 'Connection successful' });
+    mockAuditGetTokenUsage.mockResolvedValue({
+      summary: { total_tokens: 1000, total_prompt_tokens: 600, total_completion_tokens: 400, record_count: 10 },
+      by_provider: [],
+      by_day: [],
+      data: [],
+      pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+    });
+    mockAuditGetProviders.mockResolvedValue({ data: ['openai', 'deepseek'] });
+    mockStorageGetInfo.mockResolvedValue({
+      totalSize: 1024 * 1024 * 100,
+      fileCount: 60,
+      quota: 1024 * 1024 * 1024 * 5,
+      isOverQuota: false,
+    });
+    mockStorageCleanup.mockResolvedValue({ deletedCount: 5 });
   });
 
   it('renders empty state when no providers exist', async () => {
@@ -356,6 +383,111 @@ describe('SettingsPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Updated OpenAI')).toBeInTheDocument();
+    });
+  });
+
+  describe('Token Usage Audit', () => {
+    it('renders audit section with filters', async () => {
+      mockProvidersList.mockResolvedValue(mockProvidersConfig);
+      render(<SettingsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Token Usage Audit')).toBeInTheDocument();
+      });
+
+      // Check date inputs exist (type="date")
+      const dateInputs = screen.getAllByDisplayValue('');
+      expect(dateInputs.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('calls onStartDateChange when start date changes', async () => {
+      mockProvidersList.mockResolvedValue(mockProvidersConfig);
+      render(<SettingsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Token Usage Audit')).toBeInTheDocument();
+      });
+
+      // Find date inputs by type
+      const dateInputs = document.querySelectorAll('input[type="date"]');
+      expect(dateInputs.length).toBeGreaterThanOrEqual(2);
+
+      fireEvent.change(dateInputs[0], { target: { value: '2026-01-01' } });
+
+      await waitFor(() => {
+        expect(mockAuditGetTokenUsage).toHaveBeenCalledWith(
+          expect.objectContaining({ start_date: '2026-01-01' }),
+        );
+      });
+    });
+
+    it('calls onEndDateChange when end date changes', async () => {
+      mockProvidersList.mockResolvedValue(mockProvidersConfig);
+      render(<SettingsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Token Usage Audit')).toBeInTheDocument();
+      });
+
+      const dateInputs = document.querySelectorAll('input[type="date"]');
+      fireEvent.change(dateInputs[1], { target: { value: '2026-12-31' } });
+
+      await waitFor(() => {
+        expect(mockAuditGetTokenUsage).toHaveBeenCalledWith(
+          expect.objectContaining({ end_date: '2026-12-31' }),
+        );
+      });
+    });
+
+    it('calls onProviderChange when provider filter changes', async () => {
+      mockProvidersList.mockResolvedValue(mockProvidersConfig);
+      render(<SettingsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Token Usage Audit')).toBeInTheDocument();
+      });
+
+      const providerSelect = document.querySelector('select');
+      expect(providerSelect).toBeInTheDocument();
+
+      fireEvent.change(providerSelect!, { target: { value: 'openai' } });
+
+      await waitFor(() => {
+        expect(mockAuditGetTokenUsage).toHaveBeenCalledWith(
+          expect.objectContaining({ provider: 'openai' }),
+        );
+      });
+    });
+
+    it('displays audit summary data', async () => {
+      mockProvidersList.mockResolvedValue(mockProvidersConfig);
+      mockAuditGetTokenUsage.mockResolvedValue({
+        summary: { total_tokens: 50000, total_prompt_tokens: 30000, total_completion_tokens: 20000, record_count: 100 },
+        by_provider: [],
+        by_day: [],
+        data: [],
+        pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+      });
+
+      render(<SettingsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('50.0K')).toBeInTheDocument();
+      });
+    });
+
+    it('handles audit API error silently', async () => {
+      mockProvidersList.mockResolvedValue(mockProvidersConfig);
+      mockAuditGetTokenUsage.mockRejectedValue(new Error('Audit failed'));
+
+      render(<SettingsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Token Usage Audit')).toBeInTheDocument();
+      });
+
+      // Should not show error - audit is non-critical
+      expect(screen.queryByText('Audit failed')).not.toBeInTheDocument();
     });
   });
 });
