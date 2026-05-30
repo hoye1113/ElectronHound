@@ -63,7 +63,7 @@ function sleep(ms: number): Promise<void> {
  * - Network errors (TypeError in fetch): retryable
  * - Everything else: not retryable
  */
-function isRetryableError(err: unknown, config: RetryConfig): boolean {
+function isRetryableError(err: unknown, _config: RetryConfig): boolean {
   if (err instanceof LLMError) {
     return err.retryable;
   }
