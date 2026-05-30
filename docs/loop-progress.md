@@ -91,6 +91,7 @@
 | W85 | C | CDP tool error path coverage (cdp_trigger_ipc + cdp_mock_dialog) | ~87.6% | 3725 | ~33s | - | `6ba8e83` | 2026-05-31 |
 | W86 | A | NotificationSettings error state tests (failed/pending log, test error) | ~87.6% | 3729 | ~33s | - | `89c21aa` | 2026-05-31 |
 | W87 | A | Settings.tsx Token Usage Audit filter handler tests | ~87.6% | 3734 | ~33s | - | `89c21aa` | 2026-05-31 |
+| W89 | C | registry.ts streamInvoke error path coverage | ~88% | 3740 | ~33s | - | `44d9aef` | 2026-05-31 |
 
 ---
 
@@ -98,8 +99,8 @@
 
 | 指标 | 基线 | 当前 | 目标 | 差距 |
 |------|------|------|------|------|
-| 覆盖率 (stmts) | ~68% | ~87.6% | 80% | 达标 |
-| 测试数量 | 1280 | 3734 | 持续增长 | - |
+| 覆盖率 (stmts) | ~68% | ~88% | 80% | 达标 |
+| 测试数量 | 1280 | 3740 | 持续增长 | - |
 | 测试时间 | ~65s | ~33s | <30s | 达标 |
 | ESLint 错误 | 110 | 0 | 0 | 达标 |
 | 裸 catch 块 | 73+ | 0 | 0 | 达标 |
