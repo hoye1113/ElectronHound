@@ -65,6 +65,8 @@
 | W57 | A | 覆盖率补全 x3 (scheduleService/runner/operation-handler) | ~96% | 3529 | ~28s | - | `4ff55e5` | 2026-05-30 |
 | W58 | A | 批量/报告/通知/调度集成测试 x21 | ~96% | 3550 | ~28s | - | `347b39c` | 2026-05-30 |
 | W59 | F | Dashboard 分析页面 (recharts 图表 + API) | ~96% | 3565 | ~28s | - | `638e936` | 2026-05-30 |
+| W60 | C | ESLint cleanup in scheduleService test | ~96% | 3565 | ~28s | - | `82c0bf7` | 2026-05-30 |
+| W61 | F | FlowyClaw 自举 e2e 测试 x23 (ELECTRON_RUN_AS_NODE fix) | ~96% | 3588 | ~31s | - | `8198281` | 2026-05-30 |
 
 ---
 
