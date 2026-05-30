@@ -356,6 +356,55 @@ describe('execute_main tool', () => {
     expect(result.success).toBe(false);
     expect(result.error).toBeUndefined();
   });
+
+  it('should block code when trust level analysis detects violations', async () => {
+    const bridgeClient = createMockBridgeClient();
+
+    const result = await executeMain(
+      { code: 'require("fs").readFileSync("/etc/passwd")', trustLevel: 'app-context' },
+      { bridgeClient },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('blocked by trust level');
+    expect(result.securityAnalysis).toBeDefined();
+    expect(result.securityAnalysis!.safe).toBe(false);
+    expect(result.securityAnalysis!.blockedPatterns.length).toBeGreaterThan(0);
+  });
+
+  it('should allow safe code under app-context trust level', async () => {
+    const bridgeClient = createMockBridgeClient({
+      send: vi.fn().mockResolvedValue({
+        type: 'response',
+        id: '1',
+        payload: { success: true, data: 'ok' },
+      }),
+    });
+
+    const result = await executeMain(
+      { code: 'console.log("hello")', trustLevel: 'app-context' },
+      { bridgeClient },
+    );
+
+    expect(result.success).toBe(true);
+  });
+
+  it('should use default app-context trust level when not specified', async () => {
+    const bridgeClient = createMockBridgeClient({
+      send: vi.fn().mockResolvedValue({
+        type: 'response',
+        id: '1',
+        payload: { success: true, data: 'ok' },
+      }),
+    });
+
+    const result = await executeMain(
+      { code: 'console.log("test")' },
+      { bridgeClient },
+    );
+
+    expect(result.success).toBe(true);
+  });
 });
 
 // ─── trigger_ipc tests ────────────────────────────────────────────────
