@@ -418,6 +418,16 @@ describe('CDP Electron tools', () => {
 
       expect(result.success).toBe(true);
     });
+
+    it('returns error when CDP command fails', async () => {
+      // Use a disconnected client to trigger error
+      const disconnectedClient = new CDPClient();
+      const t = new CDPTriggerIpcTool(disconnectedClient);
+      const result = await t.invoke({ channel: 'test' });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+    });
   });
 
   // ── cdp_mock_dialog ────────────────────────────────────────────────────
@@ -448,6 +458,16 @@ describe('CDP Electron tools', () => {
 
       expect(result.success).toBe(true);
       expect((result.data as { type: string }).type).toBe('confirm');
+    });
+
+    it('returns error when CDP command fails', async () => {
+      // Use a disconnected client to trigger error
+      const disconnectedClient = new CDPClient();
+      const t = new CDPMockDialogTool(disconnectedClient);
+      const result = await t.invoke({ type: 'alert' });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
     });
   });
 });
