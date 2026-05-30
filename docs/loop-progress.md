@@ -86,8 +86,8 @@
 | W78 | C | cleanup.ts error handling test (toErrorMessage coverage) | ~96% | 3658 | ~32s | - | - | 2026-05-31 |
 | W79 | A | registry.ts CDP tools tests (registerCDPTools/withCDP) | ~96% | 3662 | ~31s | - | - | 2026-05-31 |
 | W80 | A | progress.ts tests (ProgressBar/Spinner/ProgressTracker/formatDuration) | ~96% | 3699 | ~31s | - | - | 2026-05-31 |
-| W81 | A | cli-help.ts tests (CLIHelp/COMMANDS) + batch PDF export test | ~87.6% | 3723 | ~39s | - | - | 2026-05-31 |
-| W82 | A | daemon.ts tests (setDaemonManager/resetDaemonManager) | ~87.6% | 3723 | ~39s | - | - | 2026-05-31 |
+| W81 | A | cli-help.ts tests (CLIHelp/COMMANDS) + batch PDF export test | ~87.6% | 3723 | ~39s | - | `7ab92e0` | 2026-05-31 |
+| W82 | A | daemon.ts tests (setDaemonManager/resetDaemonManager) | ~87.6% | 3723 | ~39s | - | `7ab92e0` | 2026-05-31 |
 
 ---
 
