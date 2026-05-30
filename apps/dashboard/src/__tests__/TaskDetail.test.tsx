@@ -24,16 +24,16 @@ const mockGetExportUrl = vi.fn(
 vi.mock('../lib/api', () => ({
   api: {
     tasks: {
-      get: (...args: unknown[]) => mockTasksGet(...args),
+      get: (id: string) => mockTasksGet(id),
     },
     reports: {
-      get: (...args: unknown[]) => mockReportsGet(...args),
+      get: (id: string) => mockReportsGet(id),
       getHtmlUrl: (id: string) => `http://localhost:3000/api/tasks/${id}/report/html`,
     },
   },
   getScreenshotUrl: (taskId: string, stepIndex: number) =>
     `http://localhost:3000/api/tasks/${taskId}/steps/${stepIndex}/screenshot`,
-  getExportUrl: (...args: unknown[]) => mockGetExportUrl(...args),
+  getExportUrl: (id: string, format: string) => mockGetExportUrl(id, format),
 }));
 
 // Mock ScreenshotGallery

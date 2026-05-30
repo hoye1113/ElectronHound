@@ -51,7 +51,7 @@ export async function runTest(
   }
 
   // Resolve MCP client (for tool execution)
-  let mcpClient;
+  let mcpClient: MCPClient | undefined;
   if (options.cdpUrl) {
     // Legacy: connect to an already-running CDP endpoint
     const mcp = new MCPClient();

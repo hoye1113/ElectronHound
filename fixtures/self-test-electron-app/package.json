@@ -1,0 +1,17 @@
+{
+  "name": "@eata/self-test-electron-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-test fixture: embeds the ElectronHound Dashboard in a minimal Electron shell for dogfooding",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "vitest run"
+  },
+  "optionalDependencies": {
+    "electron": "^39.8.5"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.0"
+  }
+}

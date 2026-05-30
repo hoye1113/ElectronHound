@@ -170,7 +170,7 @@ function ExampleFormDialog({ open, onOpenChange, initial, onSave }: ExampleFormP
       expectedResult: expectedResult.trim(),
       steps: steps.filter((s) => s.action.trim() || s.observation.trim()),
       metadata: {
-        tags: tags.length > 0 ? tags : undefined,
+        tags: tags.length > 0 ? tags : [],
         domain,
         difficulty: difficulty as 'easy' | 'medium' | 'hard',
       },

@@ -8,7 +8,7 @@
  * Results are output to benchmarks/agent-loop-results.json for CI comparison.
  */
 
-import { bench, describe, beforeAll, afterAll } from 'vitest';
+import { bench, describe, beforeAll } from 'vitest';
 import { AgentLoop } from '../packages/agent-core/src/runtime/agentLoop.js';
 import type { LLMProvider } from '../packages/agent-core/src/llm/types.js';
 import type { SessionManager } from '../packages/agent-core/src/session/sessionManager.js';

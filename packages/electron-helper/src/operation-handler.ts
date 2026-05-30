@@ -66,7 +66,7 @@ export class OperationHandler {
     }
     try {
       // Dynamic require avoids bundler issues in non-Electron contexts
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+       
       const mod = eval('require')('electron');
       // In non-Electron Node processes, require('electron') returns the
       // binary path string rather than the API module.  Guard against that.

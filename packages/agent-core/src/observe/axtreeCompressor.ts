@@ -141,7 +141,7 @@ export function compressAXTree(
   const filtered = filterByGoal(cloned, keywords);
 
   // Step 3: Sample repeated structures
-  const sampled = sampleRepeatedStructures(filtered);
+  const sampled = filtered ? sampleRepeatedStructures(filtered) : null;
 
   const compressedNodeCount = countNodes(sampled);
   const compressionRatio =

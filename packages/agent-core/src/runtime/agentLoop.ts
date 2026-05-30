@@ -273,6 +273,8 @@ export class AgentLoop {
 
     // Track recent observation fingerprints for stuck detection
     const fingerprintWindow: string[] = [];
+    // Feedback patterns to inject into the next plan attempt (only on FAIL recovery)
+    let pendingFeedback: string | undefined;
 
     try {
       while (state.stepCount < this.maxSteps) {

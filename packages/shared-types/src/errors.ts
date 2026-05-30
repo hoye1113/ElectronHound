@@ -1,9 +1,11 @@
-export enum ErrorDomain {
-  LLM = 'LLM',
-  MCP = 'MCP',
-  APP = 'APP',
-  SYS = 'SYS',
-}
+export const ErrorDomain = {
+  LLM: 'LLM',
+  MCP: 'MCP',
+  APP: 'APP',
+  SYS: 'SYS',
+} as const;
+
+export type ErrorDomain = (typeof ErrorDomain)[keyof typeof ErrorDomain];
 
 export interface EataError {
   code: string;        // e.g., 'EATA-LLM-001'

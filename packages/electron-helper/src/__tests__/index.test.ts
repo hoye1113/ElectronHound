@@ -7,7 +7,7 @@ import { createRequire } from 'node:module';
 // vitest's vi.mock() system. We patch Node's Module._load directly
 // to intercept require('electron') calls.
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const nodeRequire = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const NodeModule = nodeRequire('module') as any;

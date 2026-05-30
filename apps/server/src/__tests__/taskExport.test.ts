@@ -10,7 +10,6 @@ import { buildServer } from '../server.js';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mkdtempSync, rmSync } from 'node:fs';
-import type Database from 'better-sqlite3';
 import type { FastifyInstance } from 'fastify';
 import {
   exportTaskToJSONL,
@@ -441,14 +440,14 @@ describe('taskExport round-trip: export -> import -> verify', () => {
     expect(steps[0].phase).toBe('observe');
     expect(steps[0].status).toBe('success');
     expect(steps[0].observation).toBe('Found button element');
-    expect(JSON.parse(steps[0].action).name).toBe('click');
+    expect(JSON.parse(steps[0].action as string).name).toBe('click');
     expect(steps[0].reasoning).toBe('Button is visible and enabled');
     expect(steps[0].duration).toBe(150);
 
     expect(steps[1].phase).toBe('execute');
     expect(steps[1].status).toBe('success');
     expect(steps[1].observation).toBe('Clicked submit button');
-    expect(JSON.parse(steps[1].result).success).toBe(true);
+    expect(JSON.parse(steps[1].result as string).success).toBe(true);
   });
 
   it('JSONL output is git-diff friendly (one object per line)', () => {

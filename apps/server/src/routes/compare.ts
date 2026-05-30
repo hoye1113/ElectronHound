@@ -15,6 +15,7 @@ interface StepInfo {
   status: string;
   stepIndex: number;
   action?: { name: string };
+  duration?: number;
 }
 
 interface DiffResult {
@@ -95,7 +96,7 @@ function buildSummary(steps: StepInfo[]) {
     if (s.status === 'success') passedSteps++;
     else if (s.status === 'failed') failedSteps++;
     else if (s.status === 'retry') retriedSteps++;
-    totalDuration += s.duration;
+    totalDuration += s.duration ?? 0;
   }
 
   return {

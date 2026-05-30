@@ -407,8 +407,9 @@ describe('LiveMonitor', () => {
 
   it('handles SSE onLog callback to append logs', async () => {
     let onLogCallback: ((data: unknown) => void) | undefined;
-    mockConnectSSE.mockImplementation((_id: string, callbacks: Record<string, unknown>) => {
-      onLogCallback = callbacks.onLog as (data: unknown) => void;
+    mockConnectSSE.mockImplementation((_id: string, callbacks: unknown) => {
+      const cbs = callbacks as Record<string, unknown>;
+      onLogCallback = cbs.onLog as (data: unknown) => void;
       return { close: mockClose };
     });
 
@@ -446,8 +447,9 @@ describe('LiveMonitor', () => {
 
   it('handles SSE onStatus callback to refetch task', async () => {
     let onStatusCallback: ((data: unknown) => void) | undefined;
-    mockConnectSSE.mockImplementation((_id: string, callbacks: Record<string, unknown>) => {
-      onStatusCallback = callbacks.onStatus as (data: unknown) => void;
+    mockConnectSSE.mockImplementation((_id: string, callbacks: unknown) => {
+      const cbs = callbacks as Record<string, unknown>;
+      onStatusCallback = cbs.onStatus as (data: unknown) => void;
       return { close: mockClose };
     });
 
@@ -479,8 +481,9 @@ describe('LiveMonitor', () => {
 
   it('ignores log entries without timestamp or message', async () => {
     let onLogCallback: ((data: unknown) => void) | undefined;
-    mockConnectSSE.mockImplementation((_id: string, callbacks: Record<string, unknown>) => {
-      onLogCallback = callbacks.onLog as (data: unknown) => void;
+    mockConnectSSE.mockImplementation((_id: string, callbacks: unknown) => {
+      const cbs = callbacks as Record<string, unknown>;
+      onLogCallback = cbs.onLog as (data: unknown) => void;
       return { close: mockClose };
     });
 

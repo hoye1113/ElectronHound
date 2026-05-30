@@ -1038,7 +1038,7 @@ describe('Config Wizard', () => {
       const { writeFileSync } = await import('node:fs');
       const mockWrite = vi.mocked(writeFileSync);
       mockWrite.mockImplementationOnce(() => {
-        throw 'string error'; // eslint-disable-line no-throw-literal
+        throw 'string error';  
       });
 
       try {
