@@ -22,9 +22,18 @@ import {
   ShieldCheck,
   ShieldAlert,
   Info,
+  BarChart3,
+  Calendar,
+  Filter,
 } from 'lucide-react';
 import { api } from '../lib/api';
-import type { LLMProviderConfig, ProvidersConfig } from '../lib/api';
+import type {
+  LLMProviderConfig,
+  ProvidersConfig,
+  TokenUsageQueryResult,
+  TokenUsageByProvider,
+  TokenUsageByDay,
+} from '../lib/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -712,6 +721,219 @@ function TrustLevelSection({ currentLevel, onChange }: TrustLevelSectionProps) {
   );
 }
 
+// ─── Token Usage Audit Section ──────────────────────────────────────
+
+interface TokenUsageAuditSectionProps {
+  data: TokenUsageQueryResult | null;
+  providers: string[];
+  loading: boolean;
+  startDate: string;
+  endDate: string;
+  selectedProvider: string;
+  onStartDateChange: (date: string) => void;
+  onEndDateChange: (date: string) => void;
+  onProviderChange: (provider: string) => void;
+  onPageChange: (page: number) => void;
+}
+
+function formatNumber(num: number): string {
+  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+  return num.toLocaleString();
+}
+
+function TokenUsageAuditSection({
+  data,
+  providers,
+  loading,
+  startDate,
+  endDate,
+  selectedProvider,
+  onStartDateChange,
+  onEndDateChange,
+  onProviderChange,
+  onPageChange,
+}: TokenUsageAuditSectionProps) {
+  const { t } = useTranslation();
+
+  const inputBase =
+    'rounded-lg border bg-zinc-800 px-3 py-2 text-sm text-zinc-100 outline-none transition-colors focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500';
+
+  return (
+    <div className="mt-8 rounded-lg border border-zinc-800 bg-zinc-900 p-5">
+      <div className="flex items-center gap-2.5 mb-4">
+        <BarChart3 className="size-4 text-zinc-400" />
+        <h2 className="text-sm font-semibold text-zinc-100">{t('audit.title')}</h2>
+      </div>
+      <p className="text-xs text-zinc-500 mb-4">{t('audit.subtitle')}</p>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-end gap-3 mb-4">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-zinc-400">
+            <Calendar className="inline size-3 mr-1" />
+            {t('audit.startDate')}
+          </label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={e => onStartDateChange(e.target.value)}
+            className={`${inputBase} border-zinc-700`}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-zinc-400">
+            <Calendar className="inline size-3 mr-1" />
+            {t('audit.endDate')}
+          </label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={e => onEndDateChange(e.target.value)}
+            className={`${inputBase} border-zinc-700`}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-zinc-400">
+            <Filter className="inline size-3 mr-1" />
+            {t('audit.provider')}
+          </label>
+          <select
+            value={selectedProvider}
+            onChange={e => onProviderChange(e.target.value)}
+            className={`${inputBase} border-zinc-700`}
+          >
+            <option value="">{t('audit.allProviders')}</option>
+            {providers.map(p => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {loading && !data ? (
+        <div className="flex items-center justify-center p-8">
+          <Loader2 className="size-5 animate-spin text-zinc-400" />
+          <span className="ml-2 text-sm text-zinc-400">{t('audit.loading')}</span>
+        </div>
+      ) : data ? (
+        <div className="space-y-4">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="rounded-lg border border-zinc-800 bg-zinc-800/50 p-3">
+              <p className="text-xs text-zinc-500">{t('audit.totalTokens')}</p>
+              <p className="text-lg font-semibold text-zinc-100 mt-1">
+                {formatNumber(data.summary.total_tokens)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-800/50 p-3">
+              <p className="text-xs text-zinc-500">{t('audit.promptTokens')}</p>
+              <p className="text-lg font-semibold text-zinc-100 mt-1">
+                {formatNumber(data.summary.total_prompt_tokens)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-800/50 p-3">
+              <p className="text-xs text-zinc-500">{t('audit.completionTokens')}</p>
+              <p className="text-lg font-semibold text-zinc-100 mt-1">
+                {formatNumber(data.summary.total_completion_tokens)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-800/50 p-3">
+              <p className="text-xs text-zinc-500">{t('audit.totalRecords')}</p>
+              <p className="text-lg font-semibold text-zinc-100 mt-1">
+                {data.summary.record_count.toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          {/* By Provider */}
+          {data.by_provider.length > 0 && (
+            <div>
+              <h3 className="text-xs font-medium text-zinc-400 mb-2">{t('audit.byProvider')}</h3>
+              <div className="space-y-2">
+                {data.by_provider.map((row: TokenUsageByProvider) => (
+                  <div
+                    key={`${row.provider}-${row.model}`}
+                    className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-800/30 p-3"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-zinc-200">{row.provider}</p>
+                      <p className="text-xs text-zinc-500">{row.model}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-mono text-zinc-300">
+                        {formatNumber(row.total_tokens)} {t('audit.tokens')}
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        {row.record_count} {t('audit.calls')}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* By Day */}
+          {data.by_day.length > 0 && (
+            <div>
+              <h3 className="text-xs font-medium text-zinc-400 mb-2">{t('audit.byDay')}</h3>
+              <div className="space-y-1">
+                {data.by_day.slice(0, 7).map((row: TokenUsageByDay) => (
+                  <div
+                    key={row.date}
+                    className="flex items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-zinc-800/50"
+                  >
+                    <span className="text-zinc-400">{row.date}</span>
+                    <span className="font-mono text-zinc-300">
+                      {formatNumber(row.total_tokens)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {data.total > data.limit && (
+            <div className="flex items-center justify-between pt-2">
+              <span className="text-xs text-zinc-500">
+                {t('audit.showing', {
+                  from: (data.page - 1) * data.limit + 1,
+                  to: Math.min(data.page * data.limit, data.total),
+                  total: data.total,
+                })}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => onPageChange(data.page - 1)}
+                  disabled={data.page <= 1}
+                  className="rounded-md px-3 py-1 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-800 disabled:opacity-50"
+                >
+                  {t('common.previous')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onPageChange(data.page + 1)}
+                  disabled={data.page * data.limit >= data.total}
+                  className="rounded-md px-3 py-1 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-800 disabled:opacity-50"
+                >
+                  {t('common.next')}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="rounded-lg border border-dashed border-zinc-700 bg-zinc-900/50 p-6 text-center">
+          <p className="text-sm text-zinc-500">{t('audit.noData')}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -729,6 +951,15 @@ export default function SettingsPage() {
   const [cleaningUp, setCleaningUp] = useState(false);
   const [cleanupResult, setCleanupResult] = useState<number | null>(null);
   const [trustLevel, setTrustLevel] = useState<TrustLevel>('app-context');
+
+  // Token usage audit state
+  const [auditData, setAuditData] = useState<TokenUsageQueryResult | null>(null);
+  const [auditLoading, setAuditLoading] = useState(true);
+  const [auditProviders, setAuditProviders] = useState<string[]>([]);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   // ─── Load providers from API ────────────────────────────────────────────────
 
@@ -778,6 +1009,58 @@ export default function SettingsPage() {
     } finally {
       setCleaningUp(false);
     }
+  };
+
+  // ─── Load token usage audit ──────────────────────────────────────────────
+
+  const refreshAudit = useCallback(async () => {
+    setAuditLoading(true);
+    try {
+      const data = await api.audit.getTokenUsage({
+        start_date: startDate || undefined,
+        end_date: endDate || undefined,
+        provider: selectedProvider || undefined,
+        page: currentPage,
+        limit: 20,
+      });
+      setAuditData(data);
+    } catch {
+      // Silently fail - audit is non-critical
+    } finally {
+      setAuditLoading(false);
+    }
+  }, [startDate, endDate, selectedProvider, currentPage]);
+
+  const refreshAuditProviders = useCallback(async () => {
+    try {
+      const result = await api.audit.getProviders();
+      setAuditProviders(result.data);
+    } catch {
+      // Silently fail
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshAudit();
+  }, [refreshAudit]);
+
+  useEffect(() => {
+    void refreshAuditProviders();
+  }, [refreshAuditProviders]);
+
+  const handleStartDateChange = (date: string) => {
+    setStartDate(date);
+    setCurrentPage(1);
+  };
+
+  const handleEndDateChange = (date: string) => {
+    setEndDate(date);
+    setCurrentPage(1);
+  };
+
+  const handleProviderChange = (provider: string) => {
+    setSelectedProvider(provider);
+    setCurrentPage(1);
   };
 
   // ─── CRUD operations ────────────────────────────────────────────────────────
@@ -908,6 +1191,20 @@ export default function SettingsPage() {
       <TrustLevelSection
         currentLevel={trustLevel}
         onChange={setTrustLevel}
+      />
+
+      {/* Token Usage Audit Section (PR-17) */}
+      <TokenUsageAuditSection
+        data={auditData}
+        providers={auditProviders}
+        loading={auditLoading}
+        startDate={startDate}
+        endDate={endDate}
+        selectedProvider={selectedProvider}
+        onStartDateChange={handleStartDateChange}
+        onEndDateChange={handleEndDateChange}
+        onProviderChange={handleProviderChange}
+        onPageChange={setCurrentPage}
       />
 
       {/* Add/Edit Dialog */}

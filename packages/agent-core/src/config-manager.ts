@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, statSync } from 'node:fs';
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';
 import { CONFIG_DIR, PROVIDERS_FILE } from './config-paths.js';
 import type { LLMProviderConfig, ProvidersConfig } from './llm-types.js';
@@ -6,6 +6,12 @@ import { toErrorMessage } from './utils/error.js';
 import { createStderrLogger } from './utils/logger.js';
 
 const logger = createStderrLogger('config-manager');
+
+/**
+ * File mode 0o600: owner read/write only.
+ * Prevents other users on the system from reading API keys.
+ */
+const SECURE_FILE_MODE = 0o600;
 
 const ENCRYPTION_ALGO = 'aes-256-cbc';
 const ENCRYPTION_KEY = scryptSync('eata-provider-key', 'eata-salt', 32);
@@ -83,17 +89,26 @@ function encryptConfig(config: ProvidersConfig): ProvidersConfig {
 }
 
 export function loadProvidersConfig(): ProvidersConfig {
+  // Check file permissions on load to warn about security issues
+  checkConfigFilePermissions();
+
+  let baseConfig: ProvidersConfig;
+
   if (!existsSync(PROVIDERS_FILE)) {
-    return DEFAULT_PROVIDERS;
+    baseConfig = DEFAULT_PROVIDERS;
+  } else {
+    try {
+      const content = readFileSync(PROVIDERS_FILE, 'utf-8');
+      const raw = JSON.parse(content) as ProvidersConfig;
+      baseConfig = decryptConfig(raw);
+    } catch (err: unknown) {
+      logger.warn(`Failed to parse providers.json: ${toErrorMessage(err)}. Using defaults.`);
+      baseConfig = DEFAULT_PROVIDERS;
+    }
   }
-  try {
-    const content = readFileSync(PROVIDERS_FILE, 'utf-8');
-    const raw = JSON.parse(content) as ProvidersConfig;
-    return decryptConfig(raw);
-  } catch (err: unknown) {
-    logger.warn(`Failed to parse providers.json: ${toErrorMessage(err)}. Using defaults.`);
-    return DEFAULT_PROVIDERS;
-  }
+
+  // Environment variables override config file values
+  return injectEnvApiKeys(baseConfig);
 }
 
 export function saveProvidersConfig(config: ProvidersConfig): void {
@@ -101,7 +116,59 @@ export function saveProvidersConfig(config: ProvidersConfig): void {
     mkdirSync(CONFIG_DIR, { recursive: true });
   }
   const encrypted = encryptConfig(config);
-  writeFileSync(PROVIDERS_FILE, JSON.stringify(encrypted, null, 2));
+  writeFileSync(PROVIDERS_FILE, JSON.stringify(encrypted, null, 2), { mode: SECURE_FILE_MODE });
+}
+
+/**
+ * Warn if config file permissions are too open.
+ * Checks if the file is readable by group or others.
+ */
+export function checkConfigFilePermissions(): void {
+  if (!existsSync(PROVIDERS_FILE)) return;
+
+  try {
+    const stats = statSync(PROVIDERS_FILE);
+    const mode = stats.mode & 0o777; // Extract permission bits
+
+    // Check if group or others have any permissions
+    if (mode & 0o077) {
+      logger.warn(
+        `Config file ${PROVIDERS_FILE} has overly open permissions (${mode.toString(8)}). ` +
+        `Expected 0600 (owner read/write only). Run: chmod 600 ${PROVIDERS_FILE}`
+      );
+    }
+  } catch (err: unknown) {
+    logger.warn(`Failed to check config file permissions: ${toErrorMessage(err)}`);
+  }
+}
+
+/**
+ * Inject API keys from environment variables.
+ *
+ * Pattern: EATA_PROVIDER_{ID}_API_KEY
+ * Examples:
+ *   EATA_PROVIDER_OPENAI_DEFAULT_API_KEY=sk-...
+ *   EATA_PROVIDER_ANTHROPIC_DEFAULT_API_KEY=sk-ant-...
+ *
+ * Environment variables override config file values.
+ * Provider IDs are normalized: hyphens become underscores, then uppercased.
+ */
+function injectEnvApiKeys(config: ProvidersConfig): ProvidersConfig {
+  return {
+    ...config,
+    providers: config.providers.map((provider) => {
+      // Convert provider ID to env var format: "openai-default" -> "EATA_PROVIDER_OPENAI_DEFAULT_API_KEY"
+      const envKey = `EATA_PROVIDER_${provider.id.replace(/-/g, '_').toUpperCase()}_API_KEY`;
+      const envValue = process.env[envKey];
+
+      if (envValue) {
+        logger.info(`Using API key from environment variable ${envKey} for provider "${provider.id}"`);
+        return { ...provider, apiKey: envValue };
+      }
+
+      return provider;
+    }),
+  };
 }
 
 export function addProvider(config: LLMProviderConfig): ProvidersConfig {

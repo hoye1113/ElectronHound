@@ -177,6 +177,50 @@ export interface NotificationLogEntry {
   createdAt: string;
 }
 
+export interface TokenUsageRecord {
+  id: number;
+  task_id: string;
+  provider: string;
+  model: string;
+  prompt_tokens: number;
+  completion_tokens: number;
+  created_at: string;
+}
+
+export interface TokenUsageSummary {
+  total_prompt_tokens: number;
+  total_completion_tokens: number;
+  total_tokens: number;
+  record_count: number;
+}
+
+export interface TokenUsageByProvider {
+  provider: string;
+  model: string;
+  total_prompt_tokens: number;
+  total_completion_tokens: number;
+  total_tokens: number;
+  record_count: number;
+}
+
+export interface TokenUsageByDay {
+  date: string;
+  total_prompt_tokens: number;
+  total_completion_tokens: number;
+  total_tokens: number;
+  record_count: number;
+}
+
+export interface TokenUsageQueryResult {
+  records: TokenUsageRecord[];
+  summary: TokenUsageSummary;
+  by_provider: TokenUsageByProvider[];
+  by_day: TokenUsageByDay[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export const api = {
   tasks: {
     list(params?: { status?: string; page?: number; limit?: number }): Promise<{
@@ -501,6 +545,29 @@ export const api = {
       return fetchJson(`${API_BASE}/api/storage/cleanup`, {
         method: 'POST',
       });
+    },
+  },
+  audit: {
+    getTokenUsage(params?: {
+      start_date?: string;
+      end_date?: string;
+      provider?: string;
+      page?: number;
+      limit?: number;
+    }): Promise<TokenUsageQueryResult> {
+      const query = new URLSearchParams();
+      if (params?.start_date) query.set('start_date', params.start_date);
+      if (params?.end_date) query.set('end_date', params.end_date);
+      if (params?.provider) query.set('provider', params.provider);
+      if (params?.page) query.set('page', String(params.page));
+      if (params?.limit) query.set('limit', String(params.limit));
+      return fetchJson(`${API_BASE}/api/audit/tokens?${query}`);
+    },
+    getTaskUsage(taskId: string): Promise<{ data: TokenUsageRecord[] }> {
+      return fetchJson(`${API_BASE}/api/audit/tokens/task/${taskId}`);
+    },
+    getProviders(): Promise<{ data: string[] }> {
+      return fetchJson(`${API_BASE}/api/audit/tokens/providers`);
     },
   },
 };

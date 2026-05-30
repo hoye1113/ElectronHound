@@ -16,6 +16,7 @@ import { compareRoutes } from './compare.js';
 import { trendsRoutes } from './trends.js';
 import { notificationRoutes } from './notifications.js';
 import { storageRoutes } from './storage.js';
+import { auditRoutes } from './audit.js';
 
 export async function registerRoutes(server: FastifyInstance) {
   await server.register(healthRoutes);
@@ -35,4 +36,5 @@ export async function registerRoutes(server: FastifyInstance) {
   await server.register(trendsRoutes, { prefix: '/api' });
   await server.register(notificationRoutes, { prefix: '/api' });
   await server.register(storageRoutes, { prefix: '/api' });
+  await server.register(auditRoutes, { prefix: '/api' });
 }

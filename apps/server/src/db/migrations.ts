@@ -158,6 +158,21 @@ CREATE TABLE IF NOT EXISTS notification_log (
 
 CREATE INDEX IF NOT EXISTS idx_notification_log_event ON notification_log(event_type);
 CREATE INDEX IF NOT EXISTS idx_notification_log_created ON notification_log(created_at);
+
+CREATE TABLE IF NOT EXISTS token_usage (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT NOT NULL,
+  prompt_tokens INTEGER NOT NULL DEFAULT 0,
+  completion_tokens INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_token_usage_task_id ON token_usage(task_id);
+CREATE INDEX IF NOT EXISTS idx_token_usage_created_at ON token_usage(created_at);
+CREATE INDEX IF NOT EXISTS idx_token_usage_provider ON token_usage(provider);
 `;
 
 /**

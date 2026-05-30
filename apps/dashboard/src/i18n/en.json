@@ -522,5 +522,24 @@
     "hostFullDesc": "Everything allowed, including arbitrary filesystem, network, and process control.",
     "hostFullWarning": "WARNING: This level grants the AI agent unrestricted access to your system. Only enable this if you fully trust the code being executed.",
     "blockedInfo": "Blocked APIs at this level:"
+  },
+  "audit": {
+    "title": "Token Usage Audit",
+    "subtitle": "Track LLM token consumption across tasks and providers",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "provider": "Provider",
+    "allProviders": "All Providers",
+    "loading": "Loading usage data...",
+    "totalTokens": "Total Tokens",
+    "promptTokens": "Prompt Tokens",
+    "completionTokens": "Completion Tokens",
+    "totalRecords": "API Calls",
+    "byProvider": "By Provider",
+    "byDay": "By Day",
+    "tokens": "tokens",
+    "calls": "calls",
+    "noData": "No token usage data found",
+    "showing": "Showing {{from}}-{{to}} of {{total}}"
   }
 }

@@ -476,5 +476,24 @@
     "hostFullDesc": "允许所有操作，包括任意文件系统、网络和进程控制。",
     "hostFullWarning": "警告：此级别授予 AI 代理对您系统的完全访问权限。仅在您完全信任被执行的代码时才启用。",
     "blockedInfo": "此级别阻止的 API："
+  },
+  "audit": {
+    "title": "Token 用量审计",
+    "subtitle": "跟踪任务和提供商的 LLM Token 消耗",
+    "startDate": "开始日期",
+    "endDate": "结束日期",
+    "provider": "提供商",
+    "allProviders": "所有提供商",
+    "loading": "加载用量数据...",
+    "totalTokens": "总 Token 数",
+    "promptTokens": "提示 Token",
+    "completionTokens": "完成 Token",
+    "totalRecords": "API 调用次数",
+    "byProvider": "按提供商",
+    "byDay": "按天",
+    "tokens": "个 Token",
+    "calls": "次调用",
+    "noData": "未找到 Token 用量数据",
+    "showing": "显示第 {{from}}-{{to}} 条，共 {{total}} 条"
   }
 }
