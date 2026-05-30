@@ -164,4 +164,14 @@ describe('NotificationSettings', () => {
 
     expect(document.querySelector('.animate-spin')).toBeInTheDocument();
   });
+
+  it('shows error state when API fails', async () => {
+    mockGetConfig.mockRejectedValue(new Error('Failed to load config'));
+
+    render(<NotificationSettings />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to load config')).toBeInTheDocument();
+    });
+  });
 });
