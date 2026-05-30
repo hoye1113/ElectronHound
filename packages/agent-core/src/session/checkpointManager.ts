@@ -16,6 +16,7 @@
 
 import Database from 'better-sqlite3';
 import type { SessionEntry } from './types.js';
+import type { Observation, Plan, ExecutionResult } from '../runtime/types.js';
 
 /** Shape of an agent checkpoint for resumption. */
 export interface AgentCheckpoint {
@@ -30,11 +31,11 @@ export interface AgentCheckpoint {
   /** Serialized agent loop config (maxSteps, stuckThreshold, etc.). */
   config: Record<string, unknown>;
   /** Last observation summary (if any). */
-  lastObservation: Record<string, unknown> | null;
+  lastObservation: Observation | null;
   /** Last plan (if any). */
-  lastPlan: Record<string, unknown> | null;
+  lastPlan: Plan | null;
   /** Last execution result (if any). */
-  lastExecutionResult: Record<string, unknown> | null;
+  lastExecutionResult: ExecutionResult | null;
   /** Session entries accumulated so far. */
   sessionEntries: SessionEntry[];
   /** ISO 8601 timestamp of when the checkpoint was created/updated. */

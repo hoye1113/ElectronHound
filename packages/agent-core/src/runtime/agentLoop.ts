@@ -251,9 +251,9 @@ export class AgentLoop {
       sessionId,
       taskPrompt: checkpoint.taskPrompt,
       stepCount: checkpoint.currentStep,
-      currentObservation: checkpoint.lastObservation as unknown as Observation | null,
-      lastPlan: checkpoint.lastPlan as unknown as Plan | null,
-      lastExecution: checkpoint.lastExecutionResult as unknown as ExecutionResult | null,
+      currentObservation: checkpoint.lastObservation,
+      lastPlan: checkpoint.lastPlan,
+      lastExecution: checkpoint.lastExecutionResult,
       stuckCount: 0,
     };
 

@@ -96,9 +96,9 @@ export async function runTest(
           maxSteps: options.maxSteps ?? 50,
           taskPrompt: state.taskPrompt,
           config: { maxSteps: options.maxSteps ?? 50 },
-          lastObservation: state.currentObservation as unknown as Record<string, unknown> | null,
-          lastPlan: state.lastPlan as unknown as Record<string, unknown> | null,
-          lastExecutionResult: state.lastExecution as unknown as Record<string, unknown> | null,
+          lastObservation: state.currentObservation,
+          lastPlan: state.lastPlan,
+          lastExecutionResult: state.lastExecution,
           sessionEntries: sessionManager.getSession(state.sessionId)?.entries ?? [],
           timestamp: new Date().toISOString(),
         });
