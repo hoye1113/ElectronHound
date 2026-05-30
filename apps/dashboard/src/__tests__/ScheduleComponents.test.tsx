@@ -295,12 +295,47 @@ describe('CreateScheduleForm', () => {
     });
   });
 
-  it.skip('validates cron expression format', async () => {
-    // Select element interaction needs userEvent library
+  it('validates cron expression format', async () => {
+    render(<CreateScheduleForm {...defaultProps} />);
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('scheduleForm.namePlaceholder'), { target: { value: 'Test' } });
+      // Simulate selecting a template by directly setting the value
+      const select = screen.getByRole('combobox');
+      Object.defineProperty(select, 'value', { value: 'tpl-1', writable: true });
+      fireEvent.change(select);
+      fireEvent.change(screen.getByPlaceholderText('0 9 * * *'), { target: { value: 'invalid' } });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('common.save'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('scheduleForm.cronInvalid')).toBeDefined();
+    });
   });
 
-  it.skip('submits new schedule', async () => {
-    // Select element interaction needs userEvent library
+  it('submits new schedule', async () => {
+    const { api } = await import('../lib/api');
+    const onSuccess = vi.fn();
+    render(<CreateScheduleForm {...defaultProps} onSuccess={onSuccess} />);
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('scheduleForm.namePlaceholder'), { target: { value: 'New Schedule' } });
+      // Simulate selecting a template by directly setting the value
+      const select = screen.getByRole('combobox');
+      Object.defineProperty(select, 'value', { value: 'tpl-1', writable: true });
+      fireEvent.change(select);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('common.save'));
+    });
+    await waitFor(() => {
+      expect(api.schedules.create).toHaveBeenCalledWith({
+        name: 'New Schedule',
+        templateId: 'tpl-1',
+        cronExpression: '0 9 * * *',
+        enabled: true,
+      });
+      expect(onSuccess).toHaveBeenCalled();
+    });
   });
 
   it('submits updated schedule', async () => {
