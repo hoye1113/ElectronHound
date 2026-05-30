@@ -8,6 +8,7 @@ import { dbRowToTask, dbRowToStep } from '../utils/dbMappers.js';
 import { IdParam } from '../utils/validation.js';
 import { checkDiskQuota } from '../services/cleanup.js';
 import { exportTaskToJSONL, importTaskFromJSONL } from '../services/taskExport.js';
+import { generatePlaywrightFromDb } from '../services/codegen.js';
 
 // ── Validation schemas ──────────────────────────────────────────────
 
@@ -214,6 +215,32 @@ export async function taskRoutes(server: FastifyInstance) {
 
     reply.code(204);
     return;
+  });
+
+  // GET /tasks/:id/generate — generate Playwright test script
+  server.get('/tasks/:id/generate', async (request, reply) => {
+    const parsed = IdParam.safeParse(request.params);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Invalid task ID format', details: parsed.error.issues });
+    }
+    const { id } = parsed.data;
+
+    try {
+      const script = generatePlaywrightFromDb(server.db, id);
+
+      reply
+        .header('Content-Type', 'text/typescript; charset=utf-8')
+        .header('Content-Disposition', `attachment; filename="task-${id}.spec.ts"`)
+        .code(200);
+
+      return script;
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message === 'Task not found') {
+        reply.code(404);
+        return { error: 'Task not found' };
+      }
+      throw err;
+    }
   });
 
   // GET /tasks/:id/export — export task as JSONL file download

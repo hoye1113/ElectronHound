@@ -59,6 +59,13 @@ interface ImportCliArgs {
   dbPath?: string;
 }
 
+interface GenerateCliArgs {
+  taskId: string;
+  format: string;
+  output?: string;
+  dbPath?: string;
+}
+
 // ─── Argument Parsing ────────────────────────────────────
 
 /**
@@ -202,6 +209,44 @@ export function parseImportArgs(argv: string[]): ImportCliArgs | null {
 
   return {
     file: raw.file,
+    dbPath: raw.db || undefined,
+  };
+}
+
+/**
+ * Parse generate CLI arguments from process.argv.
+ * Supports: generate --taskId <id> [--format playwright] [--output <file>] [--db <path>]
+ */
+export function parseGenerateArgs(argv: string[]): GenerateCliArgs | null {
+  const generateIndex = argv.findIndex((arg) => arg === 'generate');
+  if (generateIndex === -1) {
+    return null;
+  }
+
+  const raw: Record<string, string> = {};
+
+  for (let i = generateIndex + 1; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg.startsWith('--')) {
+      const key = arg.slice(2);
+      const next = argv[i + 1];
+      if (next !== undefined && !next.startsWith('--')) {
+        raw[key] = next;
+        i++;
+      } else {
+        raw[key] = 'true';
+      }
+    }
+  }
+
+  if (!raw.taskId) {
+    return null;
+  }
+
+  return {
+    taskId: raw.taskId,
+    format: raw.format ?? 'playwright',
+    output: raw.output || undefined,
     dbPath: raw.db || undefined,
   };
 }
@@ -713,6 +758,157 @@ export async function handleImportCommand(args: ImportCliArgs): Promise<number> 
   }
 }
 
+/**
+ * Generate a Playwright test script from a task in the database.
+ * Self-contained implementation for CLI use (no server dependency).
+ */
+async function cliGeneratePlaywright(db: import('better-sqlite3').Database, taskId: string): Promise<string> {
+  const taskRow = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as Record<string, unknown> | undefined;
+  if (!taskRow) {
+    throw new Error('Task not found');
+  }
+
+  const goal = String(taskRow.goal);
+
+  const stepRows = db.prepare('SELECT * FROM steps WHERE task_id = ? ORDER BY step_index').all(taskId) as Array<Record<string, unknown>>;
+
+  // Map action names to Playwright calls
+  const lines: string[] = [];
+  lines.push("import { test, expect } from '@playwright/test';");
+  lines.push('');
+  lines.push(`test('${goal.replace(/'/g, "\\'")}', async ({ page }) => {`);
+
+  let stepNumber = 0;
+  for (const row of stepRows) {
+    const phase = String(row.phase);
+    const actionStr = row.action as string | null;
+
+    // Skip observe and plan phases
+    if (phase === 'observe' || phase === 'plan') {
+      continue;
+    }
+
+    stepNumber++;
+    lines.push(`  // Step ${stepNumber}: ${phase}`);
+
+    if (phase === 'execute' && actionStr) {
+      const action = JSON.parse(actionStr) as { name: string; args: Record<string, unknown> };
+      const pwLine = mapActionToCodegen(action.name, action.args);
+      lines.push(`  ${pwLine}`);
+    } else if (phase === 'verify') {
+      const observation = row.observation as string | null;
+      if (observation) {
+        lines.push(`  // Verify: ${observation}`);
+      }
+      if (actionStr) {
+        const action = JSON.parse(actionStr) as { name: string; args: Record<string, unknown> };
+        const pwLine = mapActionToCodegen(action.name, action.args);
+        lines.push(`  ${pwLine}`);
+      }
+    }
+
+    lines.push('');
+  }
+
+  lines.push('});');
+  return lines.join('\n');
+}
+
+/**
+ * Map an action name to a Playwright code line (CLI version).
+ */
+function mapActionToCodegen(name: string, args: Record<string, unknown>): string {
+  const normalizedName = name.startsWith('browser_') ? name.slice('browser_'.length) : name;
+
+  switch (normalizedName) {
+    case 'click': {
+      const selector = args.selector as string | undefined;
+      if (!selector) return `// click action missing selector`;
+      return `await page.click('${selector.replace(/'/g, "\\'")}');`;
+    }
+    case 'type': {
+      const selector = args.selector as string | undefined;
+      const text = args.text as string | undefined;
+      if (!selector) return `// type action missing selector`;
+      if (text === undefined) return `// type action missing 'text' argument`;
+      return `await page.fill('${selector.replace(/'/g, "\\'")}', '${text.replace(/'/g, "\\'")}');`;
+    }
+    case 'screenshot': {
+      return `await page.screenshot();`;
+    }
+    case 'navigate': {
+      const url = args.url as string | undefined;
+      if (!url) return `// navigate action missing url`;
+      return `await page.goto('${url.replace(/'/g, "\\'")}');`;
+    }
+    case 'assert': {
+      const selector = args.selector as string | undefined;
+      const text = args.text as string | undefined;
+      if (!selector || !text) return `// assert action missing selector or text`;
+      return `await expect(page.locator('${selector.replace(/'/g, "\\'")}')).toHaveText('${text.replace(/'/g, "\\'")}');`;
+    }
+    case 'hover': {
+      const selector = args.selector as string | undefined;
+      if (!selector) return `// hover action missing selector`;
+      return `await page.hover('${selector.replace(/'/g, "\\'")}');`;
+    }
+    case 'press_key': {
+      const key = args.key as string | undefined;
+      if (!key) return `// press_key action missing key`;
+      return `await page.keyboard.press('${key.replace(/'/g, "\\'")}');`;
+    }
+    default: {
+      return `// Unsupported action: ${name}`;
+    }
+  }
+}
+
+/**
+ * Handle the generate subcommand.
+ * Returns process exit code.
+ */
+export async function handleGenerateCommand(args: GenerateCliArgs): Promise<number> {
+  const logger = getLogger({ source: 'generate' });
+
+  if (args.format !== 'playwright') {
+    logger.error(`Unsupported format: ${args.format}. Only "playwright" is supported.`);
+    return 1;
+  }
+
+  const dbPath = args.dbPath ?? join('data', 'eata.db');
+
+  logger.info(`Generating ${args.format} script for task ${args.taskId}`);
+
+  const spinner = new Spinner({ text: `Generating script for task ${args.taskId}...` });
+  spinner.start();
+
+  try {
+    const Database = (await import('better-sqlite3')).default;
+    const db = new Database(dbPath);
+
+    try {
+      const script = await cliGeneratePlaywright(db, args.taskId);
+
+      spinner.stop();
+
+      if (args.output) {
+        writeFileSync(args.output, script, 'utf-8');
+        process.stdout.write(`Generated Playwright script to ${args.output}\n`);
+      } else {
+        process.stdout.write(script + '\n');
+      }
+
+      return 0;
+    } finally {
+      db.close();
+    }
+  } catch (err: unknown) {
+    spinner.fail('Generate failed');
+    logger.error(`Generate failed: ${err instanceof Error ? err.message : String(err)}`);
+    return 1;
+  }
+}
+
 // ─── Main CLI Flow ──────────────────────────────────────
 
 /**
@@ -763,6 +959,12 @@ export async function cliMain(
   const importArgs = parseImportArgs(process.argv);
   if (importArgs) {
     return handleImportCommand(importArgs);
+  }
+
+  // Handle generate command
+  const generateArgs = parseGenerateArgs(process.argv);
+  if (generateArgs) {
+    return handleGenerateCommand(generateArgs);
   }
 
   // Parse and validate arguments
