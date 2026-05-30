@@ -68,8 +68,8 @@ function createMockSSEClient(): MockSSEClient {
 describe('SSE Streaming E2E: Connection Establishment', () => {
   it('server has SSE stream route registered', () => {
     const routes = server.printRoutes();
-    // Fastify printRoutes() groups by common prefix — 'stream' shares 's' with 'schedules'
-    expect(routes).toMatch(/tream\/tasks/);
+    // Fastify printRoutes() groups by common prefix — 'stream' shares 'st' with 'storage' and 'schedules'
+    expect(routes).toMatch(/ream\/tasks/);
     expect(routes).toContain(':id (GET');
   });
 
