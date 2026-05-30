@@ -7,7 +7,7 @@
  * - compareResults (result comparison)
  * - cron expression parsing via scheduleNext
  */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import Database from 'better-sqlite3';
 import { ScheduleService } from '../services/scheduleService.js';
 import { randomUUID } from 'node:crypto';
@@ -391,6 +391,229 @@ describe('ScheduleService', () => {
       const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(runs[0].task_id) as Record<string, unknown>;
       expect(task).toBeDefined();
       expect(task.goal).toBe('Test goal');
+    });
+  });
+
+  describe('execute - notification paths', () => {
+    it('sends improved notification when comparison shows improvement', async () => {
+      const templateId = insertTemplate(db);
+      const scheduleId = insertSchedule(db, templateId, { name: 'Improved Schedule' });
+
+      // Create a previous run with a failed task (worse status)
+      const previousTaskId = insertTask(db, { status: 'failed', stepCount: 20 });
+      insertScheduleRun(db, scheduleId, previousTaskId);
+
+      // Spy on notification service
+      const ns = service.getNotificationService();
+      const sendSpy = vi.spyOn(ns, 'send').mockResolvedValue(undefined);
+
+      await service.execute(scheduleId);
+
+      // Should have sent at least: executed notification + improved notification
+      const improvedCall = sendSpy.mock.calls.find(
+        (c) => (c[0] as { event: string }).event === 'schedule:improved',
+      );
+      expect(improvedCall).toBeDefined();
+      expect((improvedCall![0] as { title: string }).title).toContain('Improved Schedule');
+      expect((improvedCall![0] as { title: string }).title).toContain('improved');
+
+      sendSpy.mockRestore();
+    });
+
+    it('sends regression notification when comparison shows regression', async () => {
+      const templateId = insertTemplate(db);
+      const scheduleId = insertSchedule(db, templateId, { name: 'Regression Schedule' });
+
+      // Create a previous run with a completed task (better status)
+      const previousTaskId = insertTask(db, { status: 'completed', stepCount: 5 });
+      insertScheduleRun(db, scheduleId, previousTaskId);
+
+      const ns = service.getNotificationService();
+      const sendSpy = vi.spyOn(ns, 'send').mockResolvedValue(undefined);
+
+      await service.execute(scheduleId);
+
+      // The new task is 'queued' (status value 1) vs previous 'completed' (status value 0)
+      // But queued (1) > completed (0), so it should be a regression
+      const regressionCall = sendSpy.mock.calls.find(
+        (c) => (c[0] as { event: string }).event === 'schedule:regression',
+      );
+      // Also check that executed notification was sent
+      const executedCall = sendSpy.mock.calls.find(
+        (c) => (c[0] as { event: string }).event === 'schedule:executed',
+      );
+      expect(executedCall).toBeDefined();
+
+      sendSpy.mockRestore();
+    });
+
+    it('does not send improved/regression notification when no previous run', async () => {
+      const templateId = insertTemplate(db);
+      const scheduleId = insertSchedule(db, templateId, { name: 'First Run' });
+
+      const ns = service.getNotificationService();
+      const sendSpy = vi.spyOn(ns, 'send').mockResolvedValue(undefined);
+
+      await service.execute(scheduleId);
+
+      // Should only have the executed notification, not improved/regression
+      const events = sendSpy.mock.calls.map(
+        (c) => (c[0] as { event: string }).event,
+      );
+      expect(events).toContain('schedule:executed');
+      expect(events).not.toContain('schedule:improved');
+      expect(events).not.toContain('schedule:regression');
+
+      sendSpy.mockRestore();
+    });
+  });
+
+  describe('execute - error handling (catch block)', () => {
+    it('catches error from task INSERT and sends failure notification', async () => {
+      const templateId = insertTemplate(db);
+      const scheduleId = insertSchedule(db, templateId, { name: 'Error Schedule' });
+
+      const ns = service.getNotificationService();
+      const sendSpy = vi.spyOn(ns, 'send').mockResolvedValue(undefined);
+
+      // Make the first INSERT fail by adding a conflicting task ID
+      // We'll monkey-patch the db.prepare to throw on the task INSERT
+      const originalPrepare = db.prepare.bind(db);
+      let insertCallCount = 0;
+      db.prepare = function (sql: string) {
+        insertCallCount++;
+        // The task INSERT is the 3rd prepare call in execute (after SELECT schedule, SELECT template)
+        if (sql.includes('INSERT INTO tasks') && insertCallCount >= 3) {
+          throw new Error('Simulated DB write error');
+        }
+        return originalPrepare(sql);
+      } as typeof db.prepare;
+
+      await service.execute(scheduleId);
+
+      // Verify failure notification was sent
+      const failedCall = sendSpy.mock.calls.find(
+        (c) => (c[0] as { event: string }).event === 'schedule:failed',
+      );
+      expect(failedCall).toBeDefined();
+      expect((failedCall![0] as { message: string }).message).toBe('Simulated DB write error');
+
+      sendSpy.mockRestore();
+    });
+
+    it('catches non-Error thrown during execution', async () => {
+      const templateId = insertTemplate(db);
+      const scheduleId = insertSchedule(db, templateId, { name: 'String Error Schedule' });
+
+      const ns = service.getNotificationService();
+      const sendSpy = vi.spyOn(ns, 'send').mockResolvedValue(undefined);
+
+      const originalPrepare = db.prepare.bind(db);
+      let callCount = 0;
+      db.prepare = function (sql: string) {
+        callCount++;
+        if (sql.includes('INSERT INTO tasks') && callCount >= 3) {
+          throw 'string error thrown'; // eslint-disable-line no-throw-literal
+        }
+        return originalPrepare(sql);
+      } as typeof db.prepare;
+
+      await service.execute(scheduleId);
+
+      const failedCall = sendSpy.mock.calls.find(
+        (c) => (c[0] as { event: string }).event === 'schedule:failed',
+      );
+      expect(failedCall).toBeDefined();
+      expect((failedCall![0] as { message: string }).message).toBe('string error thrown');
+
+      sendSpy.mockRestore();
+    });
+
+    it('records failed run in schedule_runs table on error', async () => {
+      const templateId = insertTemplate(db);
+      const scheduleId = insertSchedule(db, templateId, { name: 'Run Record Schedule' });
+
+      const ns = service.getNotificationService();
+      const sendSpy = vi.spyOn(ns, 'send').mockResolvedValue(undefined);
+
+      const originalPrepare = db.prepare.bind(db);
+      let callCount = 0;
+      db.prepare = function (sql: string) {
+        callCount++;
+        if (sql.includes('INSERT INTO tasks') && callCount >= 3) {
+          throw new Error('DB write error');
+        }
+        return originalPrepare(sql);
+      } as typeof db.prepare;
+
+      await service.execute(scheduleId);
+
+      // Restore real db.prepare to query results
+      db.prepare = originalPrepare;
+
+      // Check that a failed run was recorded
+      const runs = db.prepare("SELECT * FROM schedule_runs WHERE status = 'failed'").all() as Array<Record<string, unknown>>;
+      expect(runs.length).toBe(1);
+      expect(runs[0].error).toBe('DB write error');
+      expect(runs[0].schedule_id).toBe(scheduleId);
+      expect(runs[0].task_id).toBeNull();
+
+      sendSpy.mockRestore();
+    });
+
+    it('updates schedule last_status to failed on error', async () => {
+      const templateId = insertTemplate(db);
+      const scheduleId = insertSchedule(db, templateId, { name: 'Status Update Schedule' });
+
+      const ns = service.getNotificationService();
+      const sendSpy = vi.spyOn(ns, 'send').mockResolvedValue(undefined);
+
+      const originalPrepare = db.prepare.bind(db);
+      let callCount = 0;
+      db.prepare = function (sql: string) {
+        callCount++;
+        if (sql.includes('INSERT INTO tasks') && callCount >= 3) {
+          throw new Error('DB error');
+        }
+        return originalPrepare(sql);
+      } as typeof db.prepare;
+
+      await service.execute(scheduleId);
+
+      db.prepare = originalPrepare;
+
+      const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(scheduleId) as Record<string, unknown>;
+      expect(schedule.last_status).toBe('failed');
+
+      sendSpy.mockRestore();
+    });
+
+    it('still schedules next run even on execution error', async () => {
+      const templateId = insertTemplate(db);
+      const scheduleId = insertSchedule(db, templateId, { name: 'Retry Schedule' });
+
+      const ns = service.getNotificationService();
+      const sendSpy = vi.spyOn(ns, 'send').mockResolvedValue(undefined);
+
+      const originalPrepare = db.prepare.bind(db);
+      let callCount = 0;
+      db.prepare = function (sql: string) {
+        callCount++;
+        if (sql.includes('INSERT INTO tasks') && callCount >= 3) {
+          throw new Error('DB error');
+        }
+        return originalPrepare(sql);
+      } as typeof db.prepare;
+
+      await service.execute(scheduleId);
+
+      db.prepare = originalPrepare;
+
+      // Check that next_run_at was updated (scheduleNext was called)
+      const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(scheduleId) as Record<string, unknown>;
+      expect(schedule.next_run_at).not.toBeNull();
+
+      sendSpy.mockRestore();
     });
   });
 

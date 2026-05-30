@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { OperationHandler } from '../operation-handler.js';
 import type { Operation } from '../operation-handler.js';
 
@@ -967,6 +967,148 @@ describe('OperationHandler', () => {
       expect(r4.success).toBe(true);
       // Mock count should reflect the one mock we added
       expect((r4.data as Record<string, unknown>).mockDialogCount).toBe(1);
+    });
+  });
+
+  // ── getElectron dynamic require coverage (lines 69-83) ────────────
+
+  describe('getElectron dynamic require paths', () => {
+    it('should return null when require returns a non-object (string path)', async () => {
+      // Create a fresh handler (electron is undefined by default)
+      const freshHandler = new OperationHandler();
+
+      // In Node.js test environment, eval('require')('electron') returns
+      // the binary path string, which is not an object. This exercises
+      // line 73: typeof mod !== 'object' -> this.electron = null -> return null
+      const result = await freshHandler.handle({
+        type: 'execute_main',
+        payload: { code: '1+1' },
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Electron module not available');
+    });
+
+    it('should cache electron as null after first failed getElectron call', async () => {
+      const freshHandler = new OperationHandler();
+
+      // First call exercises getElectron() path
+      const r1 = await freshHandler.handle({ type: 'health_check' });
+      const data1 = r1.data as Record<string, unknown>;
+      expect(data1.hasElectron).toBe(false);
+
+      // Second call should use cached value (line 64-65 path)
+      const r2 = await freshHandler.handle({ type: 'health_check' });
+      const data2 = r2.data as Record<string, unknown>;
+      expect(data2.hasElectron).toBe(false);
+    });
+
+    it('should handle getElectron returning null for send_ipc', async () => {
+      const freshHandler = new OperationHandler();
+
+      const result = await freshHandler.handle({
+        type: 'send_ipc',
+        payload: { channel: 'test' },
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Electron module not available');
+    });
+
+    it('should handle getElectron returning null for get_menu_items', async () => {
+      const freshHandler = new OperationHandler();
+
+      const result = await freshHandler.handle({ type: 'get_menu_items' });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Electron module not available');
+    });
+
+    it('should handle getElectron returning null for mock_dialog with valid params', async () => {
+      const freshHandler = new OperationHandler();
+
+      // mock_dialog doesn't call getElectron, but verify it works independently
+      const result = await freshHandler.handle({
+        type: 'mock_dialog',
+        payload: { dialogType: 'open', response: {} },
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it('should use cached electron on subsequent handle calls', async () => {
+      // Set electron via type cast to bypass getElectron
+      const mockElectron = {
+        BrowserWindow: {
+          getAllWindows: () => [{
+            webContents: { executeJavaScript: async () => 42 },
+          }],
+        },
+        Menu: { getApplicationMenu: () => null },
+      };
+      (handler as HandlerWithElectron).electron = mockElectron;
+
+      // First call: getElectron() caches the value at line 64-65
+      const r1 = await handler.handle({
+        type: 'execute_main',
+        payload: { code: '1+1' },
+      });
+      expect(r1.success).toBe(true);
+      expect((r1.data as DataRecord).result).toBe(42);
+
+      // Second call: uses cached electron (line 64-65)
+      const r2 = await handler.handle({
+        type: 'execute_main',
+        payload: { code: '2+2' },
+      });
+      expect(r2.success).toBe(true);
+      expect((r2.data as DataRecord).result).toBe(42);
+    });
+
+    it('should handle execute_main with custom timeout via getElectron cache', async () => {
+      const mockElectron = {
+        BrowserWindow: {
+          getAllWindows: () => [{
+            webContents: {
+              executeJavaScript: () => new Promise(() => {}), // never resolves
+            },
+          }],
+        },
+        Menu: { getApplicationMenu: () => null },
+      };
+      (handler as HandlerWithElectron).electron = mockElectron;
+
+      const result = await handler.handle({
+        type: 'execute_main',
+        payload: { code: 'slow()', timeout: 100 },
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('timed out');
+      expect(result.error).toContain('100ms');
+    });
+
+    it('should handle execute_main success with default timeout', async () => {
+      const mockElectron = {
+        BrowserWindow: {
+          getAllWindows: () => [{
+            webContents: {
+              executeJavaScript: async () => 'result-value',
+            },
+          }],
+        },
+        Menu: { getApplicationMenu: () => null },
+      };
+      (handler as HandlerWithElectron).electron = mockElectron;
+
+      // No timeout specified — uses default 5000ms
+      const result = await handler.handle({
+        type: 'execute_main',
+        payload: { code: 'return "result-value"' },
+      });
+
+      expect(result.success).toBe(true);
+      expect((result.data as DataRecord).result).toBe('result-value');
     });
   });
 });
