@@ -17,6 +17,7 @@
     ".": "./src/index.ts",
     "./dx": "./src/dx/index.ts",
     "./dx/*": "./src/dx/*.ts",
+    "./security/astAnalyzer": "./src/security/astAnalyzer.ts",
     "./utils/error": "./src/utils/error.ts",
     "./utils/logger": "./src/utils/logger.ts"
   },

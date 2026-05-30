@@ -463,5 +463,18 @@
     "cleanupDone": "已清理 {{count}} 个文件",
     "cleanupNone": "没有需要清理的旧文件",
     "loading": "加载存储信息..."
+  },
+  "trustLevel": {
+    "title": "执行权限级别",
+    "subtitle": "控制 AI 代理在 Electron 主进程中可以执行的代码范围",
+    "label": "信任级别",
+    "readonly": "只读",
+    "readonlyDesc": "禁止写入、网络和文件系统访问。仅允许读取应用状态和 UI 查询。",
+    "appContext": "应用上下文",
+    "appContextDesc": "允许应用 API（如 BrowserWindow），但禁止主机级别访问。推荐使用此默认级别。",
+    "hostFull": "完全主机访问",
+    "hostFullDesc": "允许所有操作，包括任意文件系统、网络和进程控制。",
+    "hostFullWarning": "警告：此级别授予 AI 代理对您系统的完全访问权限。仅在您完全信任被执行的代码时才启用。",
+    "blockedInfo": "此级别阻止的 API："
   }
 }

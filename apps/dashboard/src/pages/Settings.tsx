@@ -18,6 +18,10 @@ import {
   ChevronDown,
   HardDrive,
   Trash,
+  Shield,
+  ShieldCheck,
+  ShieldAlert,
+  Info,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import type { LLMProviderConfig, ProvidersConfig } from '../lib/api';
@@ -597,6 +601,117 @@ function StorageSection({ info, loading, cleaningUp, cleanupResult, onCleanup }:
   );
 }
 
+// ─── Trust Level Section (PR-15) ────────────────────────────────────────
+
+type TrustLevel = 'readonly' | 'app-context' | 'host-full';
+
+interface TrustLevelSectionProps {
+  currentLevel: TrustLevel;
+  onChange: (level: TrustLevel) => void;
+}
+
+const TRUST_LEVELS: Array<{
+  value: TrustLevel;
+  icon: typeof Shield;
+  color: string;
+  labelKey: string;
+  descKey: string;
+}> = [
+  {
+    value: 'readonly',
+    icon: ShieldCheck,
+    color: 'text-emerald-400',
+    labelKey: 'trustLevel.readonly',
+    descKey: 'trustLevel.readonlyDesc',
+  },
+  {
+    value: 'app-context',
+    icon: Shield,
+    color: 'text-indigo-400',
+    labelKey: 'trustLevel.appContext',
+    descKey: 'trustLevel.appContextDesc',
+  },
+  {
+    value: 'host-full',
+    icon: ShieldAlert,
+    color: 'text-red-400',
+    labelKey: 'trustLevel.hostFull',
+    descKey: 'trustLevel.hostFullDesc',
+  },
+];
+
+function TrustLevelSection({ currentLevel, onChange }: TrustLevelSectionProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="mt-8 rounded-lg border border-zinc-800 bg-zinc-900 p-5">
+      <div className="flex items-center gap-2.5 mb-4">
+        <Shield className="size-4 text-zinc-400" />
+        <h2 className="text-sm font-semibold text-zinc-100">{t('trustLevel.title')}</h2>
+      </div>
+      <p className="text-xs text-zinc-500 mb-4">{t('trustLevel.subtitle')}</p>
+
+      <div className="space-y-2">
+        {TRUST_LEVELS.map(({ value, icon: Icon, color, labelKey, descKey }) => {
+          const isSelected = currentLevel === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              onClick={() => onChange(value)}
+              aria-label={`${t(labelKey)}${isSelected ? ' (selected)' : ''}`}
+              className={`w-full rounded-lg border p-4 text-left transition-colors ${
+                isSelected
+                  ? 'border-indigo-500/50 bg-zinc-800/50 ring-1 ring-indigo-500/20'
+                  : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Icon className={`size-4 shrink-0 ${isSelected ? color : 'text-zinc-500'}`} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-medium ${isSelected ? 'text-zinc-100' : 'text-zinc-300'}`}>
+                      {t(labelKey)}
+                    </span>
+                    {isSelected && (
+                      <span className="inline-flex items-center gap-1 rounded bg-indigo-500/10 px-1.5 py-0.5 text-[10px] font-medium text-indigo-300">
+                        <Check className="size-3" />
+                        Selected
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-xs text-zinc-500">{t(descKey)}</p>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Warning for host-full level */}
+      {currentLevel === 'host-full' && (
+        <div className="mt-3 flex items-start gap-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3">
+          <AlertCircle className="mt-0.5 size-4 shrink-0 text-red-400" />
+          <p className="text-xs text-red-200">{t('trustLevel.hostFullWarning')}</p>
+        </div>
+      )}
+
+      {/* Info about current level */}
+      {currentLevel !== 'host-full' && (
+        <div className="mt-3 flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-800/50 p-3">
+          <Info className="mt-0.5 size-4 shrink-0 text-zinc-400" />
+          <p className="text-xs text-zinc-400">
+            {t('trustLevel.blockedInfo')}{' '}
+            {currentLevel === 'readonly'
+              ? 'fs, child_process, net, http, https, dgram, dns, process.exit, process.kill, os.homedir, os.hostname'
+              : 'child_process, fs (write), process.exit, process.kill, process.env, net, http, https, dgram, dns, cluster, vm, eval, new Function, import()'}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -613,6 +728,7 @@ export default function SettingsPage() {
   const [storageLoading, setStorageLoading] = useState(true);
   const [cleaningUp, setCleaningUp] = useState(false);
   const [cleanupResult, setCleanupResult] = useState<number | null>(null);
+  const [trustLevel, setTrustLevel] = useState<TrustLevel>('app-context');
 
   // ─── Load providers from API ────────────────────────────────────────────────
 
@@ -786,6 +902,12 @@ export default function SettingsPage() {
         cleaningUp={cleaningUp}
         cleanupResult={cleanupResult}
         onCleanup={handleCleanup}
+      />
+
+      {/* Trust Level Section (PR-15) */}
+      <TrustLevelSection
+        currentLevel={trustLevel}
+        onChange={setTrustLevel}
       />
 
       {/* Add/Edit Dialog */}

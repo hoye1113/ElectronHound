@@ -509,5 +509,18 @@
     "cleanupDone": "Cleaned up {{count}} files",
     "cleanupNone": "No old files to clean up",
     "loading": "Loading storage info..."
+  },
+  "trustLevel": {
+    "title": "Execute Permission Level",
+    "subtitle": "Control what code the AI agent can execute in the Electron main process",
+    "label": "Trust Level",
+    "readonly": "Read Only",
+    "readonlyDesc": "No writes, no network, no filesystem. Allows reading app state and UI queries only.",
+    "appContext": "App Context",
+    "appContextDesc": "App APIs allowed (e.g. BrowserWindow), but no host-level access. This is the recommended default.",
+    "hostFull": "Host Full Access",
+    "hostFullDesc": "Everything allowed, including arbitrary filesystem, network, and process control.",
+    "hostFullWarning": "WARNING: This level grants the AI agent unrestricted access to your system. Only enable this if you fully trust the code being executed.",
+    "blockedInfo": "Blocked APIs at this level:"
   }
 }

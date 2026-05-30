@@ -38,3 +38,14 @@ export * from './provider.js';
 // Error types and codes
 export { ErrorDomain, ErrorCodes } from './errors.js';
 export type { EataError, ErrorCodeKey } from './errors.js';
+
+// Trust level system for execute_main permission grading (PR-15)
+export {
+  TrustLevelSchema,
+  TrustConfigSchema,
+  READONLY_TRUST_CONFIG,
+  APP_CONTEXT_TRUST_CONFIG,
+  HOST_FULL_TRUST_CONFIG,
+  TRUST_CONFIGS,
+} from './trust.js';
+export type { TrustLevel, TrustConfig } from './trust.js';
