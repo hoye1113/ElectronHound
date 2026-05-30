@@ -7,6 +7,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { toErrorMessage } from '../utils/error.js';
 import { createStderrLogger } from '../utils/logger.js';
+import { getDaemonManager, type MCPDaemonManager, type DaemonContext } from './daemon.js';
 
 const logger = createStderrLogger('MCPClient');
 
@@ -48,7 +49,10 @@ interface ServerConnection {
 export class MCPClient {
   private connected = false;
   private mockMode = false;
+  private daemonMode = false;
   private connections: Map<string, ServerConnection> = new Map();
+  private daemonManager: MCPDaemonManager | null = null;
+  private daemonContext: DaemonContext | null = null;
 
   /**
    * Connect to MCP servers.
@@ -79,6 +83,43 @@ export class MCPClient {
     }
 
     this.connected = true;
+  }
+
+  /**
+   * Connect to an existing MCP daemon for Playwright.
+   *
+   * This reuses a persistent Chromium instance across multiple tasks,
+   * eliminating cold start overhead. Each task gets an isolated BrowserContext.
+   *
+   * @param taskId - Optional task ID for context isolation
+   */
+  async connectToDaemon(taskId?: string): Promise<void> {
+    if (this.daemonMode && this.connected) {
+      logger.info('Already connected to daemon');
+      return;
+    }
+
+    this.daemonManager = getDaemonManager();
+
+    // Ensure daemon is running
+    await this.daemonManager.ensureDaemon();
+
+    // Create isolated context if task ID provided
+    if (taskId) {
+      this.daemonContext = await this.daemonManager.createContext(taskId);
+    }
+
+    this.daemonMode = true;
+    this.connected = true;
+
+    logger.info('Connected to MCP daemon');
+  }
+
+  /**
+   * Check if client is connected in daemon mode.
+   */
+  isDaemonMode(): boolean {
+    return this.daemonMode;
   }
 
   /**
@@ -192,6 +233,7 @@ export class MCPClient {
   /**
    * Call a tool on the specified server.
    * In mock mode, returns a mock result.
+   * In daemon mode, uses the daemon context's client for Playwright.
    * In real mode, uses the connected MCP client.
    */
   async callTool(
@@ -209,6 +251,23 @@ export class MCPClient {
         success: true,
         result: `mock-${server}-${toolName}: ${JSON.stringify(args)}`,
       };
+    }
+
+    // Daemon mode: use daemon context for Playwright calls
+    if (this.daemonMode && server === 'playwright' && this.daemonContext) {
+      try {
+        const result = await this.daemonContext.client.callTool(toolName, args);
+        return {
+          success: true,
+          result,
+        };
+      } catch (error: unknown) {
+        const errorMessage = toErrorMessage(error);
+        return {
+          success: false,
+          result: `Daemon tool call failed: ${errorMessage}`,
+        };
+      }
     }
 
     // Real mode: look up connection
@@ -256,12 +315,25 @@ export class MCPClient {
    * Disconnect from all MCP servers and clean up.
    */
   async disconnect(): Promise<void> {
+    // Clean up daemon context if exists
+    if (this.daemonContext && this.daemonManager) {
+      try {
+        await this.daemonManager.destroyContext(this.daemonContext.taskId);
+      } catch (error) {
+        logger.warn(`Error destroying daemon context: ${toErrorMessage(error)}`);
+      }
+      this.daemonContext = null;
+    }
+
+    // Disconnect regular connections
     const serverNames = Array.from(this.connections.keys());
     for (const server of serverNames) {
       await this.disconnectServer(server);
     }
+
     this.connected = false;
     this.mockMode = false;
+    this.daemonMode = false;
   }
 
   isConnected(): boolean {
