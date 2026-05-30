@@ -3,6 +3,10 @@ import { OperationHandler } from '../operation-handler.js';
 import type { Operation } from '../operation-handler.js';
 
 type DataRecord = Record<string, unknown>;
+type MockElectron = {
+  BrowserWindow: { getAllWindows: () => unknown[] };
+  Menu: { getApplicationMenu: () => unknown };
+};
 
 describe('OperationHandler', () => {
   let handler: OperationHandler;
@@ -58,7 +62,7 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({ type: 'health_check' });
 
@@ -143,7 +147,7 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'execute_main',
@@ -164,7 +168,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'execute_main',
@@ -186,7 +190,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'execute_main',
@@ -208,7 +212,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       // Use a short timeout via payload to avoid waiting 5s
       // But we test the default path by not providing timeout
@@ -235,7 +239,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'execute_main',
@@ -258,7 +262,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'execute_main',
@@ -335,7 +339,7 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'send_ipc',
@@ -355,7 +359,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'send_ipc',
@@ -378,7 +382,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'send_ipc',
@@ -399,7 +403,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'send_ipc',
@@ -423,7 +427,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'send_ipc',
@@ -446,7 +450,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'send_ipc',
@@ -602,7 +606,7 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({ type: 'get_menu_items' });
 
@@ -632,7 +636,7 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => mockMenu },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({ type: 'get_menu_items' });
 
@@ -693,7 +697,7 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => mockMenu },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({ type: 'get_menu_items' });
 
@@ -744,7 +748,7 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => mockMenu },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({ type: 'get_menu_items' });
 
@@ -773,7 +777,7 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => mockMenu },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({ type: 'get_menu_items' });
 
@@ -799,7 +803,7 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => mockMenu },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({ type: 'get_menu_items' });
 
@@ -815,7 +819,7 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => mockMenu },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({ type: 'get_menu_items' });
 
@@ -832,7 +836,7 @@ describe('OperationHandler', () => {
           },
         },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({ type: 'get_menu_items' });
 
@@ -849,7 +853,7 @@ describe('OperationHandler', () => {
           },
         },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({ type: 'get_menu_items' });
 
@@ -862,7 +866,7 @@ describe('OperationHandler', () => {
         BrowserWindow: { getAllWindows: () => [] },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const r1 = await handler.handle({ type: 'get_menu_items' });
       const r2 = await handler.handle({ type: 'get_menu_items' });
@@ -1045,7 +1049,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       // First call: getElectron() caches the value at line 64-65
       const r1 = await handler.handle({
@@ -1075,7 +1079,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       const result = await handler.handle({
         type: 'execute_main',
@@ -1098,7 +1102,7 @@ describe('OperationHandler', () => {
         },
         Menu: { getApplicationMenu: () => null },
       };
-      (handler as any).electron = mockElectron;
+      (handler as unknown as { electron: MockElectron }).electron = mockElectron;
 
       // No timeout specified — uses default 5000ms
       const result = await handler.handle({
