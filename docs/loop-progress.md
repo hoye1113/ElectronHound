@@ -55,6 +55,7 @@
 | W47 | C | PR-20 recastory-maestro 适配 | ~89% | 2941 | ~27s | - | `f6b6ff8` | 2026-05-30 |
 | W48 | C | PR-21 自举测试 (dogfooding) | ~89% | 2964 | ~27s | - | `d73d95d` | 2026-05-30 |
 | W49 | C | PR-22 Dashboard 多用户基础 | ~89% | 2996 | ~27s | - | `fd755ce` | 2026-05-30 |
+| W50 | A | 覆盖率补全 x5 (handlebars/storage/schedule/vlm/replay) | ~91% | 3095 | ~27s | - | `0e22e4f` | 2026-05-30 |
 
 ---
 
