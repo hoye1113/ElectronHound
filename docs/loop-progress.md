@@ -76,6 +76,7 @@
 | W68 | C | TypeScript 错误修复 (agent-core tests: checkpoint/axtree/agentLoop) | ~96% | 3618 | ~34s | - | `2f0e17d` | 2026-05-30 |
 | W69 | A | CLI command handler tests (export/import/generate/replay) | ~96% | 3628 | ~32s | - | `7db78b2` | 2026-05-30 |
 | W70 | A | isVLMProvider type guard tests (vlm-provider.ts 0%→covered) | ~96% | 3631 | ~32s | - | `633e070` | 2026-05-30 |
+| W71 | A | benchmark/compare.ts tests (loadBaseline/loadCurrent/flattenReport/checkRegression) | ~96% | 3644 | ~32s | - | `66de5e2` | 2026-05-30 |
 
 ---
 
