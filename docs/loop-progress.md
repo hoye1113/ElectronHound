@@ -77,6 +77,7 @@
 | W69 | A | CLI command handler tests (export/import/generate/replay) | ~96% | 3628 | ~32s | - | `7db78b2` | 2026-05-30 |
 | W70 | A | isVLMProvider type guard tests (vlm-provider.ts 0%→covered) | ~96% | 3631 | ~32s | - | `633e070` | 2026-05-30 |
 | W71 | A | benchmark/compare.ts tests (loadBaseline/loadCurrent/flattenReport/checkRegression) | ~96% | 3644 | ~32s | - | `66de5e2` | 2026-05-30 |
+| W72 | A | execute-main security trust level tests (blocking/safe/default) | ~96% | 3647 | ~32s | - | `ea9d0ce` | 2026-05-30 |
 
 ---
 
