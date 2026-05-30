@@ -70,6 +70,7 @@
 | W62 | A | Schedule 组件测试 x27 (ScheduleList/CreateScheduleForm/ScheduleHistory) | ~96% | 3615 | ~33s | - | `529ed9b` | 2026-05-30 |
 | W63 | A | NotificationSettings 错误状态测试 | ~96% | 3616 | ~32s | - | `127a26f` | 2026-05-30 |
 | W64 | A | Schedule 测试修复 (2 skipped → pass) | ~96% | 3618 | ~32s | - | `3cc5b6e` | 2026-05-30 |
+| W65 | C | TypeScript 错误修复 (electron-helper tests) | ~96% | 3618 | ~36s | - | `c63bb06` | 2026-05-30 |
 
 ---
 
