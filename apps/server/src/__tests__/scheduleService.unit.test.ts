@@ -435,9 +435,6 @@ describe('ScheduleService', () => {
 
       // The new task is 'queued' (status value 1) vs previous 'completed' (status value 0)
       // But queued (1) > completed (0), so it should be a regression
-      const regressionCall = sendSpy.mock.calls.find(
-        (c) => (c[0] as { event: string }).event === 'schedule:regression',
-      );
       // Also check that executed notification was sent
       const executedCall = sendSpy.mock.calls.find(
         (c) => (c[0] as { event: string }).event === 'schedule:executed',
@@ -513,7 +510,7 @@ describe('ScheduleService', () => {
       db.prepare = function (sql: string) {
         callCount++;
         if (sql.includes('INSERT INTO tasks') && callCount >= 3) {
-          throw 'string error thrown'; // eslint-disable-line no-throw-literal
+          throw 'string error thrown';
         }
         return originalPrepare(sql);
       } as typeof db.prepare;
