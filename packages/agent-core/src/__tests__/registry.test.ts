@@ -59,4 +59,58 @@ describe('ToolRegistry', () => {
       expect(registry1).not.toBe(registry2);
     });
   });
+
+  describe('streamInvoke', () => {
+    it('yields error when tool.invoke throws', async () => {
+      const registry = new ToolRegistry();
+      const throwingTool = {
+        name: 'throwing_tool',
+        description: 'A tool that throws',
+        schema: { safeParse: vi.fn().mockReturnValue({ success: true, data: {} }) },
+        invoke: vi.fn().mockRejectedValue(new Error('Tool exploded')),
+      };
+      registry.register(throwingTool as never);
+
+      const chunks: Array<{ type: string; error?: string }> = [];
+      for await (const chunk of registry.streamInvoke('throwing_tool', {})) {
+        chunks.push(chunk as { type: string; error?: string });
+      }
+
+      expect(chunks.some((c) => c.type === 'progress')).toBe(true);
+      expect(chunks.some((c) => c.type === 'error' && c.error?.includes('Tool exploded'))).toBe(true);
+    });
+
+    it('yields error when tool not found', async () => {
+      const registry = new ToolRegistry();
+
+      const chunks: Array<{ type: string; error?: string }> = [];
+      for await (const chunk of registry.streamInvoke('nonexistent', {})) {
+        chunks.push(chunk as { type: string; error?: string });
+      }
+
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0].type).toBe('error');
+      expect(chunks[0].error).toContain('not found');
+    });
+
+    it('yields error when params are invalid', async () => {
+      const registry = new ToolRegistry();
+      const tool = {
+        name: 'test_tool',
+        description: 'A test tool',
+        schema: { safeParse: vi.fn().mockReturnValue({ success: false, error: { message: 'bad params' } }) },
+        invoke: vi.fn(),
+      };
+      registry.register(tool as never);
+
+      const chunks: Array<{ type: string; error?: string }> = [];
+      for await (const chunk of registry.streamInvoke('test_tool', {})) {
+        chunks.push(chunk as { type: string; error?: string });
+      }
+
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0].type).toBe('error');
+      expect(chunks[0].error).toContain('bad params');
+    });
+  });
 });
