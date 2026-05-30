@@ -88,6 +88,9 @@
 | W80 | A | progress.ts tests (ProgressBar/Spinner/ProgressTracker/formatDuration) | ~96% | 3699 | ~31s | - | - | 2026-05-31 |
 | W81 | A | cli-help.ts tests (CLIHelp/COMMANDS) + batch PDF export test | ~87.6% | 3723 | ~39s | - | `7ab92e0` | 2026-05-31 |
 | W82 | A | daemon.ts tests (setDaemonManager/resetDaemonManager) | ~87.6% | 3723 | ~39s | - | `7ab92e0` | 2026-05-31 |
+| W85 | C | CDP tool error path coverage (cdp_trigger_ipc + cdp_mock_dialog) | ~87.6% | 3725 | ~33s | - | `6ba8e83` | 2026-05-31 |
+| W86 | A | NotificationSettings error state tests (failed/pending log, test error) | ~87.6% | 3729 | ~33s | - | `89c21aa` | 2026-05-31 |
+| W87 | A | Settings.tsx Token Usage Audit filter handler tests | ~87.6% | 3734 | ~33s | - | `89c21aa` | 2026-05-31 |
 
 ---
 
@@ -96,8 +99,8 @@
 | 指标 | 基线 | 当前 | 目标 | 差距 |
 |------|------|------|------|------|
 | 覆盖率 (stmts) | ~68% | ~87.6% | 80% | 达标 |
-| 测试数量 | 1280 | 3723 | 持续增长 | - |
-| 测试时间 | ~65s | ~39s | <30s | 达标 |
+| 测试数量 | 1280 | 3734 | 持续增长 | - |
+| 测试时间 | ~65s | ~33s | <30s | 达标 |
 | ESLint 错误 | 110 | 0 | 0 | 达标 |
 | 裸 catch 块 | 73+ | 0 | 0 | 达标 |
 | `as unknown as` | 12 | 0 | 0 | 达标 |
