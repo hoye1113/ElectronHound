@@ -256,4 +256,68 @@ describe('NotificationSettings', () => {
       expect(screen.getByText('pending')).toBeInTheDocument();
     });
   });
+
+  it('can remove a webhook URL', async () => {
+    mockGetConfig.mockResolvedValue(makeConfig({
+      webhookUrls: ['https://hooks.example.com/test'],
+    }));
+
+    render(<NotificationSettings />);
+
+    await waitFor(() => {
+      expect(screen.getByText('https://hooks.example.com/test')).toBeInTheDocument();
+    });
+
+    // Click the remove button (X icon)
+    const removeBtn = screen.getByRole('button', { name: '' });
+    fireEvent.click(removeBtn);
+
+    await waitFor(() => {
+      expect(screen.queryByText('https://hooks.example.com/test')).not.toBeInTheDocument();
+    });
+  });
+
+  it('can toggle event types', async () => {
+    render(<NotificationSettings />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Task Completed')).toBeInTheDocument();
+    });
+
+    // task.completed is selected by default, click to deselect
+    fireEvent.click(screen.getByText('Task Completed'));
+
+    // task.created is not selected by default, click to select
+    fireEvent.click(screen.getByText('Task Created'));
+  });
+
+  it('can save config via API', async () => {
+    render(<NotificationSettings />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Save Configuration')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Save Configuration'));
+
+    await waitFor(() => {
+      expect(mockUpdateConfig).toHaveBeenCalled();
+    });
+  });
+
+  it('shows error when save API fails', async () => {
+    mockUpdateConfig.mockRejectedValue(new Error('Save failed'));
+
+    render(<NotificationSettings />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Save Configuration')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Save Configuration'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Save failed')).toBeInTheDocument();
+    });
+  });
 });
