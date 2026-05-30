@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EATA Test App - Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      padding: 1.5rem;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    h1 { font-size: 1.5rem; color: #333; }
+    .nav-links { display: flex; gap: 0.75rem; }
+    .nav-links a {
+      color: #0066cc;
+      text-decoration: none;
+      padding: 0.4rem 0.8rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+    .nav-links a:hover { background: #e8f0fe; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .card h2 { font-size: 1.1rem; margin-bottom: 1rem; color: #333; }
+
+    /* Counter */
+    .counter-display {
+      font-size: 3rem;
+      font-weight: 700;
+      text-align: center;
+      padding: 0.5rem;
+      color: #0066cc;
+    }
+    .counter-controls {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-top: 0.75rem;
+    }
+    .counter-controls button {
+      padding: 0.5rem 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: white;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .counter-controls button:hover { background: #f5f5f5; }
+    .counter-controls button.primary {
+      background: #0066cc;
+      color: white;
+      border-color: #0066cc;
+    }
+    .counter-controls button.primary:hover { background: #0055aa; }
+    .counter-controls button.danger {
+      background: #dc3545;
+      color: white;
+      border-color: #dc3545;
+    }
+    .counter-controls button.danger:hover { background: #c82333; }
+
+    /* Tasks */
+    .task-input-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .task-input-row input {
+      flex: 1;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+    .task-input-row button {
+      padding: 0.5rem 1rem;
+      background: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .task-list { list-style: none; max-height: 200px; overflow-y: auto; }
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      border-bottom: 1px solid #eee;
+    }
+    .task-item.completed .task-title { text-decoration: line-through; color: #999; }
+    .task-title { flex: 1; font-size: 0.9rem; }
+    .task-toggle {
+      padding: 0.25rem 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      background: white;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    .task-toggle:hover { background: #f5f5f5; }
+    .task-clear-btn {
+      margin-top: 0.75rem;
+      padding: 0.4rem 0.8rem;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .task-count {
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 0.5rem;
+    }
+
+    /* Notifications */
+    .notif-list { list-style: none; max-height: 200px; overflow-y: auto; }
+    .notif-item {
+      padding: 0.5rem;
+      border-bottom: 1px solid #eee;
+      font-size: 0.9rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .notif-item.read { opacity: 0.6; }
+    .notif-message { flex: 1; }
+    .notif-mark-btn {
+      padding: 0.2rem 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      background: white;
+      cursor: pointer;
+      font-size: 0.75rem;
+      margin-left: 0.5rem;
+    }
+    .notif-empty { color: #999; font-size: 0.9rem; text-align: center; padding: 1rem; }
+
+    /* Status bar */
+    .status-bar {
+      margin-top: 1.5rem;
+      padding: 0.75rem 1rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: #666;
+    }
+    #app-status { color: #28a745; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Dashboard</h1>
+    <nav class="nav-links">
+      <a href="index.html" id="nav-login">Login</a>
+      <a href="settings.html" id="nav-settings">Settings</a>
+    </nav>
+  </div>
+
+  <div class="grid">
+    <!-- Counter Card -->
+    <div class="card" id="counter-card">
+      <h2>Counter</h2>
+      <div class="counter-display" id="counter-value">0</div>
+      <div class="counter-controls">
+        <button id="counter-decrement" aria-label="Decrement counter">-1</button>
+        <button id="counter-reset" class="danger" aria-label="Reset counter">Reset</button>
+        <button id="counter-increment" class="primary" aria-label="Increment counter">+1</button>
+      </div>
+    </div>
+
+    <!-- Tasks Card -->
+    <div class="card" id="tasks-card">
+      <h2>Tasks</h2>
+      <div class="task-input-row">
+        <input type="text" id="task-input" placeholder="Add a new task..." aria-label="New task title" />
+        <button id="task-add-btn" aria-label="Add task">Add</button>
+      </div>
+      <ul class="task-list" id="task-list" role="list"></ul>
+      <div class="task-count" id="task-count">0 tasks</div>
+      <button class="task-clear-btn" id="task-clear-btn">Clear Completed</button>
+    </div>
+
+    <!-- Notifications Card -->
+    <div class="card" id="notifications-card">
+      <h2>Notifications</h2>
+      <ul class="notif-list" id="notif-list">
+        <li class="notif-empty">No notifications yet</li>
+      </ul>
+    </div>
+
+    <!-- Quick Actions Card -->
+    <div class="card" id="actions-card">
+      <h2>Quick Actions</h2>
+      <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+        <button id="action-ping" style="padding: 0.6rem; border: 1px solid #ccc; border-radius: 4px; background: white; cursor: pointer;">Ping Server</button>
+        <button id="action-version" style="padding: 0.6rem; border: 1px solid #ccc; border-radius: 4px; background: white; cursor: pointer;">Get Version</button>
+        <button id="action-dialog" style="padding: 0.6rem; border: 1px solid #ccc; border-radius: 4px; background: white; cursor: pointer;">Show Dialog</button>
+        <div id="action-result" style="padding: 0.5rem; background: #f8f9fa; border-radius: 4px; font-size: 0.85rem; min-height: 2rem;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span>App Status: <span id="app-status">Ready</span></span>
+    <span id="version-display">v--</span>
+  </div>
+
+  <script>
+    // ── Counter ──────────────────────────────────────────────────────────
+    const counterValue = document.getElementById('counter-value');
+    const counterInc = document.getElementById('counter-increment');
+    const counterDec = document.getElementById('counter-decrement');
+    const counterReset = document.getElementById('counter-reset');
+
+    async function refreshCounter() {
+      const val = await window.electronAPI.getCounter();
+      counterValue.textContent = val;
+    }
+
+    counterInc.addEventListener('click', async () => {
+      await window.electronAPI.incrementCounter();
+      await refreshCounter();
+    });
+    counterDec.addEventListener('click', async () => {
+      await window.electronAPI.decrementCounter();
+      await refreshCounter();
+    });
+    counterReset.addEventListener('click', async () => {
+      await window.electronAPI.resetCounter();
+      await refreshCounter();
+    });
+
+    // ── Tasks ────────────────────────────────────────────────────────────
+    const taskInput = document.getElementById('task-input');
+    const taskAddBtn = document.getElementById('task-add-btn');
+    const taskList = document.getElementById('task-list');
+    const taskCount = document.getElementById('task-count');
+    const taskClearBtn = document.getElementById('task-clear-btn');
+
+    function renderTasks(tasks) {
+      taskList.innerHTML = '';
+      for (const task of tasks) {
+        const li = document.createElement('li');
+        li.className = 'task-item' + (task.completed ? ' completed' : '');
+        li.setAttribute('data-task-id', task.id);
+        li.innerHTML = `
+          <span class="task-title">${task.title}</span>
+          <button class="task-toggle" data-id="${task.id}">${task.completed ? 'Undo' : 'Done'}</button>
+        `;
+        taskList.appendChild(li);
+      }
+      const remaining = tasks.filter(t => !t.completed).length;
+      taskCount.textContent = `${remaining} remaining / ${tasks.length} total`;
+    }
+
+    async function refreshTasks() {
+      const tasks = await window.electronAPI.listTasks();
+      renderTasks(tasks);
+    }
+
+    taskAddBtn.addEventListener('click', async () => {
+      const title = taskInput.value.trim();
+      if (title) {
+        await window.electronAPI.addTask(title);
+        taskInput.value = '';
+        await refreshTasks();
+      }
+    });
+
+    taskInput.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        taskAddBtn.click();
+      }
+    });
+
+    taskList.addEventListener('click', async (e) => {
+      if (e.target.classList.contains('task-toggle')) {
+        const id = e.target.getAttribute('data-id');
+        await window.electronAPI.toggleTask(id);
+        await refreshTasks();
+      }
+    });
+
+    taskClearBtn.addEventListener('click', async () => {
+      await window.electronAPI.clearCompletedTasks();
+      await refreshTasks();
+    });
+
+    // ── Notifications ────────────────────────────────────────────────────
+    const notifList = document.getElementById('notif-list');
+
+    function renderNotifications(notifs) {
+      if (notifs.length === 0) {
+        notifList.innerHTML = '<li class="notif-empty">No notifications yet</li>';
+        return;
+      }
+      notifList.innerHTML = '';
+      for (const n of notifs) {
+        const li = document.createElement('li');
+        li.className = 'notif-item' + (n.read ? ' read' : '');
+        li.innerHTML = `
+          <span class="notif-message">${n.message}</span>
+          ${n.read ? '' : `<button class="notif-mark-btn" data-id="${n.id}">Mark Read</button>`}
+        `;
+        notifList.appendChild(li);
+      }
+    }
+
+    async function refreshNotifications() {
+      const notifs = await window.electronAPI.listNotifications();
+      renderNotifications(notifs);
+    }
+
+    notifList.addEventListener('click', async (e) => {
+      if (e.target.classList.contains('notif-mark-btn')) {
+        const id = e.target.getAttribute('data-id');
+        await window.electronAPI.markNotificationRead(id);
+        await refreshNotifications();
+      }
+    });
+
+    // ── Quick Actions ────────────────────────────────────────────────────
+    const actionResult = document.getElementById('action-result');
+
+    document.getElementById('action-ping').addEventListener('click', async () => {
+      const result = await window.electronAPI.ping();
+      actionResult.textContent = `Ping result: ${result}`;
+    });
+
+    document.getElementById('action-version').addEventListener('click', async () => {
+      const version = await window.electronAPI.getVersion();
+      actionResult.textContent = `App version: ${version}`;
+    });
+
+    document.getElementById('action-dialog').addEventListener('click', async () => {
+      const result = await window.electronAPI.showDialog({
+        type: 'info',
+        title: 'Test Dialog',
+        message: 'This is a test dialog from the dashboard.',
+        buttons: ['OK'],
+      });
+      actionResult.textContent = `Dialog closed, button index: ${result.response}`;
+    });
+
+    // ── Init ─────────────────────────────────────────────────────────────
+    async function init() {
+      await refreshCounter();
+      await refreshTasks();
+      await refreshNotifications();
+      try {
+        const version = await window.electronAPI.getVersion();
+        document.getElementById('version-display').textContent = `v${version}`;
+      } catch (e) { /* ignore */ }
+    }
+
+    init();
+  </script>
+</body>
+</html>

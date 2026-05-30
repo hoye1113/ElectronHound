@@ -6,6 +6,8 @@ export interface ElectronLaunchInput {
   targetAppPath: string;
   helperPath?: string;
   debuggingPort?: number;
+  /** Extra Chromium/Electron CLI flags (e.g. ['--no-sandbox'] for CI). */
+  electronFlags?: string[];
 }
 
 export interface ElectronLaunchOutput {
@@ -31,6 +33,7 @@ export async function electronLaunch(
     targetAppPath: input.targetAppPath,
     helperPath: input.helperPath,
     debuggingPort: input.debuggingPort ?? 0,
+    electronFlags: input.electronFlags,
   });
 
   // Register process for later cleanup

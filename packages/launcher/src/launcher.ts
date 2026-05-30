@@ -6,6 +6,8 @@ export interface SpawnOptions {
   debuggingPort?: number;
   env?: Record<string, string>;
   timeout?: number;
+  /** Extra Chromium/Electron CLI flags (e.g. ['--no-sandbox'] for CI). */
+  electronFlags?: string[];
 }
 
 export interface ElectronProcess {
@@ -52,6 +54,7 @@ export async function spawnElectron(options: SpawnOptions): Promise<ElectronProc
     debuggingPort = DEFAULT_DEBUGGING_PORT,
     env,
     timeout = DEFAULT_TIMEOUT,
+    electronFlags,
   } = options;
 
   const electronPath = await resolveElectronPath();
@@ -63,6 +66,16 @@ export async function spawnElectron(options: SpawnOptions): Promise<ElectronProc
 
   if (helperPath) {
     args.push('--require', helperPath);
+  }
+
+  // Append extra Electron/Chromium flags (e.g. --no-sandbox for CI)
+  // Supports both explicit flags and ELECTRON_FLAGS env var (comma-separated)
+  const envFlags = process.env.ELECTRON_FLAGS
+    ? process.env.ELECTRON_FLAGS.split(',').map((f) => f.trim()).filter(Boolean)
+    : [];
+  const allFlags = [...(electronFlags ?? []), ...envFlags];
+  if (allFlags.length > 0) {
+    args.push(...allFlags);
   }
 
   const childEnv: Record<string, string | undefined> = env
