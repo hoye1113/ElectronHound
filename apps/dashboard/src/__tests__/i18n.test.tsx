@@ -186,11 +186,9 @@ describe('i18n', () => {
       await i18n.changeLanguage('zh');
       // zh does not have this key, so fallbackLng 'en' provides it
       expect(i18n.t('testOnly.enOnlyKey')).toBe('English Only Value');
-      // Clean up
-      i18n.removeResourceBundle('en', 'translation');
-      // Re-add the original bundle so other tests aren't affected
-      const en = await import('../i18n/en.json');
-      i18n.addResourceBundle('en', 'translation', en.default ?? en, true, true);
+      // Clean up: remove the testOnly namespace that was dynamically added
+      const enBundle = i18n.getResourceBundle('en', 'translation') as Record<string, unknown>;
+      delete enBundle.testOnly;
     });
   });
 
