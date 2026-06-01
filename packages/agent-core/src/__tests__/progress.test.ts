@@ -13,7 +13,7 @@ describe('ProgressBar', () => {
   let stdoutSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    stdoutSpy = vi.spyOn(process.stdout, 'write' as never).mockImplementation(() => true);
   });
 
   afterEach(() => {
@@ -76,7 +76,7 @@ describe('Spinner', () => {
   let stdoutSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    stdoutSpy = vi.spyOn(process.stdout, 'write' as never).mockImplementation(() => true);
   });
 
   afterEach(() => {
