@@ -16,6 +16,8 @@ const { mockSchedules, mockTemplates, mockRuns } = vi.hoisted(() => ({
       lastRunAt: '2026-05-30T09:00:00Z',
       nextRunAt: '2026-05-31T09:00:00Z',
       runCount: 5,
+      createdAt: '2026-05-01T00:00:00Z',
+      updatedAt: '2026-05-30T09:00:00Z',
     },
     {
       id: 'sch-2',
@@ -27,6 +29,8 @@ const { mockSchedules, mockTemplates, mockRuns } = vi.hoisted(() => ({
       lastRunAt: '2026-05-27T10:00:00Z',
       nextRunAt: null,
       runCount: 2,
+      createdAt: '2026-05-01T00:00:00Z',
+      updatedAt: '2026-05-27T10:00:00Z',
     },
   ],
   mockTemplates: [
@@ -56,12 +60,12 @@ const { mockSchedules, mockTemplates, mockRuns } = vi.hoisted(() => ({
 vi.mock('../lib/api', () => ({
   api: {
     schedules: {
-      list: vi.fn().mockImplementation(() => Promise.resolve({ data: mockSchedules })),
+      list: vi.fn().mockImplementation(() => Promise.resolve({ data: mockSchedules, total: mockSchedules.length })),
       create: vi.fn().mockImplementation(() => Promise.resolve({ data: { id: 'sch-new' } })),
       update: vi.fn().mockImplementation(() => Promise.resolve({ data: {} })),
       delete: vi.fn().mockImplementation(() => Promise.resolve({ data: {} })),
       run: vi.fn().mockImplementation(() => Promise.resolve({ data: {} })),
-      history: vi.fn().mockImplementation(() => Promise.resolve({ data: mockRuns })),
+      history: vi.fn().mockImplementation(() => Promise.resolve({ data: mockRuns, total: mockRuns.length })),
     },
     templates: {
       list: vi.fn().mockImplementation(() => Promise.resolve({ data: mockTemplates })),
@@ -145,7 +149,7 @@ describe('ScheduleList', () => {
 
   it('renders empty state when no schedules', async () => {
     const { api } = await import('../lib/api');
-    vi.mocked(api.schedules.list).mockResolvedValueOnce({ data: [] });
+    vi.mocked(api.schedules.list).mockResolvedValueOnce({ data: [], total: 0 });
     render(<ScheduleList />);
     await waitFor(() => {
       expect(screen.getByText('scheduleList.empty')).toBeDefined();
@@ -396,7 +400,7 @@ describe('ScheduleHistory', () => {
 
   it('shows empty state when no runs', async () => {
     const { api } = await import('../lib/api');
-    vi.mocked(api.schedules.history).mockResolvedValueOnce({ data: [] });
+    vi.mocked(api.schedules.history).mockResolvedValueOnce({ data: [], total: 0 });
     render(<ScheduleHistory {...defaultProps} />);
     await waitFor(() => {
       expect(screen.getByText('scheduleHistory.empty')).toBeDefined();
