@@ -93,6 +93,7 @@
 | W87 | A | Settings.tsx Token Usage Audit filter handler tests | ~87.6% | 3734 | ~33s | - | `89c21aa` | 2026-05-31 |
 | W89 | C | registry.ts streamInvoke error path coverage | ~88% | 3740 | ~33s | - | `44d9aef` | 2026-05-31 |
 | W90 | A | NotificationSettings coverage (removeWebhook/toggleEvent/saveConfig/error) | ~88% | 3744 | ~33s | - | `8970f54` | 2026-05-31 |
+| W92 | C | i18n fixes: langSwitcher namespace + schedule dead code cleanup + completeness tests | ~88% | 3748 | ~38s | - | `6004a53` | 2026-05-31 |
 
 ---
 
@@ -101,7 +102,7 @@
 | 指标 | 基线 | 当前 | 目标 | 差距 |
 |------|------|------|------|------|
 | 覆盖率 (stmts) | ~68% | ~88% | 80% | 达标 |
-| 测试数量 | 1280 | 3740 | 持续增长 | - |
+| 测试数量 | 1280 | 3748 | 持续增长 | - |
 | 测试时间 | ~65s | ~33s | <30s | 达标 |
 | ESLint 错误 | 110 | 0 | 0 | 达标 |
 | 裸 catch 块 | 73+ | 0 | 0 | 达标 |
