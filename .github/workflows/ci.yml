@@ -31,7 +31,7 @@ jobs:
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332  # v4.1.7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@fe02b34f77f8bc972c04bb8b7e9d5e1b2b5b2e3b  # v4.0.0
+        uses: pnpm/action-setup@0c17529a66aca453f9227af23103ed11469b1e47  # v4.0.0
         with:
           version: 9
 
@@ -57,7 +57,7 @@ jobs:
         run: pnpm test -- --coverage --coverage.reporter=text --coverage.reporter=lcov
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@b9fd7d16f6d771b0bdc696c0b6b8e76e4e56585  # v4.6.0
+        uses: codecov/codecov-action@0f8570b1a125f4937846a11fcfa3bcd548bd8c97  # v4.6.0
         with:
           files: ./coverage/lcov.info
           fail_ci_if_error: false
@@ -85,7 +85,7 @@ jobs:
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332  # v4.1.7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@fe02b34f77f8bc972c04bb8b7e9d5e1b2b5b2e3b  # v4.0.0
+        uses: pnpm/action-setup@0c17529a66aca453f9227af23103ed11469b1e47  # v4.0.0
         with:
           version: 9
 
@@ -157,7 +157,7 @@ jobs:
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332  # v4.1.7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@fe02b34f77f8bc972c04bb8b7e9d5e1b2b5b2e3b  # v4.0.0
+        uses: pnpm/action-setup@0c17529a66aca453f9227af23103ed11469b1e47  # v4.0.0
         with:
           version: 9
 
