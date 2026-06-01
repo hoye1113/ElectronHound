@@ -1,8 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
-const fixtureDir = join(import.meta.dirname || __dirname, '..');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const fixtureDir = join(__dirname, '..');
 
 describe('self-test-electron-app fixture', () => {
   describe('package.json', () => {

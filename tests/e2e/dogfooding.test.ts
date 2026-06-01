@@ -74,7 +74,7 @@ async function launchSelfTestApp(): Promise<void> {
   // electron.exe behaves as plain Node.js and Electron APIs are unavailable.
   const { ELECTRON_RUN_AS_NODE: _drop, ...cleanEnv } = process.env;
 
-  appProcess = spawn(electronBin, [SELF_TEST_APP], {
+  appProcess = spawn(electronBin, [SELF_TEST_APP, '--no-sandbox'], {
     env: {
       ...cleanEnv,
       SELF_TEST_PORT: String(port),
