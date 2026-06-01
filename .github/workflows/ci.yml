@@ -18,6 +18,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
     name: Build, Test, Lint, Typecheck
@@ -25,15 +28,15 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332  # v4.1.7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@fe02b34f77f8bc972c04bb8b7e9d5e1b2b5b2e3b  # v4.0.0
         with:
           version: 9
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b  # v4.0.3
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -54,7 +57,7 @@ jobs:
         run: pnpm test -- --coverage --coverage.reporter=text --coverage.reporter=lcov
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@b9fd7d16f6d771b0bdc696c0b6b8e76e4e56585  # v4.6.0
         with:
           files: ./coverage/lcov.info
           fail_ci_if_error: false
@@ -79,15 +82,15 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332  # v4.1.7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@fe02b34f77f8bc972c04bb8b7e9d5e1b2b5b2e3b  # v4.0.0
         with:
           version: 9
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b  # v4.0.3
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -136,34 +139,30 @@ jobs:
       matrix:
         node-version: ['20', '22']
         electron-version: ['28', '30', '32', '39']
-        # Allow failures for unsupported or experimental Electron versions
         exclude:
-          # Electron 39 may not be available yet; allow failure via continue-on-error
           - node-version: '22'
-            electron-version: '28'  # Older Electron may not support Node 22
+            electron-version: '28'
 
     continue-on-error: ${{ matrix.electron-version == '39' }}
 
     env:
-      # xvfb-run provides a virtual X11 framebuffer for headless Electron
       DISPLAY: ':99'
-      # Electron flags for CI environments
       ELECTRON_DISABLE_GPU: '1'
       ELECTRON_NO_ATTACH_CONSOLE: '1'
-      # Electron version for compatibility testing
       ELECTRON_VERSION: ${{ matrix.electron-version }}
+      MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332  # v4.1.7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@fe02b34f77f8bc972c04bb8b7e9d5e1b2b5b2e3b  # v4.0.0
         with:
           version: 9
 
       - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b  # v4.0.3
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'

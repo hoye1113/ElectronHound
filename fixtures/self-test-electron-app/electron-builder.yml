@@ -1,0 +1,28 @@
+appId: com.electronhound.app
+productName: ElectronHound
+directories:
+  output: dist
+files:
+  - main.js
+  - preload.js
+  - package.json
+  - "../../apps/dashboard/dist/**/*"
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  icon: "../../apps/dashboard/public/favicon.ico"
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: "../../apps/dashboard/public/favicon.ico"
+  uninstallerIcon: "../../apps/dashboard/public/favicon.ico"
+  installerHeaderIcon: "../../apps/dashboard/public/favicon.ico"
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: ElectronHound
