@@ -186,6 +186,16 @@ importers:
         specifier: ^3.2.0
         version: 3.2.4(@types/node@24.12.4)(jiti@2.7.0)(jsdom@29.1.1(@noble/hashes@1.8.0))(lightningcss@1.32.0)(tsx@4.22.1)(yaml@2.9.0)
 
+  fixtures/self-test-electron-app:
+    devDependencies:
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.4(@types/node@24.12.4)(jiti@2.7.0)(jsdom@29.1.1(@noble/hashes@1.8.0))(lightningcss@1.32.0)(tsx@4.22.1)(yaml@2.9.0)
+    optionalDependencies:
+      electron:
+        specifier: ^39.8.5
+        version: 39.8.10
+
   fixtures/test-electron-app:
     devDependencies:
       vitest:
