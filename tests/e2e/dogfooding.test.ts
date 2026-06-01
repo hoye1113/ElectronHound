@@ -131,6 +131,7 @@ async function killSelfTestApp(): Promise<void> {
 
 describe('Dogfooding: Self-Test App E2E', () => {
   // Skip the entire suite if the dashboard hasn't been built yet
+  // or if no display server is available (required for Electron)
   beforeAll(async () => {
     if (!existsSync(join(DASHBOARD_DIST, 'index.html'))) {
       console.warn(
@@ -138,6 +139,15 @@ describe('Dogfooding: Self-Test App E2E', () => {
       );
       return;
     }
+
+    // Check if display is available (required for Electron GUI)
+    if (!process.env.DISPLAY && !process.env.WAYLAND_DISPLAY) {
+      console.warn(
+        '[dogfooding] No display server available — skipping. Run with xvfb-run or set DISPLAY.',
+      );
+      return;
+    }
+
     await launchSelfTestApp();
   }, 20_000);
 
