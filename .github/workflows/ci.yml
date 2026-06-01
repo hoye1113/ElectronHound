@@ -102,10 +102,9 @@ jobs:
             xvfb \
             libgtk-3-0 \
             libnotify-dev \
-            libgconf-2-4 \
             libnss3 \
             libxss1 \
-            libasound2 \
+            libasound2t64 \
             libxtst6 \
             xauth \
             libgbm1
@@ -174,10 +173,9 @@ jobs:
             xvfb \
             libgtk-3-0 \
             libnotify-dev \
-            libgconf-2-4 \
             libnss3 \
             libxss1 \
-            libasound2 \
+            libasound2t64 \
             libxtst6 \
             xauth \
             libgbm1
