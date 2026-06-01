@@ -33,4 +33,11 @@ benchmarks/current.json
 *.js.map
 *.d.ts
 *.d.ts.map
+
+# Exception: fixture JS files (not compiled)
+!fixtures/self-test-electron-app/main.js
+!fixtures/self-test-electron-app/preload.js
+!fixtures/test-electron-app/main.js
+!fixtures/test-electron-app/preload.js
+
 docs/superpowers/
