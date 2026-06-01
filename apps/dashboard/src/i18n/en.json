@@ -393,6 +393,11 @@
     "createError": "Failed to create batch. Please try again.",
     "loadError": "Failed to load batches"
   },
+  "langSwitcher": {
+    "title": "Language",
+    "en": "English",
+    "zh": "中文"
+  },
   "schedule": {
     "title": "Schedules",
     "newSchedule": "New Schedule",

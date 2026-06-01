@@ -396,6 +396,11 @@
     "createError": "创建批量任务失败，请重试。",
     "loadError": "加载批量任务失败"
   },
+  "langSwitcher": {
+    "title": "语言",
+    "en": "English",
+    "zh": "中文"
+  },
   "scheduleList": {
     "title": "定时任务",
     "subtitle": "管理自动化测试调度",
