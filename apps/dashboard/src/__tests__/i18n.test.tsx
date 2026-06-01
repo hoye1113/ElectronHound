@@ -193,4 +193,47 @@ describe('i18n', () => {
       i18n.addResourceBundle('en', 'translation', en.default ?? en, true, true);
     });
   });
+
+  describe('i18n completeness', () => {
+    it('en.json and zh.json have identical top-level namespaces', () => {
+      const enBundle = i18n.getResourceBundle('en', 'translation') as Record<string, unknown>;
+      const zhBundle = i18n.getResourceBundle('zh', 'translation') as Record<string, unknown>;
+
+      const enKeys = Object.keys(enBundle).sort();
+      const zhKeys = Object.keys(zhBundle).sort();
+
+      expect(enKeys).toEqual(zhKeys);
+    });
+
+    it('langSwitcher namespace exists in both bundles with required keys', () => {
+      const enBundle = i18n.getResourceBundle('en', 'translation') as Record<string, Record<string, string>>;
+      const zhBundle = i18n.getResourceBundle('zh', 'translation') as Record<string, Record<string, string>>;
+
+      expect(enBundle.langSwitcher).toBeDefined();
+      expect(zhBundle.langSwitcher).toBeDefined();
+
+      for (const key of ['title', 'en', 'zh']) {
+        expect(enBundle.langSwitcher[key]).toBeDefined();
+        expect(enBundle.langSwitcher[key].length).toBeGreaterThan(0);
+        expect(zhBundle.langSwitcher[key]).toBeDefined();
+        expect(zhBundle.langSwitcher[key].length).toBeGreaterThan(0);
+      }
+    });
+
+    it('langSwitcher keys resolve correctly in both languages', () => {
+      expect(i18n.t('langSwitcher.title')).toBe('Language');
+      expect(i18n.t('langSwitcher.en')).toBe('English');
+      expect(i18n.t('langSwitcher.zh')).toBe('中文');
+
+      i18n.changeLanguage('zh');
+      expect(i18n.t('langSwitcher.title')).toBe('语言');
+      expect(i18n.t('langSwitcher.en')).toBe('English');
+      expect(i18n.t('langSwitcher.zh')).toBe('中文');
+    });
+
+    it('schedule namespace does not exist (dead code removed)', () => {
+      const enBundle = i18n.getResourceBundle('en', 'translation') as Record<string, unknown>;
+      expect(enBundle.schedule).toBeUndefined();
+    });
+  });
 });
