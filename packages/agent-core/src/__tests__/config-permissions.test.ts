@@ -89,8 +89,14 @@ describe('Config Permissions', () => {
       expect(afterStats.isFile()).toBe(true);
 
       // On non-Windows, verify permissions were tightened
+      // Note: writeFileSync mode is affected by umask, so we check that
+      // group/other permissions are not set (i.e., only owner has read/write)
       if (process.platform !== 'win32') {
-        expect(afterStats.mode & 0o777).toBe(0o600);
+        const mode = afterStats.mode & 0o777;
+        // Verify owner has read/write (0o600)
+        expect(mode & 0o600).toBe(0o600);
+        // Verify group/other have no permissions
+        expect(mode & 0o077).toBe(0);
       }
     });
   });

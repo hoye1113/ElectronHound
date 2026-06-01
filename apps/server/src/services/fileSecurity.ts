@@ -13,21 +13,24 @@ export function validatePath(baseDir: string, targetPath: string): string {
     throw new PathTraversalError(targetPath || '(empty)');
   }
 
+  // Normalize backslashes to forward slashes for cross-platform compatibility
+  // This ensures Windows-style paths work on Linux too
+  const normalizedTarget = targetPath.replace(/\\/g, '/');
+
   // Reject paths containing literal '..' segments before resolution
   // This catches obvious traversal attempts regardless of separator style
-  const normalizedSegments = targetPath.replace(/\\/g, '/').split('/');
+  const normalizedSegments = normalizedTarget.split('/');
   if (normalizedSegments.includes('..')) {
     throw new PathTraversalError(targetPath);
   }
 
   const normalizedBase = resolve(baseDir);
-  const resolved = resolve(baseDir, targetPath);
+  const resolved = resolve(baseDir, normalizedTarget);
 
-  // Cross-platform component comparison: split on either separator type
-  // resolve() normalizes to platform-specific separators, so we detect the style
-  const sep = resolved.includes('\\') ? '\\' : '/';
-  const baseParts = normalizedBase.split(sep);
-  const resolvedParts = resolved.split(sep);
+  // Cross-platform component comparison: split on forward slash
+  // We've already normalized to forward slashes above
+  const baseParts = normalizedBase.split('/');
+  const resolvedParts = resolved.split('/');
 
   if (resolvedParts.length < baseParts.length) {
     throw new PathTraversalError(targetPath);

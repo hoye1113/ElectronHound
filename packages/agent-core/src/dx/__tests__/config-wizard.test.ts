@@ -8,6 +8,7 @@ import {
   quickSetupProvider,
   getProviderTemplates,
 } from '../config-wizard.js';
+import { PROVIDERS_FILE } from '../../config-paths.js';
 
 // ─── Module Mocks ──────────────────────────────────────────────────────
 
@@ -933,12 +934,11 @@ describe('Config Wizard', () => {
 
       // Pre-create a providers.json to trigger the overwrite prompt
       const { writeFileSync: realWrite, existsSync: realExists } = await vi.importActual<typeof import('node:fs')>('node:fs');
-      const configPath = join(tmpDir, 'providers.json');
-      realWrite(configPath, '{"version":1,"providers":[],"activeId":""}');
+      realWrite(PROVIDERS_FILE, '{"version":1,"providers":[],"activeId":""}');
 
       const { existsSync } = await import('node:fs');
       vi.mocked(existsSync).mockImplementation((p: import('node:fs').PathLike) => {
-        if (p === configPath) return true;
+        if (p === PROVIDERS_FILE) return true;
         return realExists(p);
       });
 
@@ -969,12 +969,11 @@ describe('Config Wizard', () => {
 
     it('should cancel when user declines to overwrite existing config', async () => {
       const { writeFileSync: realWrite, existsSync: realExists } = await vi.importActual<typeof import('node:fs')>('node:fs');
-      const configPath = join(tmpDir, 'providers.json');
-      realWrite(configPath, '{"version":1,"providers":[],"activeId":""}');
+      realWrite(PROVIDERS_FILE, '{"version":1,"providers":[],"activeId":""}');
 
       const { existsSync } = await import('node:fs');
       vi.mocked(existsSync).mockImplementation((p: import('node:fs').PathLike) => {
-        if (p === configPath) return true;
+        if (p === PROVIDERS_FILE) return true;
         return realExists(p);
       });
 
