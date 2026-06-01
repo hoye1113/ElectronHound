@@ -22,14 +22,15 @@ describe('test-electron-app fixture', () => {
       expect(pkg.scripts.test).toBeDefined();
     });
 
-    it('depends on electron v30+', () => {
+    it('depends on electron v28+', () => {
       const pkg = JSON.parse(readFileSync(join(fixtureDir, 'package.json'), 'utf-8'));
       // Check all dependency types
       const electronVersion = pkg.dependencies?.electron || pkg.optionalDependencies?.electron || pkg.devDependencies?.electron;
       expect(electronVersion).toBeDefined();
       // Extract major version from semver range like "^35.0.0"
+      // CI tests with electron 28, 30, 32, 39
       const major = parseInt(electronVersion.replace(/[^0-9]/g, '').slice(0, 2), 10);
-      expect(major).toBeGreaterThanOrEqual(30);
+      expect(major).toBeGreaterThanOrEqual(28);
     });
   });
 
